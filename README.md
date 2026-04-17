@@ -4,6 +4,21 @@ This project includes a sample component using LitElement with JavaScript.
 
 ## Setup
 
+
+Run dbefore install dependencies:
+```bash
+npm install --save-dev @web/dev-server
+```
+```bash
+npm install --save-dev sass
+```
+```bash
+npm install -g sass
+```
+```bash
+npm install -g nodemon
+```
+
 Install dependencies:
 
 ```bash
