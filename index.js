@@ -1,0 +1,1 @@
+export { MainElement } from './src/main.js';

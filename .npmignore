@@ -1,0 +1,10 @@
+.npmignore
+__snapshots__/*
+build/*
+coverage-reports/*
+demo/*
+account-transaction-servicing-mobile-top-up-packages-mx/*
+node_modules/*
+screenshots/*
+test/*
+test_e2e/*
