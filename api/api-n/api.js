@@ -6,7 +6,7 @@ let api = express();
 /**
  * Configs --------------------------------------------------------
  */
-let port = process.env.PORT || 8200;
+let port = process.env.PORT || 8100;
 
 const corsOptions = {
   origin: 'http://localhost:8000',
@@ -32,6 +32,12 @@ let validUsers = [
     user: 'Oscar',
     name: 'Oscar FMP',
     password: '1234',
+    level: 'manager',
+  },
+  {
+    user: 'Fer',
+    name: 'O Fer MP',
+    password: '1234',
     level: 'general',
   },
 ];
@@ -40,13 +46,12 @@ let userToSend = {};
 
 let userLoginTry = 0;
 
-let newProduct = 0;
-
 let products = [
   {
     id: 0,
     name: 'GOMA',
-    barcode: '1',
+    barcode: '11111',
+    barcodeSecondary: '',
     price: 5,
     stock: 50,
     description: 'Goma de Migajon Marca Pelican',
@@ -56,6 +61,7 @@ let products = [
     id: 1,
     name: 'SACAPUNTAS',
     barcode: '2',
+    barcodeSecondary: '2222',
     price: 5,
     stock: 50,
     description: '',
@@ -65,6 +71,7 @@ let products = [
     id: 2,
     name: 'LAPIZ',
     barcode: '3',
+    barcodeSecondary: '',
     price: 5,
     stock: 50,
     description: '',
@@ -74,6 +81,7 @@ let products = [
     id: 3,
     name: 'CUADERNO',
     barcode: '4',
+    barcodeSecondary: '',
     price: 5,
     stock: 50,
     description: '',
@@ -83,6 +91,7 @@ let products = [
     id: 4,
     name: 'HOJA DE COLOR',
     barcode: '5',
+    barcodeSecondary: '5555',
     price: 1,
     stock: 50,
     description: '',
@@ -92,12 +101,15 @@ let products = [
     id: 5,
     name: 'HOJA BLANCA',
     barcode: '6',
-    price: 5,
+    barcodeSecondary: '',
+    price: 0.5,
     stock: 50,
     description: '',
     date: '07/04/2026 - 10:19:26',
   },
 ];
+
+let newProduct = products.length;
 
 function getCurrentDate() {
   const date = new Date();
@@ -188,13 +200,18 @@ api.delete('/api/v0/products/product/:id', function (req, res) {
   const productToDelete = products.find(
     (product) => product.id === parseInt(req.params.id)
   );
+  if (!(userToSend.level === 'admin')) {
+    return res
+      .status(403)
+      .json({message: 'Not Authorized', code: 'EDP002', status: false});
+  }
   if (productToDelete) {
     products.splice(products.indexOf(productToDelete), 1);
     return res.status(200).json(true);
   } else {
     return res
       .status(400)
-      .json({message: 'Not found Product', code: 'EDP001', status: false});
+      .json({message: 'Not Found Product', code: 'EDP001', status: false});
   }
 });
 
@@ -205,6 +222,33 @@ api.get('/api/v0/products', function (req, res) {
   productsToSend = Array.from(products);
   productsToSend.reverse();
   res.status(200).json(productsToSend);
+});
+
+api.get('/api/v0/products/product/:id', function (req, res) {
+  const productToFind = products.find(
+    (product) => product.id === parseInt(req.params.id)
+  );
+ if (productToFind) {
+    return res.status(200).json(productToFind);
+  } else {
+    return res
+      .status(400)
+      .json({message: 'Not Found Product', code: 'EEP001', status: false});
+  }
+});
+
+api.patch('/api/v0/products/product/:id', function (req, res) {
+  const productToFind = products.find(
+    (product) => product.id === parseInt(req.params.id)
+  );
+  if (productToFind) {
+    products = products.map((product) => product.id === parseInt(req.params.id) ? req.body : product)
+    return res.status(200).json(req.body);
+  } else {
+    return res
+      .status(400)
+      .json({message: 'Not Found Product', code: 'EEP001', status: false});
+  }
 });
 
 /**

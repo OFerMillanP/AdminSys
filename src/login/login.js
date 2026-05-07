@@ -72,8 +72,8 @@ export class LoginElement extends LitElement {
       !this.user || !this.password ? 'Favor de llenar todos los campos' : '';
     if ((key === '' || key === 'Enter') && this.user && this.password) {
       dispatchCustomEvent(this, 'login-page-request-login', {
-        user: this.user.slice(0,15).replace(/\s/g, ''),
-        password: this.password.slice(0,20).replace(/\s/g, ''),
+        user: this.user.slice(0, 15).replace(/\s/g, ''),
+        password: this.password.slice(0, 20).replace(/\s/g, ''),
       });
     }
   }
@@ -107,22 +107,23 @@ export class LoginElement extends LitElement {
           <h1>Login</h1>
           <div>
             <div class="input-container">
-              <label for="user">User:</label>
-              <input
+              <mwc-textfield
+                outlined
+                label="User"
                 autocomplete="off"
                 id="user"
                 maxlength="15"
-                required
                 type="text"
                 .value=${this.user.replace(/\s/g, '')}
                 @input=${this._handleInput}
                 @keypress=${this.requestLoginAccess}
-              />
+              ></mwc-textfield>
             </div>
             <div class="input-container">
-              <label for="password">Password:</label>
-              <input
-                required
+              <mwc-textfield
+                outlined
+                label="Password"
+                autocomplete="off"
                 id="password"
                 type="password"
                 autocomplete="off"
@@ -130,12 +131,18 @@ export class LoginElement extends LitElement {
                 .value=${this.password.replace(/\s/g, '')}
                 @input=${this._handleInput}
                 @keypress=${this.requestLoginAccess}
-              />
+              ></mwc-textfield>
             </div>
             <div class="button-container">
-              <button class="login-button" @click=${this.requestLoginAccess}>
+              <mwc-button
+                raised
+                label="Login"
+                @click=${this.requestLoginAccess}
+              ></mwc-button>
+              <!-- <button class="login-button" @click=${this
+                .requestLoginAccess}>
                 Login
-              </button>
+              </button> -->
             </div>
             <div class="label-error-containter">
               <label class="error-label">${this._errorMessage}</label>

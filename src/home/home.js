@@ -33,14 +33,34 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
       /**
        * The name to say "Hello" to.
        */
-      registeredProducts: {
-        type: Array,
+      deleteSuccess: {
+        type: Boolean,
+        attribute: 'delete-success',
       },
       /**
        * The name to say "Hello" to.
        */
-      userData: {
+      editSuccess: {
+        type: Boolean,
+        attribute: 'edit-success',
+      },
+      /**
+       * The name to say "Hello" to.
+       */
+      productToEdit: {
         type: Object,
+      },
+      /**
+       * The name to say "Hello" to.
+       */
+      registerError: {
+        type: Object,
+      },
+      /**
+       * The name to say "Hello" to.
+       */
+      registeredProducts: {
+        type: Array,
       },
       /**
        * The name to say "Hello" to.
@@ -52,7 +72,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
       /**
        * The name to say "Hello" to.
        */
-      registerError: {
+      userData: {
         type: Object,
       },
       /**
@@ -95,15 +115,16 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
 
   constructor() {
     super();
+    this.deleteSuccess = false;
+    this.editSuccess = false;
+    this.productToEdit = {};
+    this.registerError = {};
+    this.registerSuccess = false;
     this.registeredProducts = [];
     this.userData = {};
-    this.registerSuccess = false;
-    this.registerError = {};
     this._isShowSell = false;
     this._isShowProducts = true;
     this._isShowRegister = false;
-    this._isShowUpdate = false;
-    this._isShowDelete = false;
   }
 
   _logout() {
@@ -114,8 +135,6 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
     this._isShowSell = false;
     this._isShowProducts = false;
     this._isShowRegister = false;
-    this._isShowUpdate = false;
-    this._isShowDelete = false;
   }
 
   _showSection({target: {id}}) {
@@ -147,35 +166,36 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
   get _tplHome() {
     return html`
       <header class="main-header">
-        <div class="name-header">Hello ${this.userData?.name} !</div>
+        <div class="name-header">Welcome ${this.userData?.name}</div>
         <nav class="navbar">
-          <ul class="nav-links">
+          <mwc-tab-bar>
+            <mwc-tab
+              label="Products"
+              id="products"
+              @click="${this._showSection}"
+            ></mwc-tab>
             ${this.userData?.level === 'admin'
               ? html`
-                  <li>
-                    <div id="register" @click="${this._showSection}">
-                      Register
-                    </div>
-                  </li>
+                  <mwc-tab
+                    label="Register"
+                    id="register"
+                    @click="${this._showSection}"
+                  ></mwc-tab>
                 `
               : nothing}
-            <li>
-              <div id="products" @click="${this._showSection}">
-                Products
-              </div>
-            </li>
-            <li>
-              <div id="sell" @click="${this._showSection}">
-                Sell
-              </div>
-            </li>
-            <li>
-              <button class="logout-button" @click=${this._logout}>
-                Logout
-              </button>
-            </li>
-          </ul>
+            <mwc-tab
+              label="Sell"
+              id="sell"
+              @click="${this._showSection}"
+            ></mwc-tab>
+          </mwc-tab-bar>
         </nav>
+        <mwc-button
+          class="logout"
+          raised
+          label="Logout"
+          @click=${this._logout}
+        ></mwc-button>
       </header>
       ${this._isShowSell ? this._tplSell : nothing}
       ${this._isShowProducts ? this._tplProducts : nothing}
@@ -189,14 +209,18 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
 
   get _tplProducts() {
     return html`<products-element
-      .registeredProducts=${this.registeredProducts}
+      level-user="${this.userData?.level}"
+      ?delete-success="${this.deleteSuccess}"
+      ?edit-success="${this.editSuccess}"
+      .productToEdit="${this.productToEdit}"
+      .registeredProducts="${this.registeredProducts}"
     ></products-element>`;
   }
 
   get _tplRegister() {
     return html`<register-element
-      ?register-success=${this.registerSuccess}
-      register-error=${this.registerError.code}
+      ?register-success="${this.registerSuccess}"
+      register-error="${this.registerError.code}"
     ></register-element>`;
   }
 

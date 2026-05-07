@@ -5,6 +5,15 @@ import {LoginElement} from './login/login.js';
 import {HomeElement} from './home/home.js';
 import {ManagerElement} from './dm/manager.js';
 
+import '@material/mwc-textfield/mwc-textfield.js';
+import '@material/mwc-textarea/mwc-textarea.js';
+import '@material/mwc-button/mwc-button.js';
+import '@material/mwc-icon/mwc-icon.js';
+import '@material/mwc-icon-button/mwc-icon-button.js';
+import '@material/mwc-tab-bar/mwc-tab-bar.js';
+import '@material/mwc-tab/mwc-tab.js';
+import '@material/mwc-formfield/mwc-formfield.js';
+
 import styles from './main.css.js';
 
 /**
@@ -59,6 +68,13 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
       /**
        * The name to say "Hello" to.
        */
+      _productToEdit: {
+        type: Object,
+        state: true,
+      },
+      /**
+       * The name to say "Hello" to.
+       */
       _productToSearch: {
         type: Object,
         state: true,
@@ -66,7 +82,21 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
       /**
        * The name to say "Hello" to.
        */
-      _registerSuccess: {
+      _registerProductSuccess: {
+        type: Boolean,
+        state: true,
+      },
+      /**
+       * The name to say "Hello" to.
+       */
+      _editProductSuccess: {
+        type: Boolean,
+        state: true,
+      },
+      /**
+       * The name to say "Hello" to.
+       */
+      _deleteProductSuccess: {
         type: Boolean,
         state: true,
       },
@@ -82,12 +112,15 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
 
   constructor() {
     super();
+    this._deleteProductSuccess = false;
+    this._editProductSuccess = false;
     this._isLogged = false;
     this._loginErrorCode = '';
+    this._productToEdit = {};
     this._productToSearch = {};
     this._products = [];
     this._registerError = {};
-    this._registerSuccess = false;
+    this._registerProductSuccess = false;
     this._userData = {};
   }
 
@@ -123,11 +156,11 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
   }
 
   _registerProduct({detail}) {
-    this._getDataManager().registerProduct(detail);
+    this._getDataManager().createProduct(detail);
   }
 
   _registerProductSuccessResponse({detail}) {
-    this._registerSuccess = !!Object.keys(detail).length;
+    this._registerProductSuccess = !!Object.keys(detail).length;
     this._getDataManager().getProductList();
   }
 
@@ -135,10 +168,12 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._registerError = detail;
   }
 
-  _deleteProductsSuccessResponse({detail}) {
-    if (detail) {
-      console.log('Delete successful');
-    }
+  _deleteProductSuccessResponse({detail}) {
+    this._deleteProductSuccess = !!detail;
+  }
+
+  _editProductSuccessResponse({detail}) {
+    this._editProductSuccess = !!detail;
   }
 
   _getProductsSuccessResponse({detail}) {
@@ -149,21 +184,24 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._productToSearch = detail;
   }
 
-  _closeErrorModal() {
-    this._registerError = {};
-  }
-
-  _closeSuccessModal() {
-    this._registerSuccess = false;
-  }
-
   _deleteProduct({detail}) {
     this._getDataManager().deleteProduct(detail);
   }
 
-  _editProduct({detail}) {
-    console.log(detail);
-    // this._getDataManager().editProduct(detail);
+  _selectProductToEdit({detail}) {
+    this._getDataManager().getProductById(detail);
+  }
+
+  _setProductToEdit({detail}) {
+    this._productToEdit = detail;
+  }
+
+  _editProduct({detail}){
+    this._getDataManager().editProduct(detail);
+  }
+
+  _closeErrorModal(){
+    this._registerError = {};
   }
 
   get _tplLogin() {
@@ -178,7 +216,10 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
   get _tplHome() {
     return html`
       <home-element
-        ?register-success=${this._registerSuccess}
+        ?delete-success=${this._deleteProductSuccess}
+        ?edit-success=${this._editProductSuccess}
+        ?register-success=${this._registerProductSuccess}
+        .productToEdit=${this._productToEdit}
         .registeredProducts=${this._products}
         .registerError=${this._registerError}
         .userData=${this._userData}
@@ -186,9 +227,9 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         @products-element-delete-product="${this._deleteProduct}"
         @products-element-edit-product="${this._editProduct}"
         @products-element-search-product="${this._searchProduct}"
-        @register-page-close-error-modal=${this._closeErrorModal}
-        @register-page-close-success-modal=${this._closeSuccessModal}
+        @products-element-select-product-to-edit="${this._selectProductToEdit}"
         @register-page-register-product="${this._registerProduct}"
+        @register-page-close-error-modal="${this._closeErrorModal}"
       ></home-element>
     `;
   }
@@ -201,13 +242,15 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         @api-dm-login-success-response=${this._loginSuccessResponse}
         @api-dm-register-product-handle-error=${this
           ._registerProductHandleError}
-        @api-dm-session-active-success-response=${this
-          ._getUserInSessionSuccesResponse}
         @api-dm-register-product-success-response=${this
           ._registerProductSuccessResponse}
-        @dm-get-products-success-response=${this._getProductsSuccessResponse}
+        @api-dm-session-active-success-response=${this
+          ._getUserInSessionSuccesResponse}
         @dm-delete-product-success-response=${this
-          ._deleteProductsSuccessResponse}
+          ._deleteProductSuccessResponse}
+        @dm-get-products-success-response=${this._getProductsSuccessResponse}
+        @dm-get-product-success-response=${this._setProductToEdit}
+        @dm-edit-product-success-response=${this._editProductSuccessResponse}
       ></manager-element>
     `;
   }
@@ -219,7 +262,8 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
   render() {
     return html`
       ${!this._isLogged ? this._tplLogin : nothing}
-      ${this._isLogged ? this._tplHome : nothing} ${this._tplManager}
+      ${this._isLogged ? this._tplHome : nothing}
+      ${this._tplManager}
     `;
   }
 }

@@ -1,5 +1,8 @@
-import {LitElement, html, nothing} from 'lit';
+import {LitElement, html} from 'lit';
+import {ref, createRef} from 'lit/directives/ref.js';
 import {ScopedElementsMixin} from '@open-wc/scoped-elements/html-element.js';
+
+import {ModalElement} from '../../organisms/modal/modal.js';
 
 import {dispatchCustomEvent} from '../../../utils/utils.js';
 
@@ -17,7 +20,7 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
   }
 
   static get scopedElements() {
-    return {};
+    return {'modal-element': ModalElement};
   }
 
   static get properties() {
@@ -51,6 +54,13 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
         state: true,
       },
       /**
+       * Contains product's barcode secondary.
+       */
+      _productBarcodeSecondary: {
+        type: String,
+        state: true,
+      },
+      /**
        * Contains product's description.
        */
       _productDescription: {
@@ -78,6 +88,10 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
         type: String,
         state: true,
       },
+      _errorRegisterModalRef:{
+        type: Object,
+        state: true,
+      },
       /**
        * Allows show error message
        */
@@ -92,6 +106,10 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
         type: Boolean,
         state: true,
       },
+      _successRegisterModalRef: {
+        type: Object,
+        state: true,
+      }
     };
   }
 
@@ -100,13 +118,16 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
     this.registerError = '';
     this.registerSuccess = false;
     this._errorMessage = '';
-    this._showErrorMessage = false;
-    this._showProductList = false;
-    this._productName = '';
+    this._errorRegisterModalRef = createRef();
     this._productBarcode = '';
+    this._productBarcodeSecondary = '';
     this._productDescription = '';
+    this._productName = '';
     this._productPrice = 0;
     this._productStock = 0;
+    this._showErrorMessage = false;
+    this._showProductList = false;
+    this._successRegisterModalRef = createRef();
   }
 
   /**
@@ -117,15 +138,17 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
     super.updated(changedProperties);
     if (
       changedProperties.has('registerError') ||
-      this.registerError.length > 0
+      this.registerError.length
     ) {
       this._mapErrorMessage();
+    }
+    if (changedProperties.has('registerSuccess') && this.registerSuccess) {
+      this._successRegisterModalRef.value.openModal();
     }
   }
 
   _closeSuccessModal() {
     this.shadowRoot.querySelector('#barcode').focus();
-    dispatchCustomEvent(this, 'register-page-close-success-modal');
     this._resetForm();
   }
 
@@ -138,6 +161,7 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
     this._showErrorMessage = false;
     this._productName = '';
     this._productBarcode = '';
+    this._productBarcodeSecondary = '';
     this._productDescription = '';
     this._productPrice = 0;
     this._productStock = 0;
@@ -147,6 +171,9 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
     const inputs = {
       barcode: () => {
         this._productBarcode = value.toUpperCase() || '';
+      },
+      'barcode-secondary': () => {
+        this._productBarcodeSecondary = value.toUpperCase() || '';
       },
       'product-name': () => {
         this._productName = value.toUpperCase() || '';
@@ -179,6 +206,9 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
       ERP002: 'Valores negativos',
     };
     this._errorMessage = errors[this.registerError] ?? '';
+    if (this._errorMessage.length) {
+      this._errorRegisterModalRef.value.openModal();
+    }
   }
 
   _registerProduct() {
@@ -190,6 +220,7 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
       dispatchCustomEvent(this, 'register-page-register-product', {
         name: this._productName,
         barcode: this._productBarcode,
+        barcodeSecondary: this._productBarcodeSecondary,
         price: parseFloat(this._productPrice, 10),
         stock: parseInt(this._productStock, 10),
         description: this._productDescription,
@@ -200,12 +231,16 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
   get _tplSuccessModal() {
     return html`
       <modal-element
-        ?show-modal=${this.registerSuccess}
-        body-text="El producto se ha registrado correctamente"
-        code="success-register"
-        confirm-button-text="Aceptar"
-        title-text="¡Producto Registrado!"
-        type="success"
+        ${ref(this._successRegisterModalRef)}
+        .data=${{
+          bodyText:
+            'El producto se ha registrado correctamente',
+          code: 'success-register',
+          confirmButtonText: 'Aceptar',
+          titleText: '¡Producto Registrado!',
+          type: 'success',
+        }}
+        @modal-element-cancel-action=${this._closeSuccessModal}
         @modal-element-confirm-action-success-register=${this._closeSuccessModal}
       ></modal-element>
     `;
@@ -214,12 +249,15 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
   get _tplErrorModal() {
     return html`
       <modal-element
+        ${ref(this._errorRegisterModalRef)}
         ?show-modal=${!!this.registerError.length}
-        body-text="${this._errorMessage}"
-        code="error-register"
-        confirm-button-text="Aceptar"
-        title-text="¡Error!"
-        type="error"
+        .data=${{
+          bodyText: this._errorMessage,
+          code: 'error-register',
+          confirmButtonText: 'Aceptar',
+          titleText: '¡Error!',
+          type: 'error',
+        }}
         @modal-element-confirm-action-error-register=${this._closeErrorModal}
       ></modal-element>
     `;
@@ -232,80 +270,89 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
           <h2 class="register-header">Register product</h2>
           <div>
             <div class="input-container">
-              <label for="barcode">Barcode * :</label>
-              <input
+              <mwc-textfield
+                raised
+                required
+                label="Barcode"
+                autocomplete="off"
                 id="barcode"
                 type="text"
-                autofocus
                 autocomplete="off"
                 .value="${this._productBarcode}"
                 @input=${this._handleInput}
-              />
-              <label class="error-label"
-                >${this._showErrorMessage && !this._productBarcode.length
-                  ? html`Empty Field`
-                  : nothing}</label
-              >
+              ></mwc-textfield>
             </div>
             <div class="input-container">
-              <label for="product-name">Product name * :</label>
-              <input
+              <mwc-textfield
+                raised
+                label="Barcode (Secondary)"
+                autocomplete="off"
+                id="barcode-secondary"
+                type="text"
+                .value="${this._productBarcodeSecondary}"
+                @input=${this._handleInput}
+              ></mwc-textfield>
+            </div>
+            <div class="input-container">
+              <mwc-textfield
+                raised
+                required
+                label="Product name"
+                autocomplete="off"
                 id="product-name"
                 type="text"
                 .value="${this._productName}"
                 @input=${this._handleInput}
-              />
-              <label class="error-label"
-                >${this._showErrorMessage && !this._productName.length
-                  ? html`Empty Field`
-                  : nothing}</label
-              >
+              ></mwc-textfield>
             </div>
             <div class="input-container">
-              <label for="price">Price * :</label>
-              <label>$</label>
-              <input
+              <mwc-textfield
+                raised
+                required
+                label="Price"
+                autocomplete="off"
                 id="price"
                 type="number"
                 min="0"
+                iconTrailing="attach_money"
                 .value="${this._productPrice.toString()}"
                 @input=${this._handleInput}
-              />
-              <label class="error-label"
-                >${this._showErrorMessage && !this._productPrice
-                  ? html`Empty Field`
-                  : nothing}</label
-              >
+              ></mwc-textfield>
             </div>
             <div class="input-container">
-              <label for="stock">Stock:</label>
-              <input
+              <mwc-textfield
+                raised
+                label="Stock"
+                autocomplete="off"
                 id="stock"
                 type="number"
                 min="0"
                 .value="${this._productStock.toString()}"
                 @input=${this._handleInput}
-              />
+              ></mwc-textfield>
             </div>
             <div class="input-container textarea">
-              <label for="description">Description:</label>
-              <textarea
+              <mwc-textarea
+                label="Description"
                 id="description"
                 type="text"
-                placeholder="Description..."
                 rows="4"
-                cols="50"
+                cols="51"
                 .value="${this._productDescription}"
                 @input=${this._handleInput}
-              ></textarea>
+              >
+              </mwc-textarea>
             </div>
             <div class="info-label">
               <label>Required Fields (*)</label>
             </div>
             <div class="button-container">
-              <button class="register-button" @click="${this._registerProduct}">
-                Save
-              </button>
+              <mwc-button
+                class="save"
+                raised
+                label="Save"
+                @click=${this._registerProduct}
+              ></mwc-button>
             </div>
           </div>
         </div>

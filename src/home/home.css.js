@@ -66,4 +66,22 @@ export default css`
     font-weight: bold;
     font-size: 20px
   }
+
+  mwc-button.logout {
+    --mdc-theme-primary: #9c3535;
+    --mdc-theme-on-primary: #fff;
+  }
+
+  mwc-top-app-bar {
+    --mdc-theme-primary: #333;
+    --mdc-theme-on-primary: #fff;
+  }
+
+  mwc-tab-bar {
+    --mdc-theme-primary: #ddd;
+    --mdc-text-transform: none;
+    --mdc-tab-color-default: white;
+    --mdc-tab-text-label-color-default: white;
+    --mdc-tab-stacked-height: 100px;
+  }
 `;

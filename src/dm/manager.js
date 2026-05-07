@@ -47,6 +47,13 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
       /**
        * The password to login
        */
+      _productToEdit: {
+        type: Object,
+        state: true,
+      },
+      /**
+       * The password to login
+       */
       _products: {
         type: Array,
         state: true,
@@ -67,6 +74,7 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     this.productToSearch = {};
     this.user = '';
     this._apiManager = {};
+    this._productToEdit = {};
     this._products = [];
     this._responseData = {};
   }
@@ -118,6 +126,24 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
       body
     );
   }
+
+  async getProductById({id}) {
+    if (!this._products.length) {
+      this._productToEdit = this._products.find((product) => product.id === id);
+      dispatchCustomEvent(
+        this,
+        'dm-get-product-success-response',
+        this._productToEdit
+      );
+    } else {
+      await this._getDataManager().fetch(
+        'GET',
+        `api/v0/products/product/${id}`,
+        'dm-get-product'
+      );
+    }
+  }
+
   async getProductList() {
     await this._getDataManager().fetch(
       'GET',
@@ -126,7 +152,7 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     );
   }
 
-  async registerProduct(body) {
+  async createProduct(body) {
     await this._getDataManager().fetch(
       'POST',
       'api/v0/products/product',
@@ -135,13 +161,26 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     );
   }
 
-
   async deleteProduct({id}) {
     await this._getDataManager().fetch(
       'DELETE',
       `api/v0/products/product/${id}`,
       'dm-delete-product'
     );
+  }
+
+  async editProduct(product) {
+    await this._getDataManager().fetch(
+      'PATCH',
+      `api/v0/products/product/${product.id}`,
+      'dm-edit-product',
+      product
+    );
+  }
+
+  _getProductSuccessResponse({detail}) {
+    dispatchCustomEvent(this, 'dm-get-product-success-response', detail);
+    this._productToEdit = detail;
   }
 
   _filterProducts() {
@@ -153,6 +192,9 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
             .toLowerCase()
             .includes(this.productToSearch.value.toLowerCase()) ||
           product.barcode
+            .toLowerCase()
+            .includes(this.productToSearch.value.toLowerCase()) ||
+          product.barcodeSecondary
             .toLowerCase()
             .includes(this.productToSearch.value.toLowerCase()) ||
           product.description
@@ -174,18 +216,23 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     dispatchCustomEvent(this, 'dm-get-products-success-response', detail);
   }
 
-  _deleteProductsSuccessResponse({detail}){
+  _deleteProductsSuccessResponse({detail}) {
     dispatchCustomEvent(this, 'dm-delete-product-success-response', detail);
+    this.getProductList();
+  }
+
+  _editProductSuccessResponse({detail}){
+    dispatchCustomEvent(this, 'dm-edit-product-success-response', detail);
     this.getProductList();
   }
 
   get _tplApiManager() {
     return html`
       <api-manager-element
-        @api-dm-get-products-success-response=${this
-          ._getProductsSuccessResponse}
-        @api-dm-delete-product-success-response=${this
-          ._deleteProductsSuccessResponse}
+        @api-dm-delete-product-success-response=${this._deleteProductsSuccessResponse}
+        @api-dm-edit-product-success-response=${this._editProductSuccessResponse}
+        @api-dm-get-product-success-response=${this._getProductSuccessResponse}
+        @api-dm-get-products-success-response=${this._getProductsSuccessResponse}
       ></api-manager-element>
     `;
   }

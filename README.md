@@ -7,10 +7,10 @@ This project includes a sample component using LitElement with JavaScript.
 
 Run dbefore install dependencies:
 ```bash
-npm install --save-dev @web/dev-server
+npm install -g es-dev-server
 ```
 ```bash
-npm install --save-dev sass
+npm install -g sass
 ```
 ```bash
 npm install -g sass
@@ -41,12 +41,12 @@ This sample uses open-wc's [es-dev-server](https://github.com/open-wc/open-wc/tr
 
 To run the dev server and open the project in a new browser tab:
 
-### To Mac & Linux
+### Mac & Linux
 
 ```bash
 npm run start:all
 ```
-### To Windows
+### Windows
 
 ```bash
 npm run start:all:w

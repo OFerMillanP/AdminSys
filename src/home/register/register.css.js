@@ -114,7 +114,7 @@ export default css`
     text-align: center;
     align-items: center;
     display: flex;
-    justify-content: space-between; /* Separa los hijos a los extremos */
+    justify-content: space-around; /* Separa los hijos a los extremos */
   }
 
   .link {
@@ -158,7 +158,28 @@ export default css`
 
   tr:hover {
     transition: 0.3s;
-    background-color: #f5f5f5; /* Efecto hover */
+    background-color: #f5f5f5;
+  }
+
+  mwc-textfield {
+    width: 35%;
+    --mdc-theme-primary: #000;
+    --mdc-text-field-ink-color: #000;
+    --mdc-text-field-idle-line-color: #555;
+  }
+
+  mwc-button {
+    --mdc-theme-primary: #3269c7;
+    --mdc-theme-on-primary: #fff;
+  }
+
+  mwc-button.save {
+    --mdc-theme-primary: #000000;
+    --mdc-theme-on-primary: #fff;
+  }
+
+  mwc-textarea {
+    --mdc-theme-primary: #000;
   }
 
   /* Contenedor del Modal - Oculto por defecto */
