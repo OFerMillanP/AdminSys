@@ -1,6 +1,7 @@
 #!/bin/zsh
+echo In iciando tareas...
 echo "Ejecutando el Administrador de Systemas"
 
-cd /Users/mi39251/Documents/adminsys
+cd /Users/mi39251/Documents/AdminSys-1
 
-python3 api/api.py & npm run start:all
+npm run api & npm run start

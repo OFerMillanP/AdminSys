@@ -41,9 +41,17 @@ This sample uses open-wc's [es-dev-server](https://github.com/open-wc/open-wc/tr
 
 To run the dev server and open the project in a new browser tab:
 
+### To Mac & Linux
+
 ```bash
-npm run serve
+npm run start:all
 ```
+### To Windows
+
+```bash
+npm run start:all:w
+```
+
 
 There is a development HTML file located at `/dev/index.html` that you can view at http://localhost:8000/dev/index.html.
 

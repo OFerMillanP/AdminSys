@@ -19,6 +19,7 @@
     "serve": "es-dev-server --node-resolve --watch",
     "api": "cd api/api-n && npm run start && cd ../..",
     "start:all": "npm run api & npm run start",
+    "start:all:w": "start /b npm run start & start /b npm run api",
     "start": "npm-run-all -p start-server watch-scss",
     "start-server": "web-dev-server --node-resolve --open --watch",
     "watch-scss": "sass --watch scss/styles.scss css/styles.css",
