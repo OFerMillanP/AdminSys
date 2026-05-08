@@ -1,12 +1,12 @@
-import {LitElement, html} from 'lit';
-import {ref, createRef} from 'lit/directives/ref.js';
-import {ScopedElementsMixin} from '@open-wc/scoped-elements/html-element.js';
+import { LitElement, html } from 'lit';
+import { ref, createRef } from 'lit/directives/ref.js';
+import { ScopedElementsMixin } from '@open-wc/scoped-elements/html-element.js';
 
-import {ModalElement} from '../../organisms/modal/modal.js';
+import { ModalElement } from '../../organisms/modal/modal.js';
 
-import {dispatchCustomEvent} from '../../../utils/utils.js';
+import { dispatchCustomEvent } from '../../../utils/utils.js';
 
-import {repeat} from 'lit/directives/repeat.js';
+import { repeat } from 'lit/directives/repeat.js';
 import styles from './products.css.js';
 
 /**
@@ -21,7 +21,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
   }
 
   static get scopedElements() {
-    return {'modal-element': ModalElement};
+    return { 'modal-element': ModalElement };
   }
 
   static get properties() {
@@ -127,7 +127,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     }
   }
 
-  _handleInput({target: {id, value}}) {
+  _handleInput({ target: { id, value } }) {
     const inputs = {
       barcode: () => {
         this.productToEdit.barcode = value.toUpperCase() || '';
@@ -156,20 +156,16 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     inputs[id]?.call();
   }
 
-  _selectProductToEdit({target: {id}}) {
+  _selectProductToEdit({ target: { id } }) {
     dispatchCustomEvent(this, `${ProductsElement.is}-select-product-to-edit`, {
       id: parseInt(id),
     });
   }
 
-  _deleteProduct({target: {id}}) {
-    this._productIdToAction = {id};
+  _deleteProduct({ target: { id } }) {
+    this._productIdToAction = { id };
     this._confirmDelete = true;
     this._deleteModalRef.value.openModal();
-  }
-
-  _closeEditSuccessModal() {
-    this._showEditForm = false;
   }
 
   _confirmDeleteProduct() {
@@ -180,8 +176,20 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     );
   }
 
+  _closeEditSuccessModal() {
+    this._showEditForm = false;
+    dispatchCustomEvent(
+      this,
+      `${ProductsElement.is}-close-success-edit-modal`
+    );
+  }
+
   _cancelEdit() {
     this._showEditForm = false;
+    dispatchCustomEvent(
+      this,
+      `${ProductsElement.is}-close-success-edit-modal`
+    );
   }
 
   _updateProduct() {
@@ -280,12 +288,18 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
               <label>Required Fields (*)</label>
             </div>
             <div class="button-container">
-              <button class="register-button" @click="${this._updateProduct}">
-                Save
-              </button>
-              <button class="register-button" @click="${this._cancelEdit}">
-                Cancel
-              </button>
+              <mwc-button
+                class="save"
+                raised
+                label="Save"
+                @click=${this._updateProduct}
+              ></mwc-button>
+              <mwc-button
+                class="register-button"
+                raised
+                label="Cancel"
+                @click=${this._cancelEdit}
+              ></mwc-button>
             </div>
           </div>
         </div>
@@ -310,7 +324,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
           </div>
         </div>
         ${this.registeredProducts?.length
-          ? html` <table>
+        ? html` <table>
               <thead>
                 <tr>
                   <th>
@@ -341,9 +355,9 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
               </thead>
               <tbody>
                 ${repeat(
-                  this.registeredProducts || {},
-                  (product) =>
-                    html` <tr>
+          this.registeredProducts || {},
+          (product) =>
+            html` <tr>
                       <td>${product.barcode}</td>
                       <td>${product.barcodeSecondary}</td>
                       <td>${product.name}</td>
@@ -376,10 +390,10 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                         </div>
                       </td>
                     </tr>`
-                )}
+        )}
               </tbody>
             </table>`
-          : 'No se han encontrado productos'}
+        : 'No se han encontrado productos'}
       </div>
     `;
   }
@@ -389,16 +403,16 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
       <modal-element
         ${ref(this._deleteModalRef)}
         .data=${{
-          bodyText:
-            '¿Está seguro de eliminar el producto? se borrará permanentemente del inventario.',
-          cancelButtonText: 'Cancelar',
-          code: 'confirm-delete',
-          confirmButtonText: 'Eliminar',
-          titleText: '¿Desea eliminar este producto?',
-          type: 'warning',
-        }}
+        bodyText:
+          '¿Está seguro de eliminar el producto? se borrará permanentemente del inventario.',
+        cancelButtonText: 'Cancelar',
+        code: 'confirm-delete',
+        confirmButtonText: 'Eliminar',
+        titleText: '¿Desea eliminar este producto?',
+        type: 'warning',
+      }}
         @modal-element-confirm-action-confirm-delete=${this
-          ._confirmDeleteProduct}
+        ._confirmDeleteProduct}
       ></modal-element>
     `;
   }
@@ -408,12 +422,12 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
       <modal-element
         ${ref(this._successDeleteModalRef)}
         .data=${{
-          bodyText: 'El producto se ha eliminado correctamente',
-          code: 'success-delete',
-          confirmButtonText: 'Aceptar',
-          titleText: '¡Producto Eliminado!',
-          type: 'success',
-        }}
+        bodyText: 'El producto se ha eliminado correctamente',
+        code: 'success-delete',
+        confirmButtonText: 'Aceptar',
+        titleText: '¡Producto Eliminado!',
+        type: 'success',
+      }}
       ></modal-element>
     `;
   }
@@ -423,14 +437,14 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
       <modal-element
         ${ref(this._editSuccessModalRef)}
         .data=${{
-          bodyText: 'El producto se ha actualizado correctamente',
-          code: 'success-update',
-          confirmButtonText: 'Aceptar',
-          titleText: '¡Producto Actualizado!',
-          type: 'success',
-        }}
+        bodyText: 'El producto se ha actualizado correctamente',
+        code: 'success-update',
+        confirmButtonText: 'Aceptar',
+        titleText: '¡Producto Actualizado!',
+        type: 'success',
+      }}
         @modal-element-confirm-action-success-update=${this
-          ._closeEditSuccessModal}
+        ._closeEditSuccessModal}
       ></modal-element>
     `;
   }

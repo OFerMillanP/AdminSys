@@ -178,6 +178,11 @@ export default css`
     --mdc-theme-primary: #000;
   }
 
+  mwc-button {
+    --mdc-theme-primary: #000000;
+    --mdc-theme-on-primary: #fff;
+  }
+
   /* Contenedor del Modal - Oculto por defecto */
   .modal-container {
     display: none; /* Cambiar a flex para mostrar */

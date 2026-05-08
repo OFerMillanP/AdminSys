@@ -196,11 +196,15 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._productToEdit = detail;
   }
 
-  _editProduct({detail}){
+  _editProduct({detail}) {
     this._getDataManager().editProduct(detail);
   }
 
-  _closeErrorModal(){
+ _closeSuccessEditModal() {
+    this._productToEdit = {};
+  }
+
+  _closeErrorModal() {
     this._registerError = {};
   }
 
@@ -228,6 +232,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         @products-element-edit-product="${this._editProduct}"
         @products-element-search-product="${this._searchProduct}"
         @products-element-select-product-to-edit="${this._selectProductToEdit}"
+        @products-element-close-success-edit-modal="${this._closeSuccessEditModal}"
         @register-page-register-product="${this._registerProduct}"
         @register-page-close-error-modal="${this._closeErrorModal}"
       ></home-element>
