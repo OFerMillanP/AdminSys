@@ -5,4 +5,4 @@ echo Ejecutando el Administrador de Systemas
 
 cd ~\Documentos\Repositorios\AdminSys-1
 
-start /b npm run start & start /b npm run api
+npm run start:all:w
