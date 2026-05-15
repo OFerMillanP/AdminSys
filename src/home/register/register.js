@@ -88,7 +88,7 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
         type: String,
         state: true,
       },
-      _errorRegisterModalRef:{
+      _errorRegisterModalRef: {
         type: Object,
         state: true,
       },
@@ -109,7 +109,7 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
       _successRegisterModalRef: {
         type: Object,
         state: true,
-      }
+      },
     };
   }
 
@@ -136,10 +136,7 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
    */
   updated(changedProperties) {
     super.updated(changedProperties);
-    if (
-      changedProperties.has('registerError') ||
-      this.registerError.length
-    ) {
+    if (changedProperties.has('registerError') || this.registerError.length) {
       this._mapErrorMessage();
     }
     if (changedProperties.has('registerSuccess') && this.registerSuccess) {
@@ -233,15 +230,15 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
       <modal-element
         ${ref(this._successRegisterModalRef)}
         .data=${{
-          bodyText:
-            'El producto se ha registrado correctamente',
+          bodyText: 'El producto se ha registrado correctamente',
           code: 'success-register',
           confirmButtonText: 'Aceptar',
           titleText: '¡Producto Registrado!',
           type: 'success',
         }}
         @modal-element-cancel-action=${this._closeSuccessModal}
-        @modal-element-confirm-action-success-register=${this._closeSuccessModal}
+        @modal-element-confirm-action-success-register=${this
+          ._closeSuccessModal}
       ></modal-element>
     `;
   }

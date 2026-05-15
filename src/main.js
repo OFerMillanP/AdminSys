@@ -59,6 +59,13 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         state: true,
       },
       /**
+       * Caontains List Products.
+       */
+      _productsToSell: {
+        type: Array,
+        state: true,
+      },
+      /**
        * The name to say "Hello" to.
        */
       _registerError: {
@@ -77,6 +84,13 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
        */
       _productToSearch: {
         type: Object,
+        state: true,
+      },
+      /**
+       * The name to say "Hello" to.
+       */
+      _productToSell: {
+        type: String,
         state: true,
       },
       /**
@@ -118,7 +132,9 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._loginErrorCode = '';
     this._productToEdit = {};
     this._productToSearch = {};
+    this._productToSell = '';
     this._products = [];
+    this._productsToSell = [];
     this._registerError = {};
     this._registerProductSuccess = false;
     this._userData = {};
@@ -184,6 +200,11 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._productToSearch = detail;
   }
 
+  _searchProductToSell({detail: {barcode}}) {
+    this._productToSell = barcode;
+    this._getDataManager().getProductToSell(barcode);
+  }
+
   _deleteProduct({detail}) {
     this._getDataManager().deleteProduct(detail);
   }
@@ -208,6 +229,10 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._registerError = {};
   }
 
+  _setListProductToSell({detail}) {
+    this._productsToSell = detail;
+  }
+
   get _tplLogin() {
     return html`
       <login-element
@@ -227,6 +252,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         .registeredProducts=${this._products}
         .registerError=${this._registerError}
         .userData=${this._userData}
+        .productsToSell=${this._productsToSell}
         @home-page-logout="${this._logout}"
         @products-element-delete-product="${this._deleteProduct}"
         @products-element-edit-product="${this._editProduct}"
@@ -235,6 +261,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         @products-element-close-success-edit-modal="${this._closeSuccessEditModal}"
         @register-page-register-product="${this._registerProduct}"
         @register-page-close-error-modal="${this._closeErrorModal}"
+        @sell-element-get-product-to-sell="${this._searchProductToSell}"
       ></home-element>
     `;
   }
@@ -243,6 +270,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     return html`
       <manager-element
         .productToSearch=${this._productToSearch}
+        product-to-sell=${this._productToSell}
         @api-dm-login-handle-error=${this._loginHandleError}
         @api-dm-login-success-response=${this._loginSuccessResponse}
         @api-dm-register-product-handle-error=${this
@@ -256,6 +284,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         @dm-get-products-success-response=${this._getProductsSuccessResponse}
         @dm-get-product-success-response=${this._setProductToEdit}
         @dm-edit-product-success-response=${this._editProductSuccessResponse}
+        @dm-get-product-to-sell=${this._setListProductToSell}
       ></manager-element>
     `;
   }

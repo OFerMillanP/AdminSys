@@ -53,6 +53,12 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
       /**
        * The name to say "Hello" to.
        */
+      productsToSell: {
+        type: Array,
+      },
+      /**
+       * The name to say "Hello" to.
+       */
       registerError: {
         type: Object,
       },
@@ -118,12 +124,13 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
     this.deleteSuccess = false;
     this.editSuccess = false;
     this.productToEdit = {};
+    this.productsToSell = [];
     this.registerError = {};
     this.registerSuccess = false;
     this.registeredProducts = [];
     this.userData = {};
-    this._isShowSell = false;
-    this._isShowProducts = true;
+    this._isShowSell = true;
+    this._isShowProducts = false;
     this._isShowRegister = false;
   }
 
@@ -168,7 +175,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
       <header class="main-header">
         <div class="name-header">Welcome ${this.userData?.name}</div>
         <nav class="navbar">
-          <mwc-tab-bar>
+          <mwc-tab-bar activeIndex="2">
             <mwc-tab
               label="Products"
               id="products"
@@ -204,7 +211,9 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
   }
 
   get _tplSell() {
-    return html`<sell-element></sell-element>`;
+    return html`<sell-element
+      .productsToSell="${this.productsToSell}"
+    ></sell-element>`;
   }
 
   get _tplProducts() {

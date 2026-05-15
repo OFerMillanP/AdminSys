@@ -228,7 +228,7 @@ api.get('/api/v0/products/product/:id', function (req, res) {
   const productToFind = products.find(
     (product) => product.id === parseInt(req.params.id)
   );
- if (productToFind) {
+  if (productToFind) {
     return res.status(200).json(productToFind);
   } else {
     return res
@@ -242,7 +242,9 @@ api.patch('/api/v0/products/product/:id', function (req, res) {
     (product) => product.id === parseInt(req.params.id)
   );
   if (productToFind) {
-    products = products.map((product) => product.id === parseInt(req.params.id) ? req.body : product)
+    products = products.map((product) =>
+      product.id === parseInt(req.params.id) ? req.body : product
+    );
     return res.status(200).json(req.body);
   } else {
     return res

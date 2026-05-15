@@ -238,6 +238,15 @@ export default css`
     margin: 0 auto 15px;
   }
 
+  .register-header {
+    margin: 2rem 1rem;
+  }
+
+  .info-label {
+    padding: 0.5rem 1rem;
+    color: #8e9600;
+  }
+
   /* Animación básica */
   @keyframes fadeIn {
     from {

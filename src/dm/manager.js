@@ -59,6 +59,13 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
         state: true,
       },
       /**
+       * Products to sell.
+       */
+      _productsToSell: {
+        type: Array,
+        state: true,
+      },
+      /**
        * The password to login
        */
       _responseData: {
@@ -76,6 +83,7 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     this._apiManager = {};
     this._productToEdit = {};
     this._products = [];
+    this._productsToSell = [];
     this._responseData = {};
   }
 
@@ -96,7 +104,7 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     super.updated(changedProperties);
     if (
       changedProperties.has('productToSearch') &&
-      Object.keys(this.productToSearch).length > 0
+      Object.keys(this.productToSearch).length
     ) {
       this._filterProducts();
     }
@@ -211,6 +219,25 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     );
   }
 
+  getProductToSell(barcode) {
+    const registeredProduct = this._products.find((product) => 
+      product.barcode === barcode || product.barcodeSecondary === barcode
+    );
+    const productInList = this._productsToSell.find((product) => 
+      product.barcode === barcode || product.barcodeSecondary === barcode
+    );
+    if (registeredProduct) {
+      this._productsToSell = productInList
+        ? this._productsToSell.map((product) =>
+            (product.barcode === barcode || product.barcodeSecondary === barcode)
+              ? { ...product, quantity: product.stock > product.quantity ? product.quantity + 1 : product.quantity }
+              : product
+          )
+        : [...this._productsToSell, { ...registeredProduct, quantity: 1 }];
+    }
+    dispatchCustomEvent(this, 'dm-get-product-to-sell', this._productsToSell);
+  }
+
   _getProductsSuccessResponse({detail}) {
     this._products = detail;
     dispatchCustomEvent(this, 'dm-get-products-success-response', detail);
@@ -221,7 +248,7 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     this.getProductList();
   }
 
-  _editProductSuccessResponse({detail}){
+  _editProductSuccessResponse({detail}) {
     dispatchCustomEvent(this, 'dm-edit-product-success-response', detail);
     this.getProductList();
   }
@@ -229,10 +256,13 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
   get _tplApiManager() {
     return html`
       <api-manager-element
-        @api-dm-delete-product-success-response=${this._deleteProductsSuccessResponse}
-        @api-dm-edit-product-success-response=${this._editProductSuccessResponse}
+        @api-dm-delete-product-success-response=${this
+          ._deleteProductsSuccessResponse}
+        @api-dm-edit-product-success-response=${this
+          ._editProductSuccessResponse}
         @api-dm-get-product-success-response=${this._getProductSuccessResponse}
-        @api-dm-get-products-success-response=${this._getProductsSuccessResponse}
+        @api-dm-get-products-success-response=${this
+          ._getProductsSuccessResponse}
       ></api-manager-element>
     `;
   }
