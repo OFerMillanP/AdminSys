@@ -82,6 +82,12 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
         type: Object,
       },
       /**
+       * The name to say "Hello" to.
+       */
+      total: {
+        type: Number,
+      },
+      /**
        * Toggle to show sell section
        */
       _isShowSell: {
@@ -129,6 +135,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
     this.registerSuccess = false;
     this.registeredProducts = [];
     this.userData = {};
+    this.total = 0;
     this._isShowSell = true;
     this._isShowProducts = false;
     this._isShowRegister = false;
@@ -213,6 +220,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
   get _tplSell() {
     return html`<sell-element
       .productsToSell="${this.productsToSell}"
+      .total="${this.total}"
     ></sell-element>`;
   }
 

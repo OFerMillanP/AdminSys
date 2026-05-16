@@ -19,27 +19,47 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
   static get properties() {
     return {
       /**
-       * The barcode to search for.
+       * Barcode entered by the user to add a product to the sale.
        */
       barcode: {
         type: String,
         attribute: 'barcode',
       },
       /**
-       * The list of products to sell.
+       * Products currently added to the sale list.
        */
       productsToSell: {
         type: Array,
       },
+      /**
+       * Total cost for the products currently in the sale.
+       */
+      total: {
+        type: Number,
+      },
     };
   }
 
+  /**
+   * Initialize component state.
+   */
   constructor() {
     super();
     this.barcode = '';
     this.productsToSell = [];
+    this.total = 0;
   }
 
+  update(changedProperties) {
+    super.update(changedProperties);
+    // this.shadowRoot.querySelector('vaadin-text-field#barcode')?.focus();
+  }
+
+  /**
+   * Handles input changes for form fields.
+   *
+   * @param {Event} event - The input event.
+   */
   _handleInput({target: {id, value}}) {
     const inputs = {
       barcode: () => {
@@ -49,6 +69,12 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
     inputs[id]?.call();
   }
 
+  /**
+   * Sends the barcode search event when the user presses Enter.
+   *
+   * @param {KeyboardEvent} event - The keydown event.
+   * @event sell-element-get-product-to-sell - Dispatched when the user presses Enter with a barcode.
+   */
   _sendBarcode(event) {
     if (event.key === 'Enter') {
       if (this.barcode) {
@@ -60,28 +86,38 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
     }
   }
 
-  _updateQuantity(product, change, index) {
-    const newQuantity = product.quantity + change;
-    if (newQuantity > 0) {
-      this.productsToSell = [
-        ...this.productsToSell.slice(0, index),
-        {...product, quantity: newQuantity},
-        ...this.productsToSell.slice(index + 1),
-      ];
-    }
+  /**
+   * Dispatches an updated quantity event for a product in the sale list.
+   *
+   * @param {Event} event - The input event.
+   * @param {HTMLElement} event.target - The input target element.
+   * @param {string|number} event.target.value - The new quantity value.
+   * @param {Object} event.target.product - The product object tied to the input.
+   * @event sell-element-update-product-to-sell - Dispatched when a product quantity is updated, with details of the change.
+   */
+  _updateQuantity({target: {value, product}}) {
+    const newQuantity = parseInt(value) || 1;
+    dispatchCustomEvent(this, `${SellElement.is}-update-product-to-sell`, {
+      barcode: product.barcode,
+      change: newQuantity - product.quantity,
+    });
   }
 
+  /**
+   * Dispatches an event to remove a product from the current sale.
+   *
+   * @param {Object} product - The product to remove.
+   * @event sell-element-delete-product-to-sell - Dispatched when the user removes a product from the sale.
+   */
   _deleteProductToSell(product) {
-    console.log(product);
-    this.productsToSell = this.productsToSell.filter(
-      (p) => p.barcode !== product.barcode
-    );
+    dispatchCustomEvent(this, `${SellElement.is}-delete-product-to-sell`, {
+      barcode: product.barcode,
+    });
   }
 
-  get _tplSell() {
-    return html` ${this._tplInputBarcode} ${this._tplProductsTable} `;
-  }
-
+  /**
+   * Template for the product table shown in the sell view.
+   */
   get _tplProductsTable() {
     return html`
       <section class="sell-container">
@@ -132,23 +168,23 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
                     <td>${product.barcodeSecondary}</td>
                     <td>${product.name}</td>
                     <td>
-                      <div class="data-price">$${product.price}</div>
+                      <div class="data-price">
+                        <mwc-icon class="money-icon">attach_money</mwc-icon>
+                        ${product.price}
+                      </div>
                     </td>
-                    <td>
+                    <td style="width: 10%;">
                       <div class="data-quantity">
-                        <!-- <mwc-icon
-                          class="quantity-icon-remove"
-                          @click=${() =>
-                          this._updateQuantity(product, -1, index)}
-                          >remove</mwc-icon
-                        > -->
-                        <div class="quantity">${product.quantity}</div>
-                        <!-- <mwc-icon
-                          class="quantity-icon-add"
-                          @click=${() =>
-                          this._updateQuantity(product, 1, index)}
-                          >add</mwc-icon
-                        > -->
+                        <div class="quantity">
+                          <mwc-textfield
+                            type="number"
+                            class="quantity-input"
+                            min="1"
+                            .product="${product}"
+                            .value="${product.quantity}"
+                            @input=${this._updateQuantity}
+                          ></mwc-textfield>
+                        </div>
                       </div>
                     </td>
                     <td>${product.description}</td>
@@ -161,32 +197,44 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
     `;
   }
 
+  /**
+   * Template for the barcode input section and current total.
+   */
   get _tplInputBarcode() {
     return html`
-      <section class="sell-container">
-        <div class="list-products-header">
-          <div class="input-container">
-            <mwc-textfield
-              raise
-              label="Barcode"
-              autocomplete="off"
-              iconTrailing="add"
-              id="barcode"
-              type="text"
-              .value="${this.barcode}"
-              @input=${this._handleInput}
-              @keydown=${this._sendBarcode}
-            ></mwc-textfield>
-          </div>
-        </div>
+      <section class="sell-data-container">
+        <section class="input-container">
+          <mwc-textfield
+            raise
+            label="Barcode"
+            autocomplete="off"
+            iconTrailing="add"
+            autofocus
+            id="barcode"
+            .value="${this.barcode}"
+            @input=${this._handleInput}
+            @keydown=${this._sendBarcode}
+          ></mwc-textfield>
+        </section>
+        <section class="total">Total: $${this.total.toFixed(2)}</section>
       </section>
     `;
+  }
+
+  /**
+   * Combines the input and table templates into the sell view.
+   */
+  get _tplSell() {
+    return html` ${this._tplInputBarcode} ${this._tplProductsTable} `;
   }
 
   static get styles() {
     return [styles];
   }
 
+  /**
+   * Renders the sell-element content.
+   */
   render() {
     return html` ${this._tplSell} `;
   }

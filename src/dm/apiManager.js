@@ -3,10 +3,8 @@ import {LitElement} from 'lit';
 import {dispatchCustomEvent} from '../../utils/utils.js';
 
 /**
- * An example element.
- *
- * @slot - This element has a slot
- * @csspart button - The button
+ * Elemento encargado de ejecutar llamadas API y despachar eventos con los
+ * resultados.
  */
 export class ApiManagerElement extends LitElement {
   static get is() {
@@ -17,10 +15,22 @@ export class ApiManagerElement extends LitElement {
     return {};
   }
 
+  /**
+   * Crea una instancia del administrador de API.
+   */
   constructor() {
     super();
   }
 
+  /**
+   * Realiza una petición HTTP al servicio especificado y despacha eventos
+   * de éxito o error según la respuesta.
+   *
+   * @param {string} method - El verbo HTTP a utilizar (GET, POST, PATCH, DELETE).
+   * @param {string} service - La ruta del servicio relativa al host local.
+   * @param {string} event - El nombre base del evento para despacho.
+   * @param {Object} [body={}] - El cuerpo de la petición para POST/PATCH.
+   */
   async fetch(method = '', service = '', event = '', body = {}) {
     dispatchCustomEvent(this, 'show-spinner');
     const url = 'http://localhost:8100/' + service;

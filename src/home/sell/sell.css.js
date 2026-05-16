@@ -14,26 +14,23 @@ export default css`
   }
 
   mwc-textfield {
-    width: 35%;
+    width: 100%;
     --mdc-theme-primary: #000;
     --mdc-text-field-ink-color: #000;
     --mdc-text-field-idle-line-color: #555;
   }
-
+  
   .input-container {
     display: flex;
     align-items: center;
     margin: 1rem;
-  }
-
-  .data-quantity {
-    display: flex;
-    justify-content: center;
+    width: 40%;
   }
 
   .data-price {
     display: flex;
     justify-content: center;
+    align-items: center;
   }
 
   .quantity-icon-remove,
@@ -41,6 +38,7 @@ export default css`
     cursor: pointer;
     user-select: none;
     padding: 0 0.5rem;
+    align-content: center;
   }
 
   .quantity-icon-remove:hover,
@@ -56,10 +54,22 @@ export default css`
     border: none;
     border-radius: 0.5rem;
     font-size: x-large;
-    color: #af1313;
+    color: #513737;
     text-shadow: 1px 1px 2px #00000055;
     background-color: transparent;
     cursor: pointer;
+  }
+
+  .sell-data-container{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .total {
+    font-size: 1.5rem;
+    font-weight: bold;
+    padding: 0rem 2rem;
   }
   
   table {

@@ -25,48 +25,48 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
   static get properties() {
     return {
       /**
-       * The password to login
+       * Search criteria used to filter the product list.
        */
       productToSearch: {
         type: Object,
       },
       /**
-       * The password to login
+       * Password used during login.
        */
       password: {
         type: String,
         attribute: 'password',
       },
       /**
-       * The user to login
+       * Username used during login.
        */
       user: {
         type: String,
         attribute: 'user',
       },
       /**
-       * The password to login
+       * The product selected for editing.
        */
       _productToEdit: {
         type: Object,
         state: true,
       },
       /**
-       * The password to login
+       * Cached list of products retrieved from the API.
        */
       _products: {
         type: Array,
         state: true,
       },
       /**
-       * Products to sell.
+       * Products currently added to the sale transaction.
        */
       _productsToSell: {
         type: Array,
         state: true,
       },
       /**
-       * The password to login
+       * Raw response data from the API.
        */
       _responseData: {
         type: String,
@@ -88,7 +88,10 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
-   * Lifecycle method who calls after build the component
+   * Called after the component is first updated.
+   * Initializes the session and loads the product list.
+   *
+   * @override
    */
   firstUpdated() {
     super.firstUpdated();
@@ -97,8 +100,11 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
-   * Updated function from lifecycle
-   * @param {Object} changedProperties checked value
+   * Called when reactive properties change.
+   * Filters the current product list when the search criteria change.
+   *
+   * @param {Map} changedProperties - The changed reactive properties.
+   * @override
    */
   updated(changedProperties) {
     super.updated(changedProperties);
@@ -110,14 +116,29 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     }
   }
 
+  /**
+   * Returns the nested api-manager-element from shadow DOM.
+   *
+   * @return {ApiManagerElement} The API manager element instance.
+   */
   _getDataManager() {
     return this.shadowRoot.querySelector('api-manager-element');
   }
 
+  /**
+   * Logs out the current user through the API manager.
+   *
+   * @return {Promise<void>}
+   */
   async logout() {
     await this._getDataManager().fetch('GET', 'api/v0/logout', 'dm-logout');
   }
 
+  /**
+   * Checks whether there is an active session.
+   *
+   * @return {Promise<void>}
+   */
   async _sessionActive() {
     await this._getDataManager().fetch(
       'GET',
@@ -126,6 +147,12 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     );
   }
 
+  /**
+   * Sends a login request to the API manager.
+   *
+   * @param {Object} body - The login payload containing user credentials.
+   * @return {Promise<void>}
+   */
   async login(body) {
     await this._getDataManager().fetch(
       'POST',
@@ -135,6 +162,15 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     );
   }
 
+  /**
+   * Loads a product by its identifier.
+   * If the product list is already cached, it dispatches a success event locally.
+   * Otherwise, it requests the product from the API.
+   *
+   * @param {Object} params
+   * @param {string|number} params.id - The ID of the product.
+   * @return {Promise<void>}
+   */
   async getProductById({id}) {
     if (!this._products.length) {
       this._productToEdit = this._products.find((product) => product.id === id);
@@ -152,6 +188,11 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     }
   }
 
+  /**
+   * Requests the full product list from the API.
+   *
+   * @return {Promise<void>}
+   */
   async getProductList() {
     await this._getDataManager().fetch(
       'GET',
@@ -160,6 +201,12 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     );
   }
 
+  /**
+   * Creates a new product through the API.
+   *
+   * @param {Object} body - The new product payload.
+   * @return {Promise<void>}
+   */
   async createProduct(body) {
     await this._getDataManager().fetch(
       'POST',
@@ -169,6 +216,13 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     );
   }
 
+  /**
+   * Deletes a product by its ID through the API.
+   *
+   * @param {Object} params
+   * @param {string|number} params.id - The ID of the product to delete.
+   * @return {Promise<void>}
+   */
   async deleteProduct({id}) {
     await this._getDataManager().fetch(
       'DELETE',
@@ -177,6 +231,12 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     );
   }
 
+  /**
+   * Updates a product through the API.
+   *
+   * @param {Object} product - The updated product object.
+   * @return {Promise<void>}
+   */
   async editProduct(product) {
     await this._getDataManager().fetch(
       'PATCH',
@@ -186,11 +246,20 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     );
   }
 
+  /**
+   * Handles a successful product retrieval and dispatches the event.
+   *
+   * @param {CustomEvent} event - The API response event.
+   */
   _getProductSuccessResponse({detail}) {
     dispatchCustomEvent(this, 'dm-get-product-success-response', detail);
     this._productToEdit = detail;
   }
 
+  /**
+   * Filters the cached product list using the current search value.
+   * Dispatches the filtered list as a custom event.
+   */
   _filterProducts() {
     let filteredProducts = [];
     if (this.productToSearch.value !== '') {
@@ -219,40 +288,120 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     );
   }
 
+  /**
+   * Adds a product to the sale list by barcode and updates quantities.
+   *
+   * @param {string} barcode - The barcode to search for.
+   */
   getProductToSell(barcode) {
-    const registeredProduct = this._products.find((product) => 
-      product.barcode === barcode || product.barcodeSecondary === barcode
+    const registeredProduct = this._products.find(
+      (product) =>
+        product.barcode === barcode || product.barcodeSecondary === barcode
     );
-    const productInList = this._productsToSell.find((product) => 
-      product.barcode === barcode || product.barcodeSecondary === barcode
+    const productInList = this._productsToSell.find(
+      (product) =>
+        product.barcode === barcode || product.barcodeSecondary === barcode
     );
     if (registeredProduct) {
       this._productsToSell = productInList
         ? this._productsToSell.map((product) =>
-            (product.barcode === barcode || product.barcodeSecondary === barcode)
-              ? { ...product, quantity: product.stock > product.quantity ? product.quantity + 1 : product.quantity }
+            product.barcode === barcode || product.barcodeSecondary === barcode
+              ? {
+                  ...product,
+                  quantity:
+                    product.stock > product.quantity
+                      ? product.quantity + 1
+                      : product.quantity,
+                }
               : product
           )
-        : [...this._productsToSell, { ...registeredProduct, quantity: 1 }];
+        : [...this._productsToSell, {...registeredProduct, quantity: 1}];
     }
-    dispatchCustomEvent(this, 'dm-get-product-to-sell', this._productsToSell);
+    dispatchCustomEvent(this, 'dm-get-product-to-sell', {
+      products: this._productsToSell,
+      total: this._getTotal(),
+    });
   }
 
+  /**
+   * Removes a product from the sale list by barcode.
+   *
+   * @param {string} barcode - The barcode of the product to remove.
+   */
+  deleteProductToSell(barcode) {
+    const productsToSell = this._productsToSell.filter(
+      (product) =>
+        product.barcode !== barcode && product.barcodeSecondary !== barcode
+    );
+    this._productsToSell = productsToSell;
+    dispatchCustomEvent(this, 'dm-get-product-to-sell', {
+      products: this._productsToSell,
+      total: this._getTotal(),
+    });
+  }
+
+  updateProductToSell(barcode, change) {
+    this._productsToSell = this._productsToSell.map((product) =>
+      product.barcode === barcode || product.barcodeSecondary === barcode
+        ? {...product, quantity: Math.max(1, product.quantity + change)}
+        : product
+    );
+    dispatchCustomEvent(this, 'dm-get-product-to-sell', {
+      products: this._productsToSell,
+      total: this._getTotal(),
+    });
+  }
+
+  /**
+   * Computes the total value of the current sale list.
+   *
+   * @return {number} The total sale price.
+   */
+  _getTotal() {
+    let total = 0;
+    this._productsToSell.forEach(
+      (product) => (total += product.price * product.quantity)
+    );
+    return total;
+  }
+
+  /**
+   * Handles the product list response from the API manager.
+   *
+   * @param {CustomEvent} event - The API response event.
+   */
   _getProductsSuccessResponse({detail}) {
     this._products = detail;
     dispatchCustomEvent(this, 'dm-get-products-success-response', detail);
   }
 
+  /**
+   * Handles a successful product deletion response.
+   * Refreshes the product list after deletion.
+   *
+   * @param {CustomEvent} event - The API response event.
+   */
   _deleteProductsSuccessResponse({detail}) {
     dispatchCustomEvent(this, 'dm-delete-product-success-response', detail);
     this.getProductList();
   }
 
+  /**
+   * Handles a successful product edit response.
+   * Refreshes the product list after editing.
+   *
+   * @param {CustomEvent} event - The API response event.
+   */
   _editProductSuccessResponse({detail}) {
     dispatchCustomEvent(this, 'dm-edit-product-success-response', detail);
     this.getProductList();
   }
 
+  /**
+   * Template getter for the internal API manager element.
+   *
+   * @returns {import('lit').TemplateResult}
+   */
   get _tplApiManager() {
     return html`
       <api-manager-element
@@ -267,6 +416,11 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     `;
   }
 
+  /**
+   * Renders the manager element.
+   *
+   * @returns {import('lit').TemplateResult}
+   */
   render() {
     return html` ${this._tplApiManager} `;
   }

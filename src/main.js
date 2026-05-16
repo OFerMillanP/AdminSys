@@ -14,6 +14,9 @@ import '@material/mwc-tab-bar/mwc-tab-bar.js';
 import '@material/mwc-tab/mwc-tab.js';
 import '@material/mwc-formfield/mwc-formfield.js';
 
+import '@vaadin/icon';
+import '@vaadin/text-field';
+
 import styles from './main.css.js';
 
 /**
@@ -45,77 +48,84 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         state: true,
       },
       /**
-       * Contain level of user's name.
+       * Error code returned from a failed login attempt.
        */
       _loginErrorCode: {
         type: String,
         state: true,
       },
       /**
-       * Caontains List Products.
+       * Cached list of products available in the inventory.
        */
       _products: {
         type: Array,
         state: true,
       },
       /**
-       * Caontains List Products.
+       * List of products currently added to the sale transaction.
        */
       _productsToSell: {
         type: Array,
         state: true,
       },
       /**
-       * The name to say "Hello" to.
+       * Error details from a failed product registration.
        */
       _registerError: {
         type: Object,
         state: true,
       },
       /**
-       * The name to say "Hello" to.
+       * The product currently selected for editing.
        */
       _productToEdit: {
         type: Object,
         state: true,
       },
       /**
-       * The name to say "Hello" to.
+       * Search criteria used to filter the product list.
        */
       _productToSearch: {
         type: Object,
         state: true,
       },
       /**
-       * The name to say "Hello" to.
+       * Barcode used to request a product for sale.
        */
       _productToSell: {
         type: String,
         state: true,
       },
       /**
-       * The name to say "Hello" to.
+       * Whether the last product registration succeeded.
        */
       _registerProductSuccess: {
         type: Boolean,
         state: true,
       },
       /**
-       * The name to say "Hello" to.
+       * Whether the last product edit operation succeeded.
        */
       _editProductSuccess: {
         type: Boolean,
         state: true,
       },
       /**
-       * The name to say "Hello" to.
+       * Whether the last product deletion operation succeeded.
        */
       _deleteProductSuccess: {
         type: Boolean,
         state: true,
       },
       /**
-       * Contain level of user's permision.
+       * Total amount calculated for the current sale.
+       */
+      _total: {
+        type: Number,
+        state: true,
+      },
+      /**
+       * Current authenticated user data and permissions.
        */
       _userData: {
         type: Object,
@@ -137,102 +147,252 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._productsToSell = [];
     this._registerError = {};
     this._registerProductSuccess = false;
+    this._total = 0;
     this._userData = {};
   }
 
+  /**
+   * Requests login through the data manager.
+   *
+   * @param {CustomEvent} event - The login request event.
+   * @param {Object} event.detail - The login payload.
+   */
   _requestLoginToApi({detail}) {
     this._getDataManager().login(detail);
   }
 
+  /**
+   * Handles successful login responses from the manager.
+   * Updates the user data and logged-in state.
+   *
+   * @param {CustomEvent} event - The login response event.
+   * @param {Object} event.detail - The user data response.
+   */
   _loginSuccessResponse({detail}) {
     this._userData.level = detail.level;
     this._userData.name = detail.name;
     this._isLogged = !!Object.keys(detail).length && !!detail.level;
   }
 
+  /**
+   * Handles an active session response from the manager.
+   * Reconstructs the current user session state.
+   *
+   * @param {CustomEvent} event - The session response event.
+   * @param {Object} event.detail - The current user data.
+   */
   _getUserInSessionSuccesResponse({detail}) {
     this._userData.level = detail.level;
     this._userData.name = detail.name;
     this._isLogged = !!Object.keys(detail).length;
   }
 
+  /**
+   * Handles login errors from the manager.
+   * Stores the error state so the login view can display it.
+   *
+   * @param {CustomEvent} event - The login error event.
+   * @param {Object} event.detail - The error detail.
+   * @param {boolean} event.detail.status - The login status.
+   * @param {string} event.detail.code - The error code.
+   */
   _loginHandleError({detail}) {
     this._isLogged = detail.status;
     this._loginErrorCode = detail.code;
   }
 
+  /**
+   * Returns the nested manager-element from shadow DOM.
+   *
+   * @return {ManagerElement} The manager element instance.
+   */
   _getDataManager() {
     return this.shadowRoot.querySelector('manager-element');
   }
 
+  /**
+   * Logs out the current user and clears session state.
+   */
   _logout() {
     this._loginErrorCode = '';
     this._isLogged = false;
     this._getDataManager().logout();
   }
 
+  /**
+   * Sends a new product registration request to the manager.
+   *
+   * @param {CustomEvent} event - The register request event.
+   * @param {Object} event.detail - The product to register.
+   */
   _registerProduct({detail}) {
     this._getDataManager().createProduct(detail);
   }
 
+  /**
+   * Handles successful product registration responses.
+   * Refreshes the product list after registration.
+   *
+   * @param {CustomEvent} event - The registration success event.
+   * @param {Object} event.detail - The response detail.
+   */
   _registerProductSuccessResponse({detail}) {
     this._registerProductSuccess = !!Object.keys(detail).length;
     this._getDataManager().getProductList();
   }
 
+  /**
+   * Handles product registration errors.
+   *
+   * @param {CustomEvent} event - The registration error event.
+   * @param {Object} event.detail - The error payload.
+   */
   _registerProductHandleError({detail}) {
     this._registerError = detail;
   }
 
+  /**
+   * Updates the delete success flag when a product is removed.
+   *
+   * @param {CustomEvent} event - The delete success event.
+   * @param {boolean} event.detail - The deletion result.
+   */
   _deleteProductSuccessResponse({detail}) {
     this._deleteProductSuccess = !!detail;
   }
 
+  /**
+   * Updates the edit success flag when a product is updated.
+   *
+   * @param {CustomEvent} event - The edit success event.
+   * @param {boolean} event.detail - The edit result.
+   */
   _editProductSuccessResponse({detail}) {
     this._editProductSuccess = !!detail;
   }
 
+  /**
+   * Stores the loaded product list in component state.
+   *
+   * @param {CustomEvent} event - The products success event.
+   * @param {Array} event.detail - The product list.
+   */
   _getProductsSuccessResponse({detail}) {
     this._products = detail;
   }
 
+  /**
+   * Stores the search criteria used by the product list.
+   *
+   * @param {CustomEvent} event - The product search event.
+   * @param {Object} event.detail - The search payload.
+   */
   _searchProduct({detail}) {
     this._productToSearch = detail;
   }
 
+  /**
+   * Requests a product to sell by barcode from the manager.
+   *
+   * @param {CustomEvent} event - The sell search event.
+   * @param {Object} event.detail - The event payload.
+   * @param {string} event.detail.barcode - The barcode to sell.
+   */
   _searchProductToSell({detail: {barcode}}) {
     this._productToSell = barcode;
     this._getDataManager().getProductToSell(barcode);
   }
 
+  /**
+   * Requests deletion of a product from the sale list.
+   *
+   * @param {CustomEvent} event - The delete product to sell event.
+   * @param {Object} event.detail - The event payload.
+   * @param {string} event.detail.barcode - The barcode to remove.
+   */
+  _deleteProductToSell({detail: {barcode}}) {
+    this._getDataManager().deleteProductToSell(barcode);
+  }
+
+  /**
+   * Requests an update to the quantity of a product in the sale list.
+   *
+   * @param {CustomEvent} event - The update event.
+   * @param {Object} event.detail - The event payload.
+   * @param {string} event.detail.barcode - The barcode of the product to update.
+   * @param {number} event.detail.change - The quantity change to apply.
+   */
+  _updateProductToSell({detail: {barcode, change}}) {
+    this._getDataManager().updateProductToSell(barcode, change);
+  }
+
+  /**
+   * Requests deletion of a product from the inventory.
+   *
+   * @param {CustomEvent} event - The product delete event.
+   * @param {Object} event.detail - The event payload.
+   */
   _deleteProduct({detail}) {
     this._getDataManager().deleteProduct(detail);
   }
 
+  /**
+   * Requests the manager to load a selected product for editing.
+   *
+   * @param {Object} event.detail - The selected product identifier.
+   */
   _selectProductToEdit({detail}) {
     this._getDataManager().getProductById(detail);
   }
 
+  /**
+   * Updates the selected product to edit.
+   *
+   * @param {Object} event.detail - The selected product data.
+   */
   _setProductToEdit({detail}) {
     this._productToEdit = detail;
   }
 
+  /**
+   * Sends an edit request for a product to the manager.
+   *
+   * @param {Object} event.detail - The edited product data.
+   */
   _editProduct({detail}) {
     this._getDataManager().editProduct(detail);
   }
 
- _closeSuccessEditModal() {
+  /**
+   * Closes the edit success modal by clearing the selected product.
+   */
+  _closeSuccessEditModal() {
     this._productToEdit = {};
   }
 
+  /**
+   * Closes the error modal by clearing the registration error.
+   */
   _closeErrorModal() {
     this._registerError = {};
   }
 
-  _setListProductToSell({detail}) {
-    this._productsToSell = detail;
+  /**
+   * Updates the sale list and total from the manager response.
+   *
+   * @param {Array} event.detail.products - The products to sell.
+   * @param {number} event.detail.total - The sale total.
+   */
+  _setListProductToSell({detail: {products, total}}) {
+    this._productsToSell = products;
+    this._total = total;
   }
 
+  /**
+   * Template for the login view.
+   *
+   * @returns {import('lit').TemplateResult} The login template.
+   */
   get _tplLogin() {
     return html`
       <login-element
@@ -242,6 +402,11 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     `;
   }
 
+  /**
+   * Template for the home view.
+   *
+   * @returns {import('lit').TemplateResult} The home template.
+   */
   get _tplHome() {
     return html`
       <home-element
@@ -253,19 +418,28 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         .registerError=${this._registerError}
         .userData=${this._userData}
         .productsToSell=${this._productsToSell}
+        .total=${this._total}
         @home-page-logout="${this._logout}"
         @products-element-delete-product="${this._deleteProduct}"
         @products-element-edit-product="${this._editProduct}"
         @products-element-search-product="${this._searchProduct}"
         @products-element-select-product-to-edit="${this._selectProductToEdit}"
-        @products-element-close-success-edit-modal="${this._closeSuccessEditModal}"
+        @products-element-close-success-edit-modal="${this
+          ._closeSuccessEditModal}"
         @register-page-register-product="${this._registerProduct}"
         @register-page-close-error-modal="${this._closeErrorModal}"
         @sell-element-get-product-to-sell="${this._searchProductToSell}"
+        @sell-element-delete-product-to-sell="${this._deleteProductToSell}"
+        @sell-element-update-product-to-sell="${this._updateProductToSell}"
       ></home-element>
     `;
   }
 
+  /**
+   * Template for the manager element that handles API communication.
+   *
+   * @returns {import('lit').TemplateResult} The manager template.
+   */
   get _tplManager() {
     return html`
       <manager-element
@@ -293,11 +467,15 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     return [styles];
   }
 
+  /**
+   * Renders the main application layout.
+   *
+   * @returns {import('lit').TemplateResult} The rendered template.
+   */
   render() {
     return html`
       ${!this._isLogged ? this._tplLogin : nothing}
-      ${this._isLogged ? this._tplHome : nothing}
-      ${this._tplManager}
+      ${this._isLogged ? this._tplHome : nothing} ${this._tplManager}
     `;
   }
 }

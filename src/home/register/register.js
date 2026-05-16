@@ -26,86 +26,92 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
   static get properties() {
     return {
       /**
-       * The name to say "Hello" to.
+       * Indicates whether the product was registered successfully.
        */
       registerSuccess: {
         type: Boolean,
         attribute: 'register-success',
       },
       /**
-       * The name to say "Hello" to.
+       * Error code returned after a failed product registration.
        */
       registerError: {
         type: String,
         attribute: 'register-error',
       },
       /**
-       * Contains product's name.
+       * Name of the product being registered.
        */
       _productName: {
         type: String,
         state: true,
       },
       /**
-       * Contains product's barcode.
+       * Primary barcode of the product.
        */
       _productBarcode: {
         type: String,
         state: true,
       },
       /**
-       * Contains product's barcode secondary.
+       * Secondary barcode of the product.
        */
       _productBarcodeSecondary: {
         type: String,
         state: true,
       },
       /**
-       * Contains product's description.
+       * Description of the product.
        */
       _productDescription: {
         type: String,
         state: true,
       },
       /**
-       * Contains product's price.
+       * Price of the product.
        */
       _productPrice: {
         type: Number,
         state: true,
       },
       /**
-       * Contains product's stock.
+       * Available stock quantity for the product.
        */
       _productStock: {
         type: Number,
         state: true,
       },
       /**
-       * Allows show error message
+       * Mapped error message text for the current registration error.
        */
       _errorMessage: {
         type: String,
         state: true,
       },
+      /**
+       * Reference to the error modal component.
+       */
       _errorRegisterModalRef: {
         type: Object,
         state: true,
       },
       /**
-       * Allows show error message
+       * Whether the form should display a validation error message.
        */
       _showErrorMessage: {
         type: Boolean,
         state: true,
       },
       /**
-       * Allows show product list
+       * Whether the product list should be shown in the UI.
        */
       _showProductList: {
         type: Boolean,
         state: true,
       },
+      /**
+       * Reference to the success modal component.
+       */
       _successRegisterModalRef: {
         type: Object,
         state: true,
@@ -113,6 +119,9 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
     };
   }
 
+  /**
+   * Initializes component state and refs.
+   */
   constructor() {
     super();
     this.registerError = '';
@@ -131,8 +140,10 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
-   * Updated function from lifecycle
-   * @param {Object} changedProperties checked value
+   * Lifecycle callback invoked when reactive properties change.
+   * Updates error and success modal state.
+   *
+   * @param {Map} changedProperties - The properties that changed.
    */
   updated(changedProperties) {
     super.updated(changedProperties);
@@ -144,16 +155,25 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
     }
   }
 
+  /**
+   * Closes the success modal and resets the registration form.
+   */
   _closeSuccessModal() {
     this.shadowRoot.querySelector('#barcode').focus();
     this._resetForm();
   }
 
+  /**
+   * Closes the error modal and notifies the parent component.
+   */
   _closeErrorModal() {
     this.shadowRoot.querySelector('#barcode').focus();
     dispatchCustomEvent(this, 'register-page-close-error-modal');
   }
 
+  /**
+   * Resets the form fields and clears validation state.
+   */
   _resetForm() {
     this._showErrorMessage = false;
     this._productName = '';
@@ -164,6 +184,11 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
     this._productStock = 0;
   }
 
+  /**
+   * Handles input updates for all form fields.
+   *
+   * @param {Event} event - The input event.
+   */
   _handleInput({target: {id, value}}) {
     const inputs = {
       barcode: () => {
@@ -193,10 +218,17 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
     inputs[id]?.call();
   }
 
+  /**
+   * Toggles visibility of the product list section.
+   */
   _showList() {
     this._showProductList = !this._showProductList;
   }
 
+  /**
+   * Maps the current registration error code to a user-facing message.
+   * Opens the error modal if a known error message exists.
+   */
   _mapErrorMessage() {
     const errors = {
       ERP001: 'Proucto Duplicado',
@@ -208,6 +240,9 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
     }
   }
 
+  /**
+   * Validates the registration form and dispatches the register event.
+   */
   _registerProduct() {
     this._showErrorMessage =
       !this._productBarcode.length ||
@@ -225,6 +260,11 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
     }
   }
 
+  /**
+   * Returns the success modal template.
+   *
+   * @returns {import('lit').TemplateResult}
+   */
   get _tplSuccessModal() {
     return html`
       <modal-element
@@ -243,6 +283,11 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
     `;
   }
 
+  /**
+   * Returns the error modal template.
+   *
+   * @returns {import('lit').TemplateResult}
+   */
   get _tplErrorModal() {
     return html`
       <modal-element
@@ -260,6 +305,11 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
     `;
   }
 
+  /**
+   * Returns the registration form template.
+   *
+   * @returns {import('lit').TemplateResult}
+   */
   get _tplRegister() {
     return html`
       <div class="register-container">
@@ -362,6 +412,11 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
     return [styles];
   }
 
+  /**
+   * Renders the register element.
+   *
+   * @returns {import('lit').TemplateResult}
+   */
   render() {
     return html` ${this._tplRegister} `;
   }
