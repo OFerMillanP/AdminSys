@@ -1,124 +1,129 @@
-# LitElement JavaScript starter 
+# AdminSys
 
-This project includes a sample component using LitElement with JavaScript.
+AdminSys es una aplicación de gestión de inventario y ventas construida con LitElement y una API Node.js/Express.
 
-## Setup
+## Qué incluye
 
+- Interfaz de usuario con Web Components usando `lit`
+- Módulos de `home`, `login`, `register`, `products`, `sell` y `modal`
+- API local en `api/api-n/api.js` para login, logout, productos y ventas
+- Documentación estática generada con Eleventy en `docs/`
+- Tests con Karma, Mocha y Chai
 
-Run dbefore install dependencies:
-```bash
-npm install -g es-dev-server
-```
-```bash
-npm install -g sass
-```
-```bash
-npm install -g sass
-```
-```bash
-npm install -g nodemon
-```
+## Requisitos
 
-Install dependencies:
+- Node.js 16+ recomendado
+- `npm` para instalar dependencias y ejecutar scripts
+
+## Instalación
 
 ```bash
-npm i
+npm install
 ```
 
-## Testing
+## Comandos principales
 
-This sample uses Karma, Chai, Mocha, and the open-wc test helpers for testing. See the [open-wc testing documentation](https://open-wc.org/testing/testing.html) for more information.
-
-Tests can be run with the `test` script:
+- Iniciar servidor de desarrollo y compilación SCSS:
 
 ```bash
-npm test
+npm run start
 ```
 
-## Dev Server
-
-This sample uses open-wc's [es-dev-server](https://github.com/open-wc/open-wc/tree/master/packages/es-dev-server) for previewing the project without additional build steps. ES dev server handles resolving Node-style "bare" import specifiers, which aren't supported in browsers. It also automatically transpiles JavaScript and adds polyfills to support older browsers.
-
-To run the dev server and open the project in a new browser tab:
-
-### Mac & Linux
+- Iniciar solo la API local:
 
 ```bash
-npm run start:all
+npm run api
 ```
-### Windows
+
+- Iniciar servidor de desarrollo + API en Windows:
 
 ```bash
 npm run start:all:w
 ```
 
+- Iniciar servidor de desarrollo + API en Mac y Linux:
 
-There is a development HTML file located at `/dev/index.html` that you can view at http://localhost:8000/dev/index.html.
+```bash
+npm run start:all
+```
 
-## Editing
+- Ejecutar tests:
 
-If you use VS Code, we highly reccomend the [lit-plugin extension](https://marketplace.visualstudio.com/items?itemName=runem.lit-plugin), which enables some extremely useful features for lit-html templates:
-  - Syntax highlighting
-  - Type-checking
-  - Code completion
-  - Hover-over docs
-  - Jump to definition
-  - Linting
-  - Quick Fixes
-  
-  The project is setup to reccomend lit-plugin to VS Code users if they don't already have it installed.
+```bash
+npm test
+```
 
-## Linting
-
-Linting of JavaScript files is provided by [ESLint](eslint.org). In addition, [lit-analyzer](https://www.npmjs.com/package/lit-analyzer) is used to type-check and lint lit-html templates with the same engine and rules as lit-plugin.
-
-The rules are mostly the recommended rules from each project, but some have been turned off to make LitElement usage easier. The recommended rules are pretty strict, so you may want to relax them by editing `.eslintrc.json`.
-
-To lint the project run:
+- Ejecutar lint:
 
 ```bash
 npm run lint
 ```
 
-## Formatting
-
-[Prettier](https://prettier.io/) is used for code formatting. It has been pre-configured according to the Polymer Project's style. You can change this in `.prettierrc.json`.
-
-Prettier has not been configured to run when commiting files, but this can be added with Husky and and `pretty-quick`. See the [prettier.io](https://prettier.io/) site for instructions.
-
-## Static Site
-
-This project includes a simple website generated with the [eleventy](11ty.dev) static site generator and the templates and pages in `/docs-src`. The site is generated to `/docs` and intended to be checked in so that GitHub pages can serve the site [from `/docs` on the master branch](https://help.github.com/en/github/working-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site).
-
-To enable the site go to the GitHub settings and change the GitHub Pages &quot;Source&quot; setting to &quot;master branch /docs folder&quot;.</p>
-
-To build the site, run:
+- Generar documentación estática:
 
 ```bash
 npm run docs
 ```
 
-To serve the site locally, run:
+- Servir la documentación localmente:
 
 ```bash
 npm run docs:serve
 ```
 
-To watch the site files, and re-build automatically, run:
+- Observar cambios en documentación:
 
 ```bash
 npm run docs:watch
 ```
 
-The site will usually be served at http://localhost:8000.
+## Estructura del proyecto
 
-## Bundling and minification
+- `src/` - Código de frontend principal
+  - `main.js` - App root y coordinación de rutas
+  - `home/`, `login/`, `register/`, `sell/`, `products/` - vistas y componentes
+  - `dm/` - capa de gestión de datos y llamadas API
+  - `modal/`, `organisms/modal/` - componentes de diálogo reutilizables
+- `api/api-n/` - API Express que expone endpoints de autenticación, productos y ventas
+- `utils/` - utilidades compartidas, como eventos personalizados y fecha
+- `docs-src/` - origen de la documentación estática Eleventy
+- `docs/` - sitio generado para documentación estática
 
-This starter project doesn't include any build-time optimizations like bundling or minification. We recommend publishing components as unoptimized JavaScript modules, and performing build-time optimizations at the application level. This gives build tools the best chance to deduplicate code, remove dead code, and so on.
+## Endpoints principales de la API
 
-For information on building application projects that include LitElement components, see [Build for production](https://lit-element.polymer-project.org/guide/build) on the LitElement site.
+- `GET /api/v0/login` — obtiene el usuario en sesión
+- `POST /api/v0/login` — inicia sesión con usuario y contraseña
+- `GET /api/v0/logout` — cierra la sesión
+- `GET /api/v0/products` — lista productos
+- `GET /api/v0/products/product/:id` — obtiene un producto
+- `POST /api/v0/products/product` — registra un producto nuevo
+- `PATCH /api/v0/products/product/:id` — actualiza un producto
+- `DELETE /api/v0/products/product/:id` — elimina un producto (requiere nivel `admin`)
+- `POST /api/v0/sales` — registra una venta y actualiza stock
 
+## Uso rápido
 
-## More information
+1. Ejecuta `npm install`
+2. Ejecuta `npm run start` para abrir la aplicación en modo desarrollo
+3. Si necesitas la API en otra terminal, ejecuta `npm run api`
+4. Accede a la interfaz en el navegador según el puerto que use `es-dev-server`
 
-See [Get started](https://lit-element.polymer-project.org/guide/start) on the LitElement site for more information.
+## Notas
+
+- La aplicación usa `@material/mwc-*`, `@vaadin/*` y `@open-wc/scoped-elements`
+- El servidor de desarrollo se basa en `es-dev-server`
+- No hay compilación de producción automática; la app funciona como módulos ES nativos
+
+## Contribuir
+
+Para colaborar en este proyecto:
+
+1. Clona el repositorio
+2. Instala dependencias
+3. Usa `npm run lint` antes de crear un PR
+4. Ejecuta `npm test` para validar cambios en los tests
+
+---
+
+Este README ha sido actualizado para reflejar la estructura y comandos actuales del proyecto AdminSys.
+
