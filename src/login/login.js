@@ -5,10 +5,9 @@ import {dispatchCustomEvent} from '../../utils/utils.js';
 import styles from './login.css.js';
 
 /**
- * An example element.
+ * Login page element.
  *
- * @slot - This element has a slot
- * @csspart button - The button
+ * Manages user credential input, validation and dispatches login requests.
  */
 export class LoginElement extends LitElement {
   static get is() {
@@ -18,28 +17,28 @@ export class LoginElement extends LitElement {
   static get properties() {
     return {
       /**
-       * The name to say "Hello" to.
+       * Username entered in the login form.
        */
       user: {
         type: String,
         attribute: 'user',
       },
       /**
-       * Whether the user is logged in.
+       * Password entered in the login form.
        */
       password: {
         type: String,
         attribute: 'password',
       },
       /**
-       * Whether the user is logged in.
+       * Error code returned by the authentication API.
        */
       loginError: {
         type: String,
         attribute: 'login-error',
       },
       /**
-       * Whether the user is logged in.
+       * User-visible login error message.
        */
       _errorMessage: {
         type: String,
@@ -57,8 +56,9 @@ export class LoginElement extends LitElement {
   }
 
   /**
-   * Updated function from lifecycle
-   * @param {Object} changedProperties checked value
+   * Lit lifecycle callback invoked when reactive properties change.
+   *
+   * @param {Map} changedProperties - The changed reactive properties.
    */
   updated(changedProperties) {
     super.updated(changedProperties);
@@ -67,6 +67,12 @@ export class LoginElement extends LitElement {
     }
   }
 
+  /**
+   * Validates the login form and dispatches a login request event.
+   *
+   * @param {KeyboardEvent|Object} event - The click or keypress event.
+   * @param {string} event.key - Optional key pressed during login submission.
+   */
   requestLoginAccess({key = ''}) {
     this._errorMessage =
       !this.user || !this.password ? 'Favor de llenar todos los campos' : '';
@@ -78,6 +84,11 @@ export class LoginElement extends LitElement {
     }
   }
 
+  /**
+   * Handles form input updates for the login fields.
+   *
+   * @param {InputEvent} event - The input event.
+   */
   _handleInput({target: {id, value}}) {
     this.loginError = '';
     const inputsLogin = {
@@ -92,6 +103,9 @@ export class LoginElement extends LitElement {
     this._errorMessage = '';
   }
 
+  /**
+   * Maps the login error code to a friendly error message for display.
+   */
   _showErrorMessage() {
     const errors = {
       E001: 'El usuario o contraseña son incorrectos.',

@@ -3,13 +3,12 @@ import {ScopedElementsMixin} from '@open-wc/scoped-elements/html-element.js';
 
 import {ApiManagerElement} from '../dm/apiManager.js';
 
-import {dispatchCustomEvent} from '../../utils/utils.js';
+import {dispatchCustomEvent, getCurrentDate} from '../../utils/utils.js';
 
 /**
- * An example element.
+ * Manager layer element.
  *
- * @slot - This element has a slot
- * @csspart button - The button
+ * Encapsulates API calls and local cache management for products, sales, and login.
  */
 export class ManagerElement extends ScopedElementsMixin(LitElement) {
   static get is() {
@@ -340,6 +339,12 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     });
   }
 
+  /**
+   * Updates the quantity of a product already added to the current sale.
+   *
+   * @param {string} barcode - The product barcode to update.
+   * @param {number} change - The change to apply to the quantity.
+   */
   updateProductToSell(barcode, change) {
     this._productsToSell = this._productsToSell.map((product) =>
       product.barcode === barcode || product.barcodeSecondary === barcode
@@ -350,6 +355,29 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
       products: this._productsToSell,
       total: this._getTotal(),
     });
+  }
+
+  /**
+   * Completes the current sale by sending the selected products to the API.
+   */
+  completeSale() {
+    const sale = {
+      products: this._productsToSell,
+      total: this._getTotal(),
+      date: getCurrentDate(),
+    }
+    this._getDataManager().fetch(
+      'POST',
+      'api/v0/sales',
+      'dm-register-sale',
+      this._productsToSell
+    );
+  }
+
+  _registerSaleSuccessResponse({detail}) {
+    this._productsToSell = [];
+    this.getProductList();
+    dispatchCustomEvent(this, 'dm-register-sale-success-response', detail);
   }
 
   /**
@@ -412,6 +440,7 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
         @api-dm-get-product-success-response=${this._getProductSuccessResponse}
         @api-dm-get-products-success-response=${this
           ._getProductsSuccessResponse}
+        @api-dm-register-sale-success-response=${this._registerSaleSuccessResponse}
       ></api-manager-element>
     `;
   }

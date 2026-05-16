@@ -14,16 +14,13 @@ import '@material/mwc-tab-bar/mwc-tab-bar.js';
 import '@material/mwc-tab/mwc-tab.js';
 import '@material/mwc-formfield/mwc-formfield.js';
 
-import '@vaadin/icon';
-import '@vaadin/text-field';
-
 import styles from './main.css.js';
 
 /**
- * An example element.
+ * Main application root element.
  *
- * @slot - This element has a slot
- * @csspart button - The button
+ * Manages authentication state, routes between the login and home views,
+ * and coordinates data exchange with the manager layer.
  */
 export class MainElement extends ScopedElementsMixin(LitElement) {
   static get is() {
@@ -43,6 +40,27 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
       /**
        * Whether the user is logged in.
        */
+      _completeSaleSuccess: {
+        type: Boolean,
+        state: true,
+      },
+      /**
+       * Whether the last product deletion operation succeeded.
+       */
+      _deleteProductSuccess: {
+        type: Boolean,
+        state: true,
+      },
+      /**
+       * Whether the last product edit operation succeeded.
+       */
+      _editProductSuccess: {
+        type: Boolean,
+        state: true,
+      },
+      /**
+       * Whether the user is logged in.
+       */
       _isLogged: {
         type: Boolean,
         state: true,
@@ -51,6 +69,27 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
        * Error code returned from a failed login attempt.
        */
       _loginErrorCode: {
+        type: String,
+        state: true,
+      },
+      /**
+       * The product currently selected for editing.
+       */
+      _productToEdit: {
+        type: Object,
+        state: true,
+      },
+      /**
+       * Search criteria used to filter the product list.
+       */
+      _productToSearch: {
+        type: Object,
+        state: true,
+      },
+      /**
+       * Barcode used to request a product for sale.
+       */
+      _productToSell: {
         type: String,
         state: true,
       },
@@ -76,44 +115,9 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         state: true,
       },
       /**
-       * The product currently selected for editing.
-       */
-      _productToEdit: {
-        type: Object,
-        state: true,
-      },
-      /**
-       * Search criteria used to filter the product list.
-       */
-      _productToSearch: {
-        type: Object,
-        state: true,
-      },
-      /**
-       * Barcode used to request a product for sale.
-       */
-      _productToSell: {
-        type: String,
-        state: true,
-      },
-      /**
        * Whether the last product registration succeeded.
        */
       _registerProductSuccess: {
-        type: Boolean,
-        state: true,
-      },
-      /**
-       * Whether the last product edit operation succeeded.
-       */
-      _editProductSuccess: {
-        type: Boolean,
-        state: true,
-      },
-      /**
-       * Whether the last product deletion operation succeeded.
-       */
-      _deleteProductSuccess: {
         type: Boolean,
         state: true,
       },
@@ -136,6 +140,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
 
   constructor() {
     super();
+    this._completeSaleSuccess = false;
     this._deleteProductSuccess = false;
     this._editProductSuccess = false;
     this._isLogged = false;
@@ -327,6 +332,13 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
+   * Triggers the manager to complete the current sale.
+   */
+  _completeSale() {
+    this._getDataManager().completeSale();
+  }
+
+  /**
    * Requests deletion of a product from the inventory.
    *
    * @param {CustomEvent} event - The product delete event.
@@ -339,6 +351,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
   /**
    * Requests the manager to load a selected product for editing.
    *
+   * @param {CustomEvent} event - The select product event.
    * @param {Object} event.detail - The selected product identifier.
    */
   _selectProductToEdit({detail}) {
@@ -348,6 +361,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
   /**
    * Updates the selected product to edit.
    *
+   * @param {CustomEvent} event - The set product event.
    * @param {Object} event.detail - The selected product data.
    */
   _setProductToEdit({detail}) {
@@ -357,6 +371,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
   /**
    * Sends an edit request for a product to the manager.
    *
+   * @param {CustomEvent} event - The edit product event.
    * @param {Object} event.detail - The edited product data.
    */
   _editProduct({detail}) {
@@ -380,12 +395,31 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
   /**
    * Updates the sale list and total from the manager response.
    *
+   * @param {CustomEvent} event - The sale list update event.
+   * @param {Object} event.detail - The event payload.
    * @param {Array} event.detail.products - The products to sell.
    * @param {number} event.detail.total - The sale total.
    */
   _setListProductToSell({detail: {products, total}}) {
     this._productsToSell = products;
     this._total = total;
+  }
+
+  /**
+   * Handles the successful sale completion response.
+   * Clears the current sale list and resets the total amount.
+   *
+   * @param {CustomEvent} event - The sale success event.
+   * @param {Object} event.detail - The sale response payload.
+   */
+  _registerSaleSuccessResponse({detail}) {
+    this._completeSaleSuccess = !!detail;
+  }
+
+  _closeCompleteSaleSuccessModal() {
+    this._completeSaleSuccess = false;
+    this._productsToSell = [];
+    this._total = 0;
   }
 
   /**
@@ -410,6 +444,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
   get _tplHome() {
     return html`
       <home-element
+        ?complete-sale-success=${this._completeSaleSuccess}
         ?delete-success=${this._deleteProductSuccess}
         ?edit-success=${this._editProductSuccess}
         ?register-success=${this._registerProductSuccess}
@@ -428,8 +463,11 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
           ._closeSuccessEditModal}"
         @register-page-register-product="${this._registerProduct}"
         @register-page-close-error-modal="${this._closeErrorModal}"
-        @sell-element-get-product-to-sell="${this._searchProductToSell}"
+        @modal-element-confirm-action-success-complete-sale="${this
+          ._closeCompleteSaleSuccessModal}"
+        @sell-element-complete-sale="${this._completeSale}"
         @sell-element-delete-product-to-sell="${this._deleteProductToSell}"
+        @sell-element-get-product-to-sell="${this._searchProductToSell}"
         @sell-element-update-product-to-sell="${this._updateProductToSell}"
       ></home-element>
     `;
@@ -459,6 +497,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         @dm-get-product-success-response=${this._setProductToEdit}
         @dm-edit-product-success-response=${this._editProductSuccessResponse}
         @dm-get-product-to-sell=${this._setListProductToSell}
+        @dm-register-sale-success-response=${this._registerSaleSuccessResponse}
       ></manager-element>
     `;
   }

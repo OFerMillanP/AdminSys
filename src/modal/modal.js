@@ -6,10 +6,9 @@ import {dispatchCustomEvent} from '../../utils/utils.js';
 import styles from './modal.css.js';
 
 /**
- * An example element.
+ * Reusable modal dialog element.
  *
- * @slot - This element has a slot
- * @csspart button - The button
+ * Renders a modal overlay using `showModal` state and dispatches confirm/cancel actions.
  */
 export class ModalElement extends ScopedElementsMixin(LitElement) {
   static get is() {
@@ -56,6 +55,9 @@ export class ModalElement extends ScopedElementsMixin(LitElement) {
     this.showModal = false;
   }
 
+  /**
+   * Handles the confirm action and dispatches the confirm event.
+   */
   _confirmActionButton() {
     console.log(
       `${ModalElement.is}-confirm-action${
@@ -70,10 +72,18 @@ export class ModalElement extends ScopedElementsMixin(LitElement) {
     );
   }
 
+  /**
+   * Handles the cancel action and dispatches the cancel event.
+   */
   _cancelActionButton() {
     dispatchCustomEvent(this, `${ModalElement.is}-cancel-action`);
   }
 
+  /**
+   * Selects styling properties for the modal based on its type.
+   *
+   * @returns {Object} The selected icon and CSS classes.
+   */
   _selectModalType() {
     const choices = {
       success: {
@@ -111,6 +121,11 @@ export class ModalElement extends ScopedElementsMixin(LitElement) {
     );
   }
 
+  /**
+   * Returns the modal content template when `showModal` is true.
+   *
+   * @returns {import('lit').TemplateResult|import('lit').Nothing}
+   */
   get _tplModal() {
     return this.showModal
       ? html`

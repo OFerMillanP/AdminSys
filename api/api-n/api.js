@@ -6,8 +6,16 @@ let api = express();
 /**
  * Configs --------------------------------------------------------
  */
+/**
+ * Puerto en el que escucha el servidor. Se puede configurar vía `process.env.PORT`.
+ * @type {number|string}
+ */
 let port = process.env.PORT || 8100;
 
+/**
+ * Opciones CORS para permitir peticiones desde el frontend local.
+ * @type {{origin: string, optionsSuccessStatus: number}}
+ */
 const corsOptions = {
   origin: 'http://localhost:8000',
   optionsSuccessStatus: 200,
@@ -21,6 +29,11 @@ api.use(bodyParser.json());
  * Data --------------------------------------------------------
  */
 
+/**
+ * Usuarios válidos para autenticación en el API (solo datos de ejemplo).
+ * Cada objeto contiene: `user`, `name`, `password`, `level`.
+ * @type {{user:string,name:string,password:string,level:string}[]}
+ */
 let validUsers = [
   {
     user: 'Anel',
@@ -42,8 +55,16 @@ let validUsers = [
   },
 ];
 
+/**
+ * Usuario actual en sesión. Se usa para mantener el estado entre peticiones.
+ * @type {Object}
+ */
 let userToSend = {};
 
+/**
+ * Contador de intentos de login fallidos en sesión.
+ * @type {number}
+ */
 let userLoginTry = 0;
 
 let products = [
@@ -109,8 +130,28 @@ let products = [
   },
 ];
 
+/**
+ * Ventas registradas en memoria.
+ * @type {Array<Object>}
+ */
+let sales = [];
+
+/**
+ * Productos preparados para enviar en la respuesta de listado.
+ * @type {Array<Object>}
+ */
+let productsToSend = [];
+
+/**
+ * Próximo id para nuevos productos.
+ * @type {number}
+ */
 let newProduct = products.length;
 
+/**
+ * Devuelve la fecha y hora actual en formato `DD/MM/YYYY - HH:MM:SS`.
+ * @returns {string} Fecha y hora formateada.
+ */
 function getCurrentDate() {
   const date = new Date();
   const fecha = `${
@@ -129,7 +170,11 @@ function getCurrentDate() {
  */
 
 /**
- * Api to logout
+ * Cierra la sesión del usuario en memoria.
+ * @route GET /api/v0/logout
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {200} Vacío (estado reseteado)
  */
 api.get('/api/v0/logout', function (req, res) {
   userToSend = {};
@@ -137,14 +182,19 @@ api.get('/api/v0/logout', function (req, res) {
 });
 
 /**
- * Api to get logged user
+ * Devuelve el usuario actualmente logueado (sin contraseña).
+ * @route GET /api/v0/login
+ * @returns {Object} Usuario logueado o objeto vacío
  */
 api.get('/api/v0/login', function (req, res) {
   res.status(200).json(userToSend);
 });
 
 /**
- * Api to login
+ * Valida credenciales y establece usuario en memoria.
+ * @route POST /api/v0/login
+ * @param {{user:string,password:string}} req.body - Credenciales de acceso
+ * @returns {201} Usuario autenticado (sin password) | {400} Error con código y mensaje
  */
 api.post('/api/v0/login', function (req, res) {
   userLoginTry += 1;
@@ -176,7 +226,10 @@ api.post('/api/v0/login', function (req, res) {
 });
 
 /**
- * Api to register product
+ * Registra un nuevo producto si no existe y los valores son válidos.
+ * @route POST /api/v0/products/product
+ * @param {{barcode:string,price:number,stock:number}} req.body - Datos del producto
+ * @returns {200} Producto creado | {400} Error con código y mensaje
  */
 api.post('/api/v0/products/product', function (req, res) {
   if (products.find((product) => product.barcode === req.body.barcode)) {
@@ -196,6 +249,12 @@ api.post('/api/v0/products/product', function (req, res) {
   }
 });
 
+/**
+ * Elimina un producto por `id`. Requiere nivel `admin`.
+ * @route DELETE /api/v0/products/product/:id
+ * @param {Object} req.params.id - Id del producto a eliminar
+ * @returns {200} true | {400|403} Error con código y mensaje
+ */
 api.delete('/api/v0/products/product/:id', function (req, res) {
   const productToDelete = products.find(
     (product) => product.id === parseInt(req.params.id)
@@ -216,7 +275,9 @@ api.delete('/api/v0/products/product/:id', function (req, res) {
 });
 
 /**
- * Api to get product list
+ * Devuelve la lista de productos (orden invertido).
+ * @route GET /api/v0/products
+ * @returns {Object[]} Lista de productos
  */
 api.get('/api/v0/products', function (req, res) {
   productsToSend = Array.from(products);
@@ -224,6 +285,12 @@ api.get('/api/v0/products', function (req, res) {
   res.status(200).json(productsToSend);
 });
 
+/**
+ * Obtiene un producto por `id`.
+ * @route GET /api/v0/products/product/:id
+ * @param {Object} req.params.id - Id del producto a buscar
+ * @returns {200} Producto | {400} Error si no existe
+ */
 api.get('/api/v0/products/product/:id', function (req, res) {
   const productToFind = products.find(
     (product) => product.id === parseInt(req.params.id)
@@ -237,6 +304,13 @@ api.get('/api/v0/products/product/:id', function (req, res) {
   }
 });
 
+/**
+ * Actualiza un producto por `id` reemplazando su contenido.
+ * @route PATCH /api/v0/products/product/:id
+ * @param {Object} req.params.id - Id del producto a actualizar
+ * @param {Object} req.body - Nuevo objeto producto
+ * @returns {200} Producto actualizado | {400} Error si no existe
+ */
 api.patch('/api/v0/products/product/:id', function (req, res) {
   const productToFind = products.find(
     (product) => product.id === parseInt(req.params.id)
@@ -254,10 +328,31 @@ api.patch('/api/v0/products/product/:id', function (req, res) {
 });
 
 /**
- * Api test to delete
+ * Ruta de prueba que devuelve un mensaje simple.
+ * @route DELETE /
  */
 api.delete('/', function (req, res) {
   res.json({mensaje: 'Método delete'});
+});
+
+/**
+ * Registra una nueva venta y actualiza el stock de los productos vendidos.
+ * @route POST /api/v0/sales
+ * @param {Object[]} req.body - Lista de productos vendidos con cantidad.
+ * @returns {200} Venta registrada
+ */
+api.post('/api/v0/sales', function (req, res) {
+  const sale = req.body;
+  sales.push(sale);
+  products.map((product) => {
+    const productInSale = sale.find(
+      (productSale) => productSale.barcode === product.barcode
+    );
+    if (productInSale) {
+      product.stock -= productInSale.quantity;
+    }
+  });
+  res.status(200).json(sale);
 });
 
 /**

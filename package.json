@@ -51,7 +51,8 @@
     "@vaadin/login": "^25.1.1",
     "@vaadin/text-field": "^25.1.1",
     "bootstrap": "^5.3.8",
-    "lit": "^3.0.0"
+    "lit": "^3.0.0",
+    "uuid": "^14.0.0"
   },
   "devDependencies": {
     "@11ty/eleventy": "^0.10.0",

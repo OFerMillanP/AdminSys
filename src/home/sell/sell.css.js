@@ -1,4 +1,4 @@
-import { css } from 'lit';
+import {css} from 'lit';
 
 export default css`
   :host {
@@ -19,7 +19,7 @@ export default css`
     --mdc-text-field-ink-color: #000;
     --mdc-text-field-idle-line-color: #555;
   }
-  
+
   .input-container {
     display: flex;
     align-items: center;
@@ -60,18 +60,38 @@ export default css`
     cursor: pointer;
   }
 
-  .sell-data-container{
+  .sell-data-container {
     display: flex;
     align-items: center;
     justify-content: space-between;
   }
 
+  .sale {
+    margin: 1rem;
+    display: flex;
+  }
+
   .total {
+    padding: 0rem 1rem;
     font-size: 1.5rem;
     font-weight: bold;
-    padding: 0rem 2rem;
+    justify-content: center;
+    display: flex;
+    align-items: center;
   }
-  
+
+  .button-complete-sale {
+    padding: 0rem 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  mwc-button#complete-sale {
+    --mdc-theme-primary: #213aa8;
+    --mdc-theme-on-primary: #fff;
+  }
+
   table {
     width: 100%;
     border-collapse: collapse; /* Bordes unidos */

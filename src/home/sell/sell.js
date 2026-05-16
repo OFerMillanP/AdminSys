@@ -1,5 +1,6 @@
 import {LitElement, html} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
+import {ref, createRef} from 'lit/directives/ref.js';
 import {ScopedElementsMixin} from '@open-wc/scoped-elements/html-element.js';
 
 import {dispatchCustomEvent} from '../../../utils/utils.js';
@@ -7,6 +8,11 @@ import {dispatchCustomEvent} from '../../../utils/utils.js';
 import styles from './sell.css.js';
 import {map} from 'lit/directives/map.js';
 
+/**
+ * Sales page element.
+ *
+ * Handles barcode entry, product quantity updates, and sale completion events.
+ */
 export class SellElement extends ScopedElementsMixin(LitElement) {
   static get is() {
     return 'sell-element';
@@ -18,6 +24,10 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
 
   static get properties() {
     return {
+      completeSaleSuccess: {
+        type: Boolean,
+        attribute: 'complete-sale-success',
+      },
       /**
        * Barcode entered by the user to add a product to the sale.
        */
@@ -37,6 +47,14 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
       total: {
         type: Number,
       },
+      /**
+       * Reference to the success modal for completing a sale.
+       * @type {Object}
+       * @default createRef()
+       */
+      _successCompleteSaleModalRef: {
+        type: Object,
+      },
     };
   }
 
@@ -45,14 +63,26 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
    */
   constructor() {
     super();
+    this.completeSaleSuccess = false;
     this.barcode = '';
     this.productsToSell = [];
     this.total = 0;
+    this._successCompleteSaleModalRef = createRef();
   }
 
-  update(changedProperties) {
-    super.update(changedProperties);
-    // this.shadowRoot.querySelector('vaadin-text-field#barcode')?.focus();
+  /**
+   * Lifecycle callback invoked when reactive properties change.
+   * Updates error and success modal state.
+   *
+   * @param {Map} changedProperties - The properties that changed.
+   */
+  updated(changedProperties) {
+    if (
+      changedProperties.has('completeSaleSuccess') &&
+      this.completeSaleSuccess
+    ) {
+      this._successCompleteSaleModalRef.value.openModal();
+    }
   }
 
   /**
@@ -113,6 +143,26 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
     dispatchCustomEvent(this, `${SellElement.is}-delete-product-to-sell`, {
       barcode: product.barcode,
     });
+  }
+
+  /**
+   * Returns the success modal template.
+   *
+   * @returns {import('lit').TemplateResult}
+   */
+  get _tplSuccessModal() {
+    return html`
+      <modal-element
+        ${ref(this._successCompleteSaleModalRef)}
+        .data=${{
+          bodyText: 'La venta se ha completado correctamente',
+          code: 'success-complete-sale',
+          confirmButtonText: 'Aceptar',
+          titleText: '¡Venta Completada!',
+          type: 'success',
+        }}
+      ></modal-element>
+    `;
   }
 
   /**
@@ -180,6 +230,7 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
                             type="number"
                             class="quantity-input"
                             min="1"
+                            max="${product.stock}"
                             .product="${product}"
                             .value="${product.quantity}"
                             @input=${this._updateQuantity}
@@ -200,7 +251,7 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
   /**
    * Template for the barcode input section and current total.
    */
-  get _tplInputBarcode() {
+  get _tplInputDataSection() {
     return html`
       <section class="sell-data-container">
         <section class="input-container">
@@ -216,7 +267,18 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
             @keydown=${this._sendBarcode}
           ></mwc-textfield>
         </section>
-        <section class="total">Total: $${this.total.toFixed(2)}</section>
+        <section class="sale">
+          <section class="total">Total: $${this.total.toFixed(2)}</section>
+          <section class="button-complete-sale">
+            <mwc-button
+              id="complete-sale"
+              raised
+              label="Complete Sale"
+              @click=${() =>
+                dispatchCustomEvent(this, `${SellElement.is}-complete-sale`)}
+            ></mwc-button>
+          </section>
+        </section>
       </section>
     `;
   }
@@ -225,7 +287,7 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
    * Combines the input and table templates into the sell view.
    */
   get _tplSell() {
-    return html` ${this._tplInputBarcode} ${this._tplProductsTable} `;
+    return html` ${this._tplInputDataSection} ${this._tplProductsTable} `;
   }
 
   static get styles() {
@@ -236,7 +298,7 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
    * Renders the sell-element content.
    */
   render() {
-    return html` ${this._tplSell} `;
+    return html` ${this._tplSell} ${this._tplSuccessModal} `;
   }
 }
 

@@ -10,10 +10,10 @@ import {dispatchCustomEvent} from '../../utils/utils.js';
 import styles from './home.css.js';
 
 /**
- * An example element.
+ * Home page container element.
  *
- * @slot - This element has a slot
- * @csspart button - The button
+ * Renders the main product, register, and sell sections and routes
+ * navigation events inside the home view.
  */
 export class HomeElement extends ScopedElementsMixin(LitElement) {
   static get is() {
@@ -31,92 +31,99 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
   static get properties() {
     return {
       /**
-       * The name to say "Hello" to.
+       * Whether a complete sale operation completed successfully.
+       */
+      completeSaleSuccess: {
+        type: Boolean,
+        attribute: 'complete-sale-success',
+      },
+      /**
+       * Whether a delete operation completed successfully.
        */
       deleteSuccess: {
         type: Boolean,
         attribute: 'delete-success',
       },
       /**
-       * The name to say "Hello" to.
+       * Whether an edit operation completed successfully.
        */
       editSuccess: {
         type: Boolean,
         attribute: 'edit-success',
       },
       /**
-       * The name to say "Hello" to.
+       * Product selected for editing.
        */
       productToEdit: {
         type: Object,
       },
       /**
-       * The name to say "Hello" to.
+       * Products currently selected for sale.
        */
       productsToSell: {
         type: Array,
       },
       /**
-       * The name to say "Hello" to.
+       * Product registration error details.
        */
       registerError: {
         type: Object,
       },
       /**
-       * The name to say "Hello" to.
+       * Products loaded from the inventory.
        */
       registeredProducts: {
         type: Array,
       },
       /**
-       * The name to say "Hello" to.
+       * Whether the last product registration succeeded.
        */
       registerSuccess: {
         type: Boolean,
         attribute: 'register-success',
       },
       /**
-       * The name to say "Hello" to.
+       * Session user data from login.
        */
       userData: {
         type: Object,
       },
       /**
-       * The name to say "Hello" to.
+       * Current total amount for the sale list.
        */
       total: {
         type: Number,
       },
       /**
-       * Toggle to show sell section
+       * Toggle to show the sell section.
        */
       _isShowSell: {
         type: Boolean,
         state: true,
       },
       /**
-       * Toggle to show sell section
+       * Toggle to show the products section.
        */
       _isShowProducts: {
         type: Boolean,
         state: true,
       },
       /**
-       * Toggle to show register section
+       * Toggle to show the register section.
        */
       _isShowRegister: {
         type: Boolean,
         state: true,
       },
       /**
-       * Toggle to show update section
+       * Toggle to show the update section.
        */
       _isShowUpdate: {
         type: Boolean,
         state: true,
       },
       /**
-       * Toggle to show delete section
+       * Toggle to show the delete section.
        */
       _isShowDelete: {
         type: Boolean,
@@ -127,6 +134,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
 
   constructor() {
     super();
+    this.completeSaleSuccess = false;
     this.deleteSuccess = false;
     this.editSuccess = false;
     this.productToEdit = {};
@@ -141,16 +149,28 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
     this._isShowRegister = false;
   }
 
+  /**
+   * Dispatches a logout request event to the application root.
+   */
   _logout() {
     dispatchCustomEvent(this, 'home-page-logout');
   }
 
+  /**
+   * Hides all home page sections.
+   */
   _resetSections() {
     this._isShowSell = false;
     this._isShowProducts = false;
     this._isShowRegister = false;
   }
 
+  /**
+   * Shows the requested home page section based on the clicked tab.
+   *
+   * @param {Event} event - The click event from the tab.
+   * @param {HTMLElement} event.target - The clicked tab.
+   */
   _showSection({target: {id}}) {
     const sections = {
       sell: () => {
@@ -177,6 +197,10 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
     sections[id].call();
   }
 
+  /**
+   * Returns the home view template.
+   * @returns {import('lit').TemplateResult}
+   */
   get _tplHome() {
     return html`
       <header class="main-header">
@@ -188,7 +212,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
               id="products"
               @click="${this._showSection}"
             ></mwc-tab>
-            ${this.userData?.level === 'admin'
+            ${this.userData?.level === 'admin' || this.userData?.level === 'manager'
               ? html`
                   <mwc-tab
                     label="Register"
@@ -217,13 +241,22 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
     `;
   }
 
+  /**
+   * Returns the sell section template.
+   * @returns {import('lit').TemplateResult}
+   */
   get _tplSell() {
     return html`<sell-element
       .productsToSell="${this.productsToSell}"
       .total="${this.total}"
+      ?complete-sale-success="${this.completeSaleSuccess}"
     ></sell-element>`;
   }
 
+  /**
+   * Returns the products section template.
+   * @returns {import('lit').TemplateResult}
+   */
   get _tplProducts() {
     return html`<products-element
       level-user="${this.userData?.level}"
@@ -234,6 +267,10 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
     ></products-element>`;
   }
 
+  /**
+   * Returns the register section template.
+   * @returns {import('lit').TemplateResult}
+   */
   get _tplRegister() {
     return html`<register-element
       ?register-success="${this.registerSuccess}"

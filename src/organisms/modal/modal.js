@@ -6,10 +6,10 @@ import {dispatchCustomEvent} from '../../../utils/utils.js';
 import styles from './modal.css.js';
 
 /**
- * An example element.
+ * Reusable modal dialog element.
  *
- * @slot - This element has a slot
- * @csspart button - The button
+ * Renders modal content based on data passed by the parent and
+ * dispatches confirm/cancel actions.
  */
 export class ModalElement extends ScopedElementsMixin(LitElement) {
   static get is() {
@@ -56,10 +56,16 @@ export class ModalElement extends ScopedElementsMixin(LitElement) {
     this.showModal = false;
   }
 
+  /**
+   * Opens the internal HTML dialog element.
+   */
   openModal(){
     this.shadowRoot.querySelector('#dialog')?.showModal();
   }
 
+  /**
+   * Handles the confirm button click and dispatches the corresponding event.
+   */
   _confirmActionButton() {
     console.log(
       `${ModalElement.is}-confirm-action${
@@ -75,6 +81,9 @@ export class ModalElement extends ScopedElementsMixin(LitElement) {
     );
   }
 
+  /**
+   * Handles the cancel button click and dispatches the cancel action event.
+   */
   _cancelActionButton() {
     this.shadowRoot.querySelector('#dialog')?.close();
     dispatchCustomEvent(
@@ -83,6 +92,11 @@ export class ModalElement extends ScopedElementsMixin(LitElement) {
     );
   }
 
+  /**
+   * Selects modal styling and icons based on the configured modal type.
+   *
+   * @returns {Object} The display properties for the current modal type.
+   */
   _selectModalType() {
     const choices = {
       success: {
@@ -120,6 +134,11 @@ export class ModalElement extends ScopedElementsMixin(LitElement) {
     );
   }
 
+  /**
+   * Returns the template for the dialog content.
+   *
+   * @returns {import('lit').TemplateResult}
+   */
   get _tplModal() {
     return html`
       <dialog id="dialog" popover>

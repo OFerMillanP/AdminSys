@@ -1,4 +1,4 @@
-import {LitElement, html} from 'lit';
+import {LitElement, html, nothing} from 'lit';
 import {ref, createRef} from 'lit/directives/ref.js';
 import {ScopedElementsMixin} from '@open-wc/scoped-elements/html-element.js';
 
@@ -10,10 +10,10 @@ import {repeat} from 'lit/directives/repeat.js';
 import styles from './products.css.js';
 
 /**
- * An example element.
+ * Products administration page element.
  *
- * @slot - This element has a slot
- * @csspart button - The button
+ * Renders the product list, edit form, and delete confirmation modal.
+ * Dispatches edit and delete events to the parent container.
  */
 export class ProductsElement extends ScopedElementsMixin(LitElement) {
   static get is() {
@@ -27,40 +27,40 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
   static get properties() {
     return {
       /**
-       * The name to say "Hello" to.
+       * Whether the last delete operation succeeded.
        */
       deleteSuccess: {
         type: Boolean,
         attribute: 'delete-success',
       },
       /**
-       * The name to say "Hello" to.
+       * Whether the last edit operation succeeded.
        */
       editSuccess: {
         type: Boolean,
         attribute: 'edit-success',
       },
       /**
-       * The name to say "Hello" to.
+       * Current authenticated user level for permission checks.
        */
       levelUser: {
         type: String,
         attribute: 'level-user',
       },
       /**
-       * Contains list products.
+       * Product currently selected for editing.
        */
       productToEdit: {
         type: Object,
       },
       /**
-       * Contains list products.
+       * Registered products loaded from the API.
        */
       registeredProducts: {
         type: Array,
       },
       /**
-       * Contains list products.
+       * Whether the delete confirmation modal is visible.
        */
       _confirmDelete: {
         type: Boolean,
@@ -79,14 +79,14 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
         state: true,
       },
       /**
-       * Contains list products.
+       * The id of the product currently pending deletion.
        */
       _productIdToAction: {
         type: Object,
         state: true,
       },
       /**
-       * Contains list products.
+       * Whether the edit form is currently displayed.
        */
       _showEditForm: {
         type: Boolean,
@@ -111,8 +111,10 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
-   * Updated function from lifecycle
-   * @param {Object} changedProperties checked value
+   * Lit lifecycle callback invoked after reactive properties change.
+   * Used to open edit and delete modals when incoming state changes.
+   *
+   * @param {Map} changedProperties - The changed reactive properties.
    */
   updated(changedProperties) {
     super.updated(changedProperties);
@@ -127,6 +129,11 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     }
   }
 
+  /**
+   * Handles input changes for the product edit form and search field.
+   *
+   * @param {InputEvent} event - The input event.
+   */
   _handleInput({target: {id, value}}) {
     const inputs = {
       barcode: () => {
@@ -156,18 +163,31 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     inputs[id]?.call();
   }
 
+  /**
+   * Requests the selected product for editing.
+   *
+   * @param {Event} event - The click event on the edit button.
+   */
   _selectProductToEdit({target: {id}}) {
     dispatchCustomEvent(this, `${ProductsElement.is}-select-product-to-edit`, {
       id: parseInt(id),
     });
   }
 
+  /**
+   * Opens the delete confirmation modal for the selected product.
+   *
+   * @param {Event} event - The click event on the delete button.
+   */
   _deleteProduct({target: {id}}) {
     this._productIdToAction = {id};
     this._confirmDelete = true;
     this._deleteModalRef.value.openModal();
   }
 
+  /**
+   * Dispatches the event that confirms deletion of the currently selected product.
+   */
   _confirmDeleteProduct() {
     dispatchCustomEvent(
       this,
@@ -176,18 +196,24 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     );
   }
 
+  /**
+   * Closes the edit success modal and resets the edit form state.
+   */
   _closeEditSuccessModal() {
     this._showEditForm = false;
     dispatchCustomEvent(this, `${ProductsElement.is}-close-success-edit-modal`);
   }
 
+  /**
+   * Cancels edit mode and closes the edit view.
+   */
   _cancelEdit() {
     this._showEditForm = false;
     dispatchCustomEvent(this, `${ProductsElement.is}-close-success-edit-modal`);
   }
 
-  /*
-   ** Update product function, dispatch event to edit product and open success modal after update
+  /**
+   * Sends the edited product to the parent and opens the success modal.
    */
   _updateProduct() {
     dispatchCustomEvent(
@@ -198,8 +224,10 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     this._editSuccessModalRef.value.openModal();
   }
 
-  /*
-   ** Product Edit Form Template
+  /**
+   * Returns the edit form template for the selected product.
+   *
+   * @returns {import('lit').TemplateResult}
    */
   get _tplEditForm() {
     return html`
@@ -307,8 +335,10 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     `;
   }
 
-  /*
-   ** Product List Template
+  /**
+   * Returns the product list template for the registered products.
+   *
+   * @returns {import('lit').TemplateResult}
    */
   get _tplProductList() {
     return html`
@@ -351,9 +381,13 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                   <th>
                     <div class="header-table">Registered date</div>
                   </th>
-                  <th>
-                    <div class="header-table">Tools</div>
-                  </th>
+                  ${this.levelUser === 'admin' || this.levelUser === 'manager'
+                    ? html`
+                        <th>
+                          <div class="header-table">Tools</div>
+                        </th>
+                      `
+                    : nothing}
                 </tr>
               </thead>
               <tbody>
@@ -372,26 +406,34 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                       </td>
                       <td>${product.description}</td>
                       <td>${product.date}</td>
-                      <td>
-                        <div class="product-tools">
-                          <button
-                            class="edit-product"
-                            id="${product.id}"
-                            @click=${this._selectProductToEdit}
-                            popovertarget="my-dialog"
-                          >
-                            &#9998;
-                          </button>
-                          <button
-                            class="delete-product"
-                            id="${product.id}"
-                            @click=${this._deleteProduct}
-                            popovertarget="my-dialog"
-                          >
-                            ✖
-                          </button>
-                        </div>
-                      </td>
+                      ${this.levelUser === 'admin' || this.levelUser === 'manager'
+                        ? html`
+                            <td>
+                              <div class="product-tools">
+                                <button
+                                  class="edit-product"
+                                  id="${product.id}"
+                                  @click=${this._selectProductToEdit}
+                                  popovertarget="my-dialog"
+                                >
+                                  &#9998;
+                                </button>
+                                ${this.levelUser === 'admin'
+                                  ? html`
+                                      <button
+                                        class="delete-product"
+                                        id="${product.id}"
+                                        @click=${this._deleteProduct}
+                                        popovertarget="my-dialog"
+                                      >
+                                        ✖
+                                      </button>
+                                    `
+                                  : nothing}
+                              </div>
+                            </td>
+                          `
+                        : nothing}
                     </tr>`
                 )}
               </tbody>
@@ -401,6 +443,11 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     `;
   }
 
+  /**
+   * Returns the delete confirmation modal template.
+   *
+   * @returns {import('lit').TemplateResult}
+   */
   get _tplDeleteModal() {
     return html`
       <modal-element
@@ -420,6 +467,11 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     `;
   }
 
+  /**
+   * Returns the delete success modal template.
+   *
+   * @returns {import('lit').TemplateResult}
+   */
   get _tplDeleteSuccessModal() {
     return html`
       <modal-element
@@ -435,6 +487,11 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     `;
   }
 
+  /**
+   * Returns the edit success modal template.
+   *
+   * @returns {import('lit').TemplateResult}
+   */
   get _tplEditSuccessModal() {
     return html`
       <modal-element

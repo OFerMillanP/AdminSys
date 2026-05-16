@@ -9,10 +9,9 @@ import {dispatchCustomEvent} from '../../../utils/utils.js';
 import styles from './register.css.js';
 
 /**
- * An example element.
+ * Product registration page element.
  *
- * @slot - This element has a slot
- * @csspart button - The button
+ * Manages form state, validation, and registration events for new products.
  */
 export class RegisterElement extends ScopedElementsMixin(LitElement) {
   static get is() {
@@ -187,7 +186,7 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
   /**
    * Handles input updates for all form fields.
    *
-   * @param {Event} event - The input event.
+   * @param {InputEvent} event - The input event.
    */
   _handleInput({target: {id, value}}) {
     const inputs = {
@@ -241,7 +240,7 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
-   * Validates the registration form and dispatches the register event.
+   * Registers the product with the provided details.
    */
   _registerProduct() {
     this._showErrorMessage =
