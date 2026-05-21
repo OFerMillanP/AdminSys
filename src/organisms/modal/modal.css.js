@@ -26,12 +26,19 @@ export default css`
     cursor: pointer;
   }
 
-  .accept-modal-button:hover {
-    background-color: #256aff;
+  mwc-button.logout {
+    --mdc-theme-primary: #9c3535;
+    --mdc-theme-on-primary: #fff;
   }
 
-  .cancel-modal-button:hover {
-    background-color: #af1313;
+  mwc-button#confirm-button {
+    --mdc-theme-primary: #256aff;
+    --mdc-theme-on-primary: #fff;
+  }
+
+  mwc-button#cancel-button {
+    --mdc-theme-primary: #af1313;
+    --mdc-theme-on-primary: #fff;
   }
 
   .accept-modal-button-warning:hover {

@@ -95,7 +95,6 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
   firstUpdated() {
     super.firstUpdated();
     this._sessionActive();
-    this.getProductList();
   }
 
   /**
@@ -360,18 +359,22 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
   /**
    * Completes the current sale by sending the selected products to the API.
    */
-  completeSale() {
-    const sale = {
-      products: this._productsToSell,
-      total: this._getTotal(),
-      date: getCurrentDate(),
+  completeSale(changeToGive, paymentMethod) {
+    if (this._productsToSell.length > 0) {
+      const sale = {
+        products: this._productsToSell,
+        total: this._getTotal(),
+        date: getCurrentDate(),
+        changeToGive,
+        paymentMethod,
+      };
+      this._getDataManager().fetch(
+        'POST',
+        'api/v0/sales',
+        'dm-register-sale',
+        sale
+      );
     }
-    this._getDataManager().fetch(
-      'POST',
-      'api/v0/sales',
-      'dm-register-sale',
-      this._productsToSell
-    );
   }
 
   _registerSaleSuccessResponse({detail}) {
@@ -440,7 +443,8 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
         @api-dm-get-product-success-response=${this._getProductSuccessResponse}
         @api-dm-get-products-success-response=${this
           ._getProductsSuccessResponse}
-        @api-dm-register-sale-success-response=${this._registerSaleSuccessResponse}
+        @api-dm-register-sale-success-response=${this
+          ._registerSaleSuccessResponse}
       ></api-manager-element>
     `;
   }

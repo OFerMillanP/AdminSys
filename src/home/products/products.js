@@ -460,6 +460,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
           confirmButtonText: 'Eliminar',
           titleText: '¿Desea eliminar este producto?',
           type: 'warning',
+          isEnableConfirmButton: true,
         }}
         @modal-element-confirm-action-confirm-delete=${this
           ._confirmDeleteProduct}
@@ -482,6 +483,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
           confirmButtonText: 'Aceptar',
           titleText: '¡Producto Eliminado!',
           type: 'success',
+          isEnableConfirmButton: true,
         }}
       ></modal-element>
     `;
@@ -502,6 +504,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
           confirmButtonText: 'Aceptar',
           titleText: '¡Producto Actualizado!',
           type: 'success',
+          isEnableConfirmButton: true,
         }}
         @modal-element-confirm-action-success-update=${this
           ._closeEditSuccessModal}

@@ -1,12 +1,17 @@
-import {LitElement, html} from 'lit';
+import {LitElement, html, nothing} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
 import {ref, createRef} from 'lit/directives/ref.js';
 import {ScopedElementsMixin} from '@open-wc/scoped-elements/html-element.js';
 
-import {dispatchCustomEvent} from '../../../utils/utils.js';
+import {
+  dispatchCustomEvent,
+  ticketTplToPrint,
+  getCurrentDate,
+} from '../../../utils/utils.js';
 
 import styles from './sell.css.js';
 import {map} from 'lit/directives/map.js';
+import {state} from 'lit/decorators.js';
 
 /**
  * Sales page element.
@@ -48,12 +53,56 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
         type: Number,
       },
       /**
+       * Change to give to the customer after completing the sale.
+       */
+      _changeToGive: {
+        type: Number,
+        state: true,
+      },
+      /**
+       * Reference to the success modal for confirm to completing a sale
+       * @type {Object}
+       * @default createRef()
+       */
+      _confirmCompleteSaleModalRef: {
+        type: Object,
+        state: true,
+      },
+      /**
+       * Flag to enable the confirm button in the complete sale confirmation modal.
+       * @type {Boolean}
+       * @default false
+       */
+      _enableCompleteSale: {
+        type: Boolean,
+        state: true,
+      },
+      /**
+       * Flag to show the cash input field when the user selects cash as the payment method.
+       * @type {Boolean}
+       * @default false
+       */
+      _showInputForCash: {
+        type: Boolean,
+        state: true,
+      },
+      /**
+       * Flag to show the ticket after completing the sale.
+       * @type {Boolean}
+       * @default false
+       */
+      _showTicket: {
+        type: Boolean,
+        state: true,
+      },
+      /**
        * Reference to the success modal for completing a sale.
        * @type {Object}
        * @default createRef()
        */
       _successCompleteSaleModalRef: {
         type: Object,
+        state: true,
       },
     };
   }
@@ -67,6 +116,11 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
     this.barcode = '';
     this.productsToSell = [];
     this.total = 0;
+    this._changeToGive = 0;
+    this._confirmCompleteSaleModalRef = createRef();
+    this._enableCompleteSale = false;
+    this._showInputForCash = false;
+    this._showTicket = false;
     this._successCompleteSaleModalRef = createRef();
   }
 
@@ -145,6 +199,113 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
     });
   }
 
+  _confirmCompleteSale() {
+    if (this._showInputForCash) {
+      this.shadowRoot.querySelector('#payment-cash-input').value = '';
+    }
+    dispatchCustomEvent(this, `${SellElement.is}-complete-sale`,{
+      changeToGive: this._changeToGive,
+      paymentMethod: this._showInputForCash ? 'cash' : 'card',
+    });
+    this._changeToGive = 0;
+  }
+
+  _selectPaymentMethod({target: {id}}) {
+    const paymentMethod = {
+      'payment-card': () => {
+        this._showInputForCash = false;
+        this._enableCompleteSale = true;
+      },
+      'payment-cash': () => {
+        this._showInputForCash = true;
+        this._enableCompleteSale = false;
+      },
+    };
+    paymentMethod[id]?.call();
+  }
+
+  _getChangeForCashPayment({target: {value}}) {
+    const change = parseFloat(value !== '' ? value : 0) - this.total;
+    console.log(change);
+    if (change >= 0) {
+      this._changeToGive = change;
+      this._enableCompleteSale = true;
+    } else {
+      this._changeToGive = 0;
+      this._enableCompleteSale = false;
+    }
+  }
+
+  _printTicket() {
+    dispatchCustomEvent(this, `${SellElement.is}-print-ticket`);
+  }
+
+  get _tplConfirmCompleteSaleModal() {
+    return html`
+      <modal-element
+        id="data-ticket-modal"
+        ${ref(this._confirmCompleteSaleModalRef)}
+        .data=${{
+          bodyText: 'Would you like to complete the sale?',
+          code: 'confirm-complete-sale',
+          confirmButtonText: 'Yes, complete',
+          cancelButtonText: 'No, cancel',
+          titleText: 'Confirm Sale',
+          type: 'info',
+          isEnableConfirmButton: this._enableCompleteSale,
+        }}
+        @modal-element-confirm-action-confirm-complete-sale="${this
+          ._confirmCompleteSale}"
+      >
+        <section slot="content-data" class="confirm-sale-data">
+          <div class="confirm-sale-data-row">
+            <b>
+              <span class="confirm-sale-data-label">Total a pagar:</span>
+              <span class="confirm-sale-data-value"
+                >$${this.total.toFixed(2)}</span
+              >
+            </b>
+          </div>
+          <section class="confirm-sale-payment-methods">
+            <p class="confirm-sale-data-label"><b>Método de pago:</b></p>
+            <mwc-formfield label="Tarjeta de crédito/débito">
+              <mwc-radio
+                name="payment-method"
+                id="payment-card"
+                @change="${this._selectPaymentMethod}"
+              ></mwc-radio>
+            </mwc-formfield>
+            <mwc-formfield label="Efectivo">
+              <mwc-radio
+                name="payment-method"
+                id="payment-cash"
+                @change="${this._selectPaymentMethod}"
+              ></mwc-radio>
+            </mwc-formfield>
+            ${this._showInputForCash
+              ? html`
+                  <div class="confirm-sale-cash-input">
+                    <mwc-textfield
+                      id="payment-cash-input"
+                      label="Monto recibido"
+                      type="number"
+                      min="${this.total.toFixed(2)}"
+                      step="0.50"
+                      value=""
+                      @input="${this._getChangeForCashPayment}"
+                    ></mwc-textfield>
+                    <p class="confirm-sale-change">
+                      <b>Cambio: $${this._changeToGive.toFixed(2)}</b>
+                    </p>
+                  </div>
+                `
+              : nothing}
+          </section>
+        </section>
+      </modal-element>
+    `;
+  }
+
   /**
    * Returns the success modal template.
    *
@@ -155,13 +316,22 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
       <modal-element
         ${ref(this._successCompleteSaleModalRef)}
         .data=${{
-          bodyText: 'La venta se ha completado correctamente',
+          bodyText: 'The sale has been completed successfully.',
           code: 'success-complete-sale',
-          confirmButtonText: 'Aceptar',
-          titleText: '¡Venta Completada!',
+          confirmButtonText: 'Accept',
+          titleText: 'Sale Completed!',
           type: 'success',
+          isEnableConfirmButton: true,
         }}
-      ></modal-element>
+      >
+        <section slot="content-data" class="confirm-sale-data">
+          <mwc-button
+            id="print-ticket-button"
+            label="Print Ticket"
+            @click="${this._printTicket}"
+          ></mwc-button>
+        </section>
+      </modal-element>
     `;
   }
 
@@ -274,8 +444,10 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
               id="complete-sale"
               raised
               label="Complete Sale"
-              @click=${() =>
-                dispatchCustomEvent(this, `${SellElement.is}-complete-sale`)}
+              ?disabled=${!this.productsToSell?.length}
+              @click="${() => {
+                this._confirmCompleteSaleModalRef.value.openModal();
+              }}"
             ></mwc-button>
           </section>
         </section>
@@ -298,7 +470,10 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
    * Renders the sell-element content.
    */
   render() {
-    return html` ${this._tplSell} ${this._tplSuccessModal} `;
+    return html`
+      ${this._tplSell} ${this._tplSuccessModal}
+      ${this._tplConfirmCompleteSaleModal}
+    `;
   }
 }
 

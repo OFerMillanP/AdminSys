@@ -52,6 +52,7 @@ export class ModalElement extends ScopedElementsMixin(LitElement) {
       confirmButtonText: '',
       titleText: '',
       type: '',
+      isEnableConfirmButton: false,
     };
     this.showModal = false;
   }
@@ -148,21 +149,23 @@ export class ModalElement extends ScopedElementsMixin(LitElement) {
           </div>
           <h2>${this.data.titleText}</h2>
           <p>${this.data.bodyText}</p>
+          <slot name="content-data"></slot>
           <div class="button-container">
             ${this.data.confirmButtonText?.length
-              ? html`<button
+              ? html`<mwc-button
                   id="confirm-button"
-                  class=${this._selectModalType().type === 'warning'
+                  ?disabled=${!this.data.isEnableConfirmButton}
+                  class="${this._selectModalType().type === 'warning'
                     ? 'accept-modal-button-warning'
-                    : 'accept-modal-button'}
+                    : 'accept-modal-button'}"
                   @click=${this._confirmActionButton}
                 >
                   ${this.data.confirmButtonText}
-                </button>`
+                </mwc-button>`
               : nothing}
             ${this.data.cancelButtonText?.length
               ? html`
-                  <button
+                  <mwc-button
                     id="cancel-button"
                     class="${this._selectModalType().type === 'warning'
                       ? 'cancel-modal-button-warning'
@@ -170,7 +173,7 @@ export class ModalElement extends ScopedElementsMixin(LitElement) {
                     @click=${this._cancelActionButton}
                   >
                     ${this.data.cancelButtonText}
-                  </button>
+                  </mwc-button>
                 `
               : nothing}
           </div>

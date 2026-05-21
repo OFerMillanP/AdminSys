@@ -5,16 +5,19 @@ import {LoginElement} from './login/login.js';
 import {HomeElement} from './home/home.js';
 import {ManagerElement} from './dm/manager.js';
 
-import '@material/mwc-textfield/mwc-textfield.js';
-import '@material/mwc-textarea/mwc-textarea.js';
 import '@material/mwc-button/mwc-button.js';
-import '@material/mwc-icon/mwc-icon.js';
+import '@material/mwc-formfield/mwc-formfield.js';
 import '@material/mwc-icon-button/mwc-icon-button.js';
+import '@material/mwc-icon/mwc-icon.js';
+import '@material/mwc-radio/mwc-radio.js';
 import '@material/mwc-tab-bar/mwc-tab-bar.js';
 import '@material/mwc-tab/mwc-tab.js';
-import '@material/mwc-formfield/mwc-formfield.js';
+import '@material/mwc-textarea/mwc-textarea.js';
+import '@material/mwc-textfield/mwc-textfield.js';
 
 import styles from './main.css.js';
+
+import {ticketTplToPrint, getCurrentDate} from '../../../utils/utils.js';
 
 /**
  * Main application root element.
@@ -41,7 +44,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
        * Whether the user is logged in.
        */
       _completeSaleSuccess: {
-        type: Boolean,
+        type: Object,
         state: true,
       },
       /**
@@ -122,6 +125,13 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         state: true,
       },
       /**
+       * Whether to show the sale completion ticket.
+       */
+      _showTicket: {
+        type: Boolean,
+        state: true,
+      },
+      /**
        * Total amount calculated for the current sale.
        */
       _total: {
@@ -140,7 +150,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
 
   constructor() {
     super();
-    this._completeSaleSuccess = false;
+    this._completeSaleSuccess = {};
     this._deleteProductSuccess = false;
     this._editProductSuccess = false;
     this._isLogged = false;
@@ -152,6 +162,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._productsToSell = [];
     this._registerError = {};
     this._registerProductSuccess = false;
+    this._showTicket = false;
     this._total = 0;
     this._userData = {};
   }
@@ -177,6 +188,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._userData.level = detail.level;
     this._userData.name = detail.name;
     this._isLogged = !!Object.keys(detail).length && !!detail.level;
+    this._getDataManager().getProductList();
   }
 
   /**
@@ -190,6 +202,9 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._userData.level = detail.level;
     this._userData.name = detail.name;
     this._isLogged = !!Object.keys(detail).length;
+    if (this._isLogged) {
+      this._getDataManager().getProductList();
+    }
   }
 
   /**
@@ -334,8 +349,8 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
   /**
    * Triggers the manager to complete the current sale.
    */
-  _completeSale() {
-    this._getDataManager().completeSale();
+  _completeSale({detail: {changeToGive, paymentMethod}}) {
+    this._getDataManager().completeSale(changeToGive, paymentMethod);
   }
 
   /**
@@ -413,13 +428,126 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
    * @param {Object} event.detail - The sale response payload.
    */
   _registerSaleSuccessResponse({detail}) {
-    this._completeSaleSuccess = !!detail;
+    this._completeSaleSuccess = detail;
   }
 
   _closeCompleteSaleSuccessModal() {
-    this._completeSaleSuccess = false;
+    this._completeSaleSuccess = {};
     this._productsToSell = [];
     this._total = 0;
+  }
+
+  _printTicket() {
+    this._showTicket = true;
+    var contenidoOriginal = document.body.innerHTML;
+    setTimeout(() => {
+      // Extrae el HTML del div que quieres imprimir
+      var contenidoImprimir = this.shadowRoot.querySelector(
+        'div.ticket-container'
+      ).outerHTML;
+      // Reemplaza el body de la página solo con el contenido a imprimir
+      document.body.innerHTML = ticketTplToPrint(contenidoImprimir);
+      // Llama a la función de impresión
+      window.print();
+      // Restaura el contenido original de la página
+      document.body.innerHTML = contenidoOriginal;
+    }, 200);
+  }
+
+  get _tplTicket() {
+    return html`
+      <div class="ticket-container">
+        <!-- Header -->
+        <div class="ticket-header">
+          <div class="store-name">🛍️ Anel Store</div>
+          <div class="store-info">
+            Dirección: Av. Ing. Jorge Luque Loyola 71, CP. 57500, Nezahualcoyotl
+            Edo Mex<br />
+            Tel: +52 55 70609743<br />
+            Horario: Lun-Dom 9:00-21:00
+          </div>
+          <div class="ticket-number">
+            Ticket #${this._completeSaleSuccess.id}<br />
+            Fecha: ${getCurrentDate()}
+          </div>
+        </div>
+
+        <!-- Items -->
+        <div class="ticket-items">
+          ${this._completeSaleSuccess.products.map(
+            (item) => html`
+              <div class="item">
+                <div class="item-name">
+                  <b>${item.name}</b>
+                </div>
+                <div class="item-qty">${item.quantity}</div>
+                <div class="item-price">
+                  $${(item.price * item.quantity).toFixed(2)}
+                </div>
+              </div>
+              <div class="item-desc">
+                Precio unitario: $${item.price.toFixed(2)} c/u
+              </div>
+            `
+          )}
+        </div>
+
+        <!-- Totals -->
+        <div class="totals">
+          <div class="total-row subtotal">
+            <span>Subtotal:</span>
+            <span>$${(this._completeSaleSuccess.total * 0.84).toFixed(2)}</span>
+          </div>
+          <div class="total-row tax">
+            <span>IVA (16%):</span>
+            <span>$${(this._completeSaleSuccess.total * 0.16).toFixed(2)}</span>
+          </div>
+          <div class="total-row total">
+            <span>TOTAL:</span>
+            <span>$${this._completeSaleSuccess.total.toFixed(2)}</span>
+          </div>
+          ${this._completeSaleSuccess.paymentMethod === 'cash'
+            ? html`
+                <div class="total-row total">
+                  <span>Pago:</span>
+                  <span>
+                    $${(
+                      parseFloat(this._completeSaleSuccess.total) +
+                      parseFloat(this._completeSaleSuccess.changeToGive)
+                    ).toFixed(2)}
+                  </span>
+                </div>
+                <div class="total-row total">
+                  <span>Cambio:</span>
+                  <span>
+                    $${this._completeSaleSuccess.changeToGive.toFixed(2)}
+                  </span>
+                </div>
+              `
+            : nothing}
+        </div>
+
+        <!-- Payment Method -->
+        <div class="payment-method">
+          <b>
+            Método de pago:
+            ${this._completeSaleSuccess.paymentMethod === 'card'
+              ? 'Tarjeta Crédito'
+              : 'Efectivo'}<br />
+          </b>
+        </div>
+
+        <!-- Footer -->
+        <div class="ticket-footer">
+          <div class="footer-message">
+            ¡Gracias por su compra!<br />
+            Conserve este ticket como comprobante<br />
+            <br />
+            Operador: ${this._userData.name}
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   /**
@@ -444,7 +572,8 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
   get _tplHome() {
     return html`
       <home-element
-        ?complete-sale-success=${this._completeSaleSuccess}
+        ?complete-sale-success="${Object.keys(this._completeSaleSuccess)
+          .length > 0}"
         ?delete-success=${this._deleteProductSuccess}
         ?edit-success=${this._editProductSuccess}
         ?register-success=${this._registerProductSuccess}
@@ -469,6 +598,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         @sell-element-delete-product-to-sell="${this._deleteProductToSell}"
         @sell-element-get-product-to-sell="${this._searchProductToSell}"
         @sell-element-update-product-to-sell="${this._updateProductToSell}"
+        @sell-element-print-ticket="${this._printTicket}"
       ></home-element>
     `;
   }
@@ -513,8 +643,10 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
    */
   render() {
     return html`
-      ${!this._isLogged ? this._tplLogin : nothing}
-      ${this._isLogged ? this._tplHome : nothing} ${this._tplManager}
+      ${this._showTicket
+        ? this._tplTicket
+        : html`${!this._isLogged ? this._tplLogin : nothing}
+          ${this._isLogged ? this._tplHome : nothing} ${this._tplManager}`}
     `;
   }
 }

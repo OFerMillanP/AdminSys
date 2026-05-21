@@ -274,6 +274,7 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
           confirmButtonText: 'Aceptar',
           titleText: '¡Producto Registrado!',
           type: 'success',
+          isEnableConfirmButton: true,
         }}
         @modal-element-cancel-action=${this._closeSuccessModal}
         @modal-element-confirm-action-success-register=${this
@@ -298,6 +299,7 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
           confirmButtonText: 'Aceptar',
           titleText: '¡Error!',
           type: 'error',
+          isEnableConfirmButton: true,
         }}
         @modal-element-confirm-action-error-register=${this._closeErrorModal}
       ></modal-element>

@@ -148,6 +148,8 @@ let productsToSend = [];
  */
 let newProduct = products.length;
 
+let newSale = sales.length;
+
 /**
  * Devuelve la fecha y hora actual en formato `DD/MM/YYYY - HH:MM:SS`.
  * @returns {string} Fecha y hora formateada.
@@ -343,15 +345,17 @@ api.delete('/', function (req, res) {
  */
 api.post('/api/v0/sales', function (req, res) {
   const sale = req.body;
-  sales.push(sale);
+  sale.id = newSale + 1;
+  newSale += 1;
   products.map((product) => {
-    const productInSale = sale.find(
+    const productInSale = sale.products.find(
       (productSale) => productSale.barcode === product.barcode
     );
     if (productInSale) {
       product.stock -= productInSale.quantity;
     }
   });
+  sales.push(sale);
   res.status(200).json(sale);
 });
 
