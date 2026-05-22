@@ -163,7 +163,7 @@ function getCurrentDate() {
   }/${date.getFullYear()}`;
   const hora = `${date.getHours()}:${
     date.getMinutes() < 10 ? `0${date.getMinutes()}` : date.getMinutes()
-  }:${date.getSeconds()}`;
+  }:${date.getSeconds() < 10 ? `0${date.getSeconds()}` : date.getSeconds()}`;
   return `${fecha} - ${hora}`;
 }
 
@@ -357,6 +357,17 @@ api.post('/api/v0/sales', function (req, res) {
   });
   sales.push(sale);
   res.status(200).json(sale);
+});
+
+/**
+ * Devuelve la lista de ventas registradas.
+ * @route GET /api/v0/sales
+ * @returns {Object[]} Lista de ventas
+ */
+api.get('/api/v0/sales', function (req, res) {
+  salesToShow = Array.from(sales);
+  salesToShow.reverse();
+  res.status(200).json(salesToShow);
 });
 
 /**

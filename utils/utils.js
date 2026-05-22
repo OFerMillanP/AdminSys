@@ -36,7 +36,7 @@ export function getCurrentDate() {
   }/${date.getFullYear()}`;
   const hora = `${date.getHours()}:${
     date.getMinutes() < 10 ? `0${date.getMinutes()}` : date.getMinutes()
-  }:${date.getSeconds()}`;
+  }:${date.getSeconds() < 10 ? `0${date.getSeconds()}` : date.getSeconds()}`;
   return `${fecha} - ${hora}`;
 }
 

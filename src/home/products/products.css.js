@@ -260,4 +260,16 @@ export default css`
       transition: 0.5s;
     }
   }
+
+  @media (max-width: 760px) {
+    .input-container {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .input-container input {
+      width: 100%;
+      margin: 0.5rem 0;
+    }
+  }
 `;

@@ -4,10 +4,12 @@ import {ScopedElementsMixin} from '@open-wc/scoped-elements/html-element.js';
 import {SellElement} from './sell/sell.js';
 import {ProductsElement} from './products/products.js';
 import {RegisterElement} from './register/register.js';
+import {SalesElement} from './sales/sales.js';
 
 import {dispatchCustomEvent} from '../../utils/utils.js';
 
 import styles from './home.css.js';
+import { state } from 'lit/decorators.js';
 
 /**
  * Home page container element.
@@ -25,6 +27,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
       'sell-element': SellElement,
       'products-element': ProductsElement,
       'register-element': RegisterElement,
+      'sales-element': SalesElement,
     };
   }
 
@@ -95,6 +98,12 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
         type: Number,
       },
       /**
+       * List of completed sales transactions.
+       */
+      sales: {
+        type: Array,
+      },
+      /**
        * Toggle to show the sell section.
        */
       _isShowSell: {
@@ -116,16 +125,9 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
         state: true,
       },
       /**
-       * Toggle to show the update section.
-       */
-      _isShowUpdate: {
-        type: Boolean,
-        state: true,
-      },
-      /**
        * Toggle to show the delete section.
        */
-      _isShowDelete: {
+      _isShowSales: {
         type: Boolean,
         state: true,
       },
@@ -144,9 +146,34 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
     this.registeredProducts = [];
     this.userData = {};
     this.total = 0;
-    this._isShowSell = true;
+    this.sales = [];
+    this._activeIndex = 0;
     this._isShowProducts = false;
     this._isShowRegister = false;
+    this._isShowSales = false;
+    this._isShowSell = false;
+  }
+
+  firstUpdated() {
+    super.firstUpdated();
+    const sections = {
+      admin: () => {
+        this._resetSections();
+        this._isShowProducts = true;
+        this._activeIndex = 0;
+      },
+      manager: () => {
+        this._resetSections();
+        this._isShowProducts = true;
+        this._activeIndex = 0;
+      },
+      general: () => {
+        this._resetSections();
+        this._isShowSell = true;
+        this._activeIndex = 1;
+      },
+    };
+    sections[this.userData?.level]?.call();
   }
 
   /**
@@ -163,6 +190,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
     this._isShowSell = false;
     this._isShowProducts = false;
     this._isShowRegister = false;
+    this._isShowSales = false;
   }
 
   /**
@@ -173,25 +201,26 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
    */
   _showSection({target: {id}}) {
     const sections = {
-      sell: () => {
-        this._resetSections();
-        this._isShowSell = true;
-      },
       products: () => {
         this._resetSections();
         this._isShowProducts = true;
+        this._activeIndex = 0;
       },
       register: () => {
         this._resetSections();
         this._isShowRegister = true;
+        this._activeIndex = 1;
       },
-      update: () => {
+      sell: () => {
         this._resetSections();
-        this._isShowUpdate = true;
+        this._isShowSell = true;
+        this._activeIndex = 2;
       },
-      delete: () => {
+      sales: () => {
         this._resetSections();
-        this._isShowDelete = true;
+        this._isShowSales = true;
+        this._activeIndex = 3;
+        dispatchCustomEvent(this, `${HomeElement.is}-get-sales`);
       },
     };
     sections[id].call();
@@ -206,7 +235,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
       <header class="main-header">
         <div class="name-header">Welcome ${this.userData?.name}</div>
         <nav class="navbar">
-          <mwc-tab-bar activeIndex="2">
+          <mwc-tab-bar activeIndex="${this._activeIndex}">
             <mwc-tab
               label="Products"
               id="products"
@@ -226,6 +255,11 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
               id="sell"
               @click="${this._showSection}"
             ></mwc-tab>
+            <mwc-tab
+              label="Sales"
+              id="sales"
+              @click="${this._showSection}"
+            ></mwc-tab>
           </mwc-tab-bar>
         </nav>
         <mwc-button
@@ -238,6 +272,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
       ${this._isShowSell ? this._tplSell : nothing}
       ${this._isShowProducts ? this._tplProducts : nothing}
       ${this._isShowRegister ? this._tplRegister : nothing}
+      ${this._isShowSales ? this._tplSales : nothing}
     `;
   }
 
@@ -251,6 +286,18 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
       .total="${this.total}"
       ?complete-sale-success="${this.completeSaleSuccess}"
     ></sell-element>`;
+  }
+
+  /**
+   * Returns the sales section template.
+   * @returns {import('lit').TemplateResult}
+   */
+  get _tplSales() {
+    return html`<sales-element
+      .sales="${this.sales}"
+      .total="${this.total}"
+      ?complete-sale-success="${this.completeSaleSuccess}"
+    ></sales-element>`;
   }
 
   /**

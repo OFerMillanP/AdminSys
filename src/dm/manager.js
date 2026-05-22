@@ -244,6 +244,10 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     );
   }
 
+  async getSales() {
+    await this._getDataManager().fetch('GET', 'api/v0/sales', 'dm-get-sales');
+  }
+
   /**
    * Handles a successful product retrieval and dispatches the event.
    *
@@ -380,6 +384,7 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
   _registerSaleSuccessResponse({detail}) {
     this._productsToSell = [];
     this.getProductList();
+    this.getSales();
     dispatchCustomEvent(this, 'dm-register-sale-success-response', detail);
   }
 

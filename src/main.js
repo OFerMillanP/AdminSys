@@ -1,4 +1,5 @@
 import {LitElement, html, nothing} from 'lit';
+import {ref, createRef} from 'lit/directives/ref.js';
 import {ScopedElementsMixin} from '@open-wc/scoped-elements/html-element.js';
 
 import {LoginElement} from './login/login.js';
@@ -17,7 +18,7 @@ import '@material/mwc-textfield/mwc-textfield.js';
 
 import styles from './main.css.js';
 
-import {ticketTplToPrint, getCurrentDate} from '../../../utils/utils.js';
+import {ticketTplToPrint, getCurrentDate} from '../utils/utils.js';
 
 /**
  * Main application root element.
@@ -73,6 +74,13 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
        */
       _loginErrorCode: {
         type: String,
+        state: true,
+      },
+      /**
+       * Reference to the manager element for API communication.
+       */
+      _managerRef: {
+        type: Object,
         state: true,
       },
       /**
@@ -132,6 +140,13 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         state: true,
       },
       /**
+       * List of completed sales transactions.
+       */
+      _sales: {
+        type: Array,
+        state: true,
+      },
+      /**
        * Total amount calculated for the current sale.
        */
       _total: {
@@ -155,6 +170,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._editProductSuccess = false;
     this._isLogged = false;
     this._loginErrorCode = '';
+    this._managerRef = createRef();
     this._productToEdit = {};
     this._productToSearch = {};
     this._productToSell = '';
@@ -163,6 +179,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._registerError = {};
     this._registerProductSuccess = false;
     this._showTicket = false;
+    this._sales = [];
     this._total = 0;
     this._userData = {};
   }
@@ -174,7 +191,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
    * @param {Object} event.detail - The login payload.
    */
   _requestLoginToApi({detail}) {
-    this._getDataManager().login(detail);
+    this._managerRef.value.login(detail);
   }
 
   /**
@@ -188,7 +205,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._userData.level = detail.level;
     this._userData.name = detail.name;
     this._isLogged = !!Object.keys(detail).length && !!detail.level;
-    this._getDataManager().getProductList();
+    this._managerRef.value.getProductList();
   }
 
   /**
@@ -203,7 +220,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._userData.name = detail.name;
     this._isLogged = !!Object.keys(detail).length;
     if (this._isLogged) {
-      this._getDataManager().getProductList();
+      this._managerRef.value.getProductList();
     }
   }
 
@@ -222,21 +239,12 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
-   * Returns the nested manager-element from shadow DOM.
-   *
-   * @return {ManagerElement} The manager element instance.
-   */
-  _getDataManager() {
-    return this.shadowRoot.querySelector('manager-element');
-  }
-
-  /**
    * Logs out the current user and clears session state.
    */
   _logout() {
     this._loginErrorCode = '';
     this._isLogged = false;
-    this._getDataManager().logout();
+    this._managerRef.value.logout();
   }
 
   /**
@@ -246,7 +254,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
    * @param {Object} event.detail - The product to register.
    */
   _registerProduct({detail}) {
-    this._getDataManager().createProduct(detail);
+    this._managerRef.value.createProduct(detail);
   }
 
   /**
@@ -258,7 +266,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
    */
   _registerProductSuccessResponse({detail}) {
     this._registerProductSuccess = !!Object.keys(detail).length;
-    this._getDataManager().getProductList();
+    this._managerRef.value.getProductList();
   }
 
   /**
@@ -320,7 +328,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
    */
   _searchProductToSell({detail: {barcode}}) {
     this._productToSell = barcode;
-    this._getDataManager().getProductToSell(barcode);
+    this._managerRef.value.getProductToSell(barcode);
   }
 
   /**
@@ -331,7 +339,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
    * @param {string} event.detail.barcode - The barcode to remove.
    */
   _deleteProductToSell({detail: {barcode}}) {
-    this._getDataManager().deleteProductToSell(barcode);
+    this._managerRef.value.deleteProductToSell(barcode);
   }
 
   /**
@@ -343,14 +351,14 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
    * @param {number} event.detail.change - The quantity change to apply.
    */
   _updateProductToSell({detail: {barcode, change}}) {
-    this._getDataManager().updateProductToSell(barcode, change);
+    this._managerRef.value.updateProductToSell(barcode, change);
   }
 
   /**
    * Triggers the manager to complete the current sale.
    */
   _completeSale({detail: {changeToGive, paymentMethod}}) {
-    this._getDataManager().completeSale(changeToGive, paymentMethod);
+    this._managerRef.value.completeSale(changeToGive, paymentMethod);
   }
 
   /**
@@ -360,7 +368,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
    * @param {Object} event.detail - The event payload.
    */
   _deleteProduct({detail}) {
-    this._getDataManager().deleteProduct(detail);
+    this._managerRef.value.deleteProduct(detail);
   }
 
   /**
@@ -370,7 +378,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
    * @param {Object} event.detail - The selected product identifier.
    */
   _selectProductToEdit({detail}) {
-    this._getDataManager().getProductById(detail);
+    this._managerRef.value.getProductById(detail);
   }
 
   /**
@@ -390,7 +398,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
    * @param {Object} event.detail - The edited product data.
    */
   _editProduct({detail}) {
-    this._getDataManager().editProduct(detail);
+    this._managerRef.value.editProduct(detail);
   }
 
   /**
@@ -437,16 +445,13 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._total = 0;
   }
 
-  _printTicket() {
+  _printTicket({detail}) {
+    let sales = detail === true ? this._completeSaleSuccess : detail;
     this._showTicket = true;
     var contenidoOriginal = document.body.innerHTML;
     setTimeout(() => {
-      // Extrae el HTML del div que quieres imprimir
-      var contenidoImprimir = this.shadowRoot.querySelector(
-        'div.ticket-container'
-      ).outerHTML;
       // Reemplaza el body de la página solo con el contenido a imprimir
-      document.body.innerHTML = ticketTplToPrint(contenidoImprimir);
+      document.body.innerHTML = ticketTplToPrint(this._tplTicket(sales));
       // Llama a la función de impresión
       window.print();
       // Restaura el contenido original de la página
@@ -454,8 +459,18 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     }, 200);
   }
 
-  get _tplTicket() {
-    return html`
+  _getSales() {
+    if (!this._sales?.length) {
+      this._managerRef.value.getSales();
+    }
+  }
+
+  _getSalesSuccessResponse({detail}) {
+    this._sales = detail;
+  }
+
+  _tplTicket(sales) {
+    return `
       <div class="ticket-container">
         <!-- Header -->
         <div class="ticket-header">
@@ -467,61 +482,56 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
             Horario: Lun-Dom 9:00-21:00
           </div>
           <div class="ticket-number">
-            Ticket #${this._completeSaleSuccess.id}<br />
+            Ticket #${sales.id}<br />
             Fecha: ${getCurrentDate()}
           </div>
         </div>
 
         <!-- Items -->
         <div class="ticket-items">
-          ${this._completeSaleSuccess.products.map(
-            (item) => html`
-              <div class="item">
+          ${sales.products.map(
+            (product) => `<div class="item">
                 <div class="item-name">
-                  <b>${item.name}</b>
+                  <b>${product.name}</b>
                 </div>
-                <div class="item-qty">${item.quantity}</div>
+                <div class="item-qty">${product.quantity}</div>
                 <div class="item-price">
-                  $${(item.price * item.quantity).toFixed(2)}
+                  $${(product.price * product.quantity).toFixed(2)}
                 </div>
               </div>
               <div class="item-desc">
-                Precio unitario: $${item.price.toFixed(2)} c/u
-              </div>
-            `
-          )}
+                Precio unitario: $${product.price.toFixed(2)} c/u
+              </div>`
+          ).join('')}
         </div>
 
         <!-- Totals -->
         <div class="totals">
           <div class="total-row subtotal">
             <span>Subtotal:</span>
-            <span>$${(this._completeSaleSuccess.total * 0.84).toFixed(2)}</span>
+            <span>$${(sales.total * 0.84).toFixed(2)}</span>
           </div>
           <div class="total-row tax">
             <span>IVA (16%):</span>
-            <span>$${(this._completeSaleSuccess.total * 0.16).toFixed(2)}</span>
+            <span>$${(sales.total * 0.16).toFixed(2)}</span>
           </div>
           <div class="total-row total">
             <span>TOTAL:</span>
-            <span>$${this._completeSaleSuccess.total.toFixed(2)}</span>
+            <span>$${sales.total.toFixed(2)}</span>
           </div>
-          ${this._completeSaleSuccess.paymentMethod === 'cash'
-            ? html`
+          ${sales.paymentMethod === 'cash'
+            ? `
                 <div class="total-row total">
                   <span>Pago:</span>
                   <span>
                     $${(
-                      parseFloat(this._completeSaleSuccess.total) +
-                      parseFloat(this._completeSaleSuccess.changeToGive)
+                      parseFloat(sales.total) + parseFloat(sales.changeToGive)
                     ).toFixed(2)}
                   </span>
                 </div>
                 <div class="total-row total">
                   <span>Cambio:</span>
-                  <span>
-                    $${this._completeSaleSuccess.changeToGive.toFixed(2)}
-                  </span>
+                  <span> $${sales.changeToGive.toFixed(2)} </span>
                 </div>
               `
             : nothing}
@@ -531,7 +541,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         <div class="payment-method">
           <b>
             Método de pago:
-            ${this._completeSaleSuccess.paymentMethod === 'card'
+            ${sales.paymentMethod === 'card'
               ? 'Tarjeta Crédito'
               : 'Efectivo'}<br />
           </b>
@@ -578,11 +588,12 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         ?edit-success=${this._editProductSuccess}
         ?register-success=${this._registerProductSuccess}
         .productToEdit=${this._productToEdit}
-        .registeredProducts=${this._products}
-        .registerError=${this._registerError}
-        .userData=${this._userData}
         .productsToSell=${this._productsToSell}
+        .registerError=${this._registerError}
+        .registeredProducts=${this._products}
+        .sales=${this._sales}
         .total=${this._total}
+        .userData=${this._userData}
         @home-page-logout="${this._logout}"
         @products-element-delete-product="${this._deleteProduct}"
         @products-element-edit-product="${this._editProduct}"
@@ -599,6 +610,8 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         @sell-element-get-product-to-sell="${this._searchProductToSell}"
         @sell-element-update-product-to-sell="${this._updateProductToSell}"
         @sell-element-print-ticket="${this._printTicket}"
+        @home-element-get-sales="${this._getSales}"
+        @sales-element-print-ticket="${this._printTicket}"
       ></home-element>
     `;
   }
@@ -611,8 +624,10 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
   get _tplManager() {
     return html`
       <manager-element
+        ${ref(this._managerRef)}
         .productToSearch=${this._productToSearch}
         product-to-sell=${this._productToSell}
+        @api-dm-get-sales-success-response=${this._getSalesSuccessResponse}
         @api-dm-login-handle-error=${this._loginHandleError}
         @api-dm-login-success-response=${this._loginSuccessResponse}
         @api-dm-register-product-handle-error=${this
@@ -623,10 +638,10 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
           ._getUserInSessionSuccesResponse}
         @dm-delete-product-success-response=${this
           ._deleteProductSuccessResponse}
-        @dm-get-products-success-response=${this._getProductsSuccessResponse}
-        @dm-get-product-success-response=${this._setProductToEdit}
         @dm-edit-product-success-response=${this._editProductSuccessResponse}
+        @dm-get-product-success-response=${this._setProductToEdit}
         @dm-get-product-to-sell=${this._setListProductToSell}
+        @dm-get-products-success-response=${this._getProductsSuccessResponse}
         @dm-register-sale-success-response=${this._registerSaleSuccessResponse}
       ></manager-element>
     `;
@@ -643,10 +658,10 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
    */
   render() {
     return html`
-      ${this._showTicket
-        ? this._tplTicket
-        : html`${!this._isLogged ? this._tplLogin : nothing}
-          ${this._isLogged ? this._tplHome : nothing} ${this._tplManager}`}
+      ${html`
+        ${!this._isLogged ? this._tplLogin : nothing}
+        ${this._isLogged ? this._tplHome : nothing} ${this._tplManager}
+      `}
     `;
   }
 }
