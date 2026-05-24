@@ -226,7 +226,6 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
 
   _getChangeForCashPayment({target: {value}}) {
     const change = parseFloat(value !== '' ? value : 0) - this.total;
-    console.log(change);
     if (change >= 0) {
       this._changeToGive = change;
       this._enableCompleteSale = true;

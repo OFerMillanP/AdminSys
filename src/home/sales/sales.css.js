@@ -37,6 +37,15 @@ export default css`
     text-align: center
   }
 
+  .quantity {
+    text-align: center
+  }
+
+  .show-products {
+    cursor: pointer;
+    background: #eee;
+  }
+
   .empty-message {
     padding: 1rem;
     background: #f8f8f8;
@@ -61,13 +70,25 @@ export default css`
   }
 
   tbody td {
-    border: 1px solid #e0e0e0;
+    border: 1px solid #d4d4d4;
     padding: 0.75rem;
     font-size: 0.95rem;
   }
 
   tbody tr:nth-child(even) {
-    background-color: #fbfbfb;
+    background-color: #eee;
+  }
+
+  tbody tr:nth-child(odd) {
+    background-color: #dfdfdf;
+  }
+
+  tbody tr.products :nth-child(even) {
+    background-color: #fdfdfd;
+  }
+
+  tbody tr.products :nth-child(odd) {
+    background-color: #fafafa;
   }
 
   tbody tr:hover {

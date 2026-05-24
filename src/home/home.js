@@ -296,6 +296,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
     return html`<sales-element
       .sales="${this.sales}"
       .total="${this.total}"
+      level="${this.userData?.level}"
       ?complete-sale-success="${this.completeSaleSuccess}"
     ></sales-element>`;
   }

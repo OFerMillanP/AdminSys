@@ -466,7 +466,16 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
   }
 
   _getSalesSuccessResponse({detail}) {
-    this._sales = detail;
+    this._sales = detail.map((sale) => ({
+      ...sale,
+      showProducts: false,
+    }));
+  }
+
+  _toggleProducts({detail: {id}}) {
+    this._sales = this._sales.map((sale) =>
+      sale.id.toString() === id ? {...sale, showProducts: !sale.showProducts} : sale
+    );
   }
 
   _tplTicket(sales) {
@@ -534,7 +543,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
                   <span> $${sales.changeToGive.toFixed(2)} </span>
                 </div>
               `
-            : nothing}
+            : ''}
         </div>
 
         <!-- Payment Method -->
@@ -612,6 +621,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         @sell-element-print-ticket="${this._printTicket}"
         @home-element-get-sales="${this._getSales}"
         @sales-element-print-ticket="${this._printTicket}"
+        @sales-element-toggle-products="${this._toggleProducts}"
       ></home-element>
     `;
   }
