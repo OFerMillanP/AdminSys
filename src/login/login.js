@@ -171,6 +171,11 @@ export class LoginElement extends LitElement {
     return [styles];
   }
 
+  /**
+   * Renders the login-element template.
+   *
+   * @returns {import('lit').TemplateResult}
+   */
   render() {
     return html` ${this._tplLogin} `;
   }

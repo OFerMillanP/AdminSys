@@ -19,7 +19,6 @@ import '@material/mwc-textfield/mwc-textfield.js';
 import styles from './main.css.js';
 
 import {ticketTplToPrint, getCurrentDate} from '../utils/utils.js';
-
 /**
  * Main application root element.
  *
@@ -306,7 +305,11 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
    * @param {Array} event.detail - The product list.
    */
   _getProductsSuccessResponse({detail}) {
-    this._products = detail;
+    let products = [];
+    for (let i = 0; i < detail.length; i += 20) {
+      products.push(detail.slice(i, i + 20));
+    }
+    this._products = products;
   }
 
   /**
@@ -439,45 +442,87 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._completeSaleSuccess = detail;
   }
 
+  /**
+   * Closes the complete sale success modal and resets sale state.
+   */
   _closeCompleteSaleSuccessModal() {
     this._completeSaleSuccess = {};
     this._productsToSell = [];
     this._total = 0;
   }
 
+  /**
+   * Generates the sale ticket and opens the print dialog.
+   *
+   * @param {CustomEvent} event - The event containing the sale.
+   * @param {Object|boolean} event.detail - The selected sale or a boolean value.
+   */
   _printTicket({detail}) {
     let sales = detail === true ? this._completeSaleSuccess : detail;
     this._showTicket = true;
     var contenidoOriginal = document.body.innerHTML;
     setTimeout(() => {
-      // Reemplaza el body de la página solo con el contenido a imprimir
+      // Replace the page body only with the content to print
       document.body.innerHTML = ticketTplToPrint(this._tplTicket(sales));
-      // Llama a la función de impresión
+      // Call the print function
       window.print();
-      // Restaura el contenido original de la página
+      // Restore the original page content
       document.body.innerHTML = contenidoOriginal;
     }, 200);
   }
 
+  /**
+   * Requests the sales list from the manager if not already loaded.
+   */
   _getSales() {
     if (!this._sales?.length) {
       this._managerRef.value.getSales();
     }
   }
 
+  /**
+   * Updates the sales list in local state.
+   *
+   * @param {CustomEvent} event - The event containing the sales data.
+   * @param {Object[]} event.detail - The sales array.
+   */
   _getSalesSuccessResponse({detail}) {
-    this._sales = detail.map((sale) => ({
+    let sales = detail.map((sale) => ({
       ...sale,
       showProducts: false,
     }));
+    let salesToShow = [];
+    for (let i = 0; i < detail.length; i += 20) {
+      salesToShow.push(detail.slice(i, i + 20));
+    }
+    this._sales = salesToShow;
   }
 
+  /**
+   * Toggles the visibility of products for a specific sale.
+   *
+   * @param {CustomEvent} event - The event containing the sale identifier.
+   * @param {Object} event.detail - The event details.
+   * @param {string} event.detail.id - The sale id.
+   */
   _toggleProducts({detail: {id}}) {
-    this._sales = this._sales.map((sale) =>
-      sale.id.toString() === id ? {...sale, showProducts: !sale.showProducts} : sale
-    );
+    this._sales = this._sales.map((salesPage) => {
+      return [
+        ...salesPage.map((sale) =>
+          sale.id.toString() === id
+            ? {...sale, showProducts: !sale.showProducts}
+            : sale
+        ),
+      ];
+    });
   }
 
+  /**
+   * Builds the sale ticket HTML ready for printing.
+   *
+   * @param {Object} sales - The sale data to print.
+   * @returns {string} The ticket HTML.
+   */
   _tplTicket(sales) {
     return `
       <div class="ticket-container">
@@ -498,8 +543,9 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
 
         <!-- Items -->
         <div class="ticket-items">
-          ${sales.products.map(
-            (product) => `<div class="item">
+          ${sales.products
+            .map(
+              (product) => `<div class="item">
                 <div class="item-name">
                   <b>${product.name}</b>
                 </div>
@@ -511,7 +557,8 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
               <div class="item-desc">
                 Precio unitario: $${product.price.toFixed(2)} c/u
               </div>`
-          ).join('')}
+            )
+            .join('')}
         </div>
 
         <!-- Totals -->
@@ -528,8 +575,9 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
             <span>TOTAL:</span>
             <span>$${sales.total.toFixed(2)}</span>
           </div>
-          ${sales.paymentMethod === 'cash'
-            ? `
+          ${
+            sales.paymentMethod === 'cash'
+              ? `
                 <div class="total-row total">
                   <span>Pago:</span>
                   <span>
@@ -539,20 +587,21 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
                   </span>
                 </div>
                 <div class="total-row total">
-                  <span>Cambio:</span>
+                  <span>Change:</span>
                   <span> $${sales.changeToGive.toFixed(2)} </span>
                 </div>
               `
-            : ''}
+              : ''
+          }
         </div>
 
         <!-- Payment Method -->
         <div class="payment-method">
           <b>
             Método de pago:
-            ${sales.paymentMethod === 'card'
-              ? 'Tarjeta Crédito'
-              : 'Efectivo'}<br />
+            ${
+              sales.paymentMethod === 'card' ? 'Tarjeta Crédito' : 'Efectivo'
+            }<br />
           </b>
         </div>
 
@@ -668,10 +717,8 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
    */
   render() {
     return html`
-      ${html`
         ${!this._isLogged ? this._tplLogin : nothing}
         ${this._isLogged ? this._tplHome : nothing} ${this._tplManager}
-      `}
     `;
   }
 }

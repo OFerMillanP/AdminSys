@@ -59,6 +59,8 @@ export class ModalElement extends ScopedElementsMixin(LitElement) {
 
   /**
    * Opens the internal HTML dialog element.
+   *
+   * @returns {void}
    */
   openModal(){
     this.shadowRoot.querySelector('#dialog')?.showModal();
@@ -186,6 +188,11 @@ export class ModalElement extends ScopedElementsMixin(LitElement) {
     return [styles];
   }
 
+  /**
+   * Renders the modal element template.
+   *
+   * @returns {import('lit').TemplateResult}
+   */
   render() {
     return html`
       ${this._tplModal}

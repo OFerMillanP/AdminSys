@@ -24,8 +24,8 @@ export function dispatchCustomEvent(
 }
 
 /**
- * Devuelve la fecha y hora local actual en formato `DD/MM/YYYY - HH:MM:SS`.
- * @returns {string} Fecha y hora formateadas.
+ * Returns the current local date and time in `DD/MM/YYYY - HH:MM:SS` format.
+ * @returns {string} Formatted date and time.
  */
 export function getCurrentDate() {
   const date = new Date();
@@ -40,6 +40,12 @@ export function getCurrentDate() {
   return `${fecha} - ${hora}`;
 }
 
+/**
+ * Generates the full HTML document for printing a purchase ticket.
+ *
+ * @param {string} body - The ticket body HTML content.
+ * @returns {string} The full HTML document ready for printing.
+ */
 export function ticketTplToPrint(body) {
   return `
     <!DOCTYPE html>

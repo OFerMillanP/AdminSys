@@ -3,8 +3,8 @@ import {LitElement} from 'lit';
 import {dispatchCustomEvent} from '../../utils/utils.js';
 
 /**
- * Elemento encargado de ejecutar llamadas API y despachar eventos con los
- * resultados.
+ * Element responsible for executing API requests and dispatching events with
+ * the results.
  */
 export class ApiManagerElement extends LitElement {
   static get is() {
@@ -16,20 +16,20 @@ export class ApiManagerElement extends LitElement {
   }
 
   /**
-   * Crea una instancia del administrador de API.
+  * Creates an instance of the API manager.
    */
   constructor() {
     super();
   }
 
   /**
-   * Realiza una petición HTTP al servicio especificado y despacha eventos
-   * de éxito o error según la respuesta.
+  * Sends an HTTP request to the specified service and dispatches success or
+  * error events based on the response.
    *
-   * @param {string} method - El verbo HTTP a utilizar (GET, POST, PATCH, DELETE).
-   * @param {string} service - La ruta del servicio relativa al host local.
-   * @param {string} event - El nombre base del evento para despacho.
-   * @param {Object} [body={}] - El cuerpo de la petición para POST/PATCH.
+    * @param {string} method - The HTTP verb to use (GET, POST, PATCH, DELETE).
+    * @param {string} service - The service path relative to the local host.
+    * @param {string} event - The base name of the event to dispatch.
+    * @param {Object} [body={}] - The request body for POST/PATCH.
    */
   async fetch(method = '', service = '', event = '', body = {}) {
     dispatchCustomEvent(this, 'show-spinner');

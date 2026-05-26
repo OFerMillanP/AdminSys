@@ -40,14 +40,14 @@ export default css`
     --mdc-theme-primary: #af1313;
     --mdc-theme-on-primary: #fff;
   }
-
+/* 
   .accept-modal-button-warning:hover {
     background-color: #af1313;
   }
 
   .cancel-modal-button-warning:hover {
     background-color: #256aff;
-  }
+  } */
 
   .success:hover {
     background-color: #2ecc71;

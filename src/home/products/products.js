@@ -3,6 +3,7 @@ import {ref, createRef} from 'lit/directives/ref.js';
 import {ScopedElementsMixin} from '@open-wc/scoped-elements/html-element.js';
 
 import {ModalElement} from '../../organisms/modal/modal.js';
+import {PaginationElement} from '../../organisms/pagination/pagination.js';
 
 import {dispatchCustomEvent} from '../../../utils/utils.js';
 
@@ -21,7 +22,10 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
   }
 
   static get scopedElements() {
-    return {'modal-element': ModalElement};
+    return {
+      'modal-element': ModalElement,
+      'pagination-element': PaginationElement
+    };
   }
 
   static get properties() {
@@ -66,6 +70,10 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
         type: Boolean,
         state: true,
       },
+      _currentPage: {
+        type: Number,
+        state: true,
+      },
       _deleteModalRef: {
         type: Object,
         state: true,
@@ -103,6 +111,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     this.productToEdit = {};
     this.registeredProducts = [];
     this._confirmDelete = false;
+    this._currentPage = 1;
     this._deleteModalRef = createRef();
     this._editSuccessModalRef = createRef();
     this._productIdToAction = {};
@@ -222,6 +231,14 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
       this.productToEdit
     );
     this._editSuccessModalRef.value.openModal();
+  }
+
+  /**
+   * Handles page changes in the products list.
+   * @param {CustomEvent} event - The page change event.
+   */
+  _handlePageChanged({detail: {page}}) {
+    this._currentPage = page;
   }
 
   /**
@@ -392,7 +409,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
               </thead>
               <tbody>
                 ${repeat(
-                  this.registeredProducts || {},
+                  this.registeredProducts[this._currentPage - 1] || {},
                   (product) =>
                     html` <tr>
                       <td>${product.barcode}</td>
@@ -512,15 +529,29 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     `;
   }
 
+  get _tplPagination() {
+    return html`
+      <pagination-element
+        .totalPages=${Math.ceil(this.registeredProducts.length)}
+        @pagination-element-page-changed=${this._handlePageChanged}
+      ></pagination-element>
+    `;
+  }
+
   static get styles() {
     return [styles];
   }
 
+  /**
+   * Renders the products-element template.
+   * @returns {import('lit').TemplateResult}
+   */
   render() {
     return html`
       ${!this._showEditForm ? this._tplProductList : this._tplEditForm}
       ${this._tplDeleteModal} ${this._tplDeleteSuccessModal}
       ${this._tplEditSuccessModal}
+      ${this._tplPagination}
     `;
   }
 }

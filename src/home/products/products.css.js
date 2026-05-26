@@ -51,10 +51,6 @@ export default css`
     cursor: pointer;
   }
 
-  /* .button-container button:hover {
-    background-color: #982929;
-  } */
-
   .accept-modal-button.delete:hover {
     background-color: #982929;
   }

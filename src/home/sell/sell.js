@@ -199,6 +199,11 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
     });
   }
 
+  /**
+    * Confirms the sale and dispatches the sale completion event.
+   *
+   * @returns {void}
+   */
   _confirmCompleteSale() {
     if (this._showInputForCash) {
       this.shadowRoot.querySelector('#payment-cash-input').value = '';
@@ -210,6 +215,13 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
     this._changeToGive = 0;
   }
 
+  /**
+   * Selects the payment method and updates the form state.
+   *
+   * @param {Event} event - The payment option change event.
+   * @param {HTMLElement} event.target - The selected payment option element.
+   * @param {string} event.target.id - The payment method identifier.
+   */
   _selectPaymentMethod({target: {id}}) {
     const paymentMethod = {
       'payment-card': () => {
@@ -224,6 +236,13 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
     paymentMethod[id]?.call();
   }
 
+  /**
+   * Calculates cash change and enables or disables the complete sale button.
+   *
+   * @param {Event} event - The received cash amount input event.
+   * @param {HTMLElement} event.target - The cash input field.
+   * @param {string|number} event.target.value - The entered value.
+   */
   _getChangeForCashPayment({target: {value}}) {
     const change = parseFloat(value !== '' ? value : 0) - this.total;
     if (change >= 0) {
@@ -235,10 +254,18 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
     }
   }
 
+  /**
+    * Dispatches the action to print the sale ticket.
+   */
   _printTicket() {
     dispatchCustomEvent(this, `${SellElement.is}-print-ticket`);
   }
 
+  /**
+   * Returns the confirmation modal template for completing a sale.
+   *
+   * @returns {import('lit').TemplateResult}
+   */
   get _tplConfirmCompleteSaleModal() {
     return html`
       <modal-element
@@ -310,6 +337,11 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
    *
    * @returns {import('lit').TemplateResult}
    */
+  /**
+   * Returns the modal template shown when a sale completes successfully.
+   *
+   * @returns {import('lit').TemplateResult}
+   */
   get _tplSuccessModal() {
     return html`
       <modal-element
@@ -336,6 +368,11 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
 
   /**
    * Template for the product table shown in the sell view.
+   */
+  /**
+   * Returns the products table template for the current sale.
+   *
+   * @returns {import('lit').TemplateResult}
    */
   get _tplProductsTable() {
     return html`
@@ -420,6 +457,11 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
   /**
    * Template for the barcode input section and current total.
    */
+  /**
+   * Returns the barcode input section template and current total display.
+   *
+   * @returns {import('lit').TemplateResult}
+   */
   get _tplInputDataSection() {
     return html`
       <section class="sell-data-container">
@@ -457,16 +499,28 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
   /**
    * Combines the input and table templates into the sell view.
    */
+  /**
+   * Returns the full sell section template combining input and product table.
+   *
+   * @returns {import('lit').TemplateResult}
+   */
   get _tplSell() {
     return html` ${this._tplInputDataSection} ${this._tplProductsTable} `;
   }
 
+  /**
+   * Returns the styles for the sell element.
+   *
+   * @returns {import('lit').CSSResult[]}
+   */
   static get styles() {
     return [styles];
   }
 
   /**
-   * Renders the sell-element content.
+   * Renders the sell-element template.
+   *
+   * @returns {import('lit').TemplateResult}
    */
   render() {
     return html`

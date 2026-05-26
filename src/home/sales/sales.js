@@ -29,6 +29,10 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
       total: {
         type: Number,
       },
+      _currentPage: {
+        type: Number,
+        state: true,
+      },
     };
   }
 
@@ -38,28 +42,45 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
     this.sales = [];
     this.total = 0;
     this.completeSaleSuccess = false;
+    this._currentPage = 1;
   }
 
+  /**
+   * Dispatches a request to print the ticket for a sale.
+   *
+   * @param {Object} sale - The sale object to print.
+   */
   _printTicket(sale) {
     dispatchCustomEvent(this, `${SalesElement.is}-print-ticket`, sale);
   }
 
+  /**
+   * Toggles the display of products for a selected sale row.
+   *
+   * @param {Event} event - The click event from the sale row.
+   * @param {HTMLElement} event.currentTarget - The row target element.
+   * @param {string} event.currentTarget.id - The sale identifier.
+   */
   _toggleProducts({currentTarget: {id}}) {
     dispatchCustomEvent(this, `${SalesElement.is}-toggle-products`, {id});
+  }
+
+  _handlePageChanged({detail: {page}}) {
+    this._currentPage = page;
   }
 
   static get styles() {
     return [styles];
   }
 
-  render() {
+  get _tplSales() {
     return html`
       <section class="sales-list">
         <header class="list-header">
           <h2>Listado de ventas</h2>
         </header>
 
-        ${this.sales?.length > 0
+        ${this.sales[this._currentPage - 1]?.length > 0
           ? html`
               <table>
                 <thead>
@@ -71,9 +92,13 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
                   </tr>
                 </thead>
                 <tbody>
-                  ${this.sales.map(
+                  ${this.sales[this._currentPage - 1]?.map(
                     (sale) => html`
-                      <tr id="${sale.id}" @click=${this._toggleProducts} class="${this.level === 'admin' ? 'show-products' : ''}">
+                      <tr
+                        id="${sale.id}"
+                        @click=${this._toggleProducts}
+                        class="${this.level === 'admin' ? 'show-products' : ''}"
+                      >
                         <td>${sale.date}</td>
                         <td class="payment-method">
                           ${sale.paymentMethod == 'cash'
@@ -91,17 +116,18 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
                         ? html`
                             <tr class="products-row">
                               <table class="products-row">
-                                <thead>
-                                </thead>
+                                <thead></thead>
                                 <tbody>
                                   ${sale.products.map(
                                     (product) =>
                                       html`
                                         <tr class="products">
                                           <td>${product.name}</td>
-                                          <td class="quantity">${product.quantity}</td>
+                                          <td class="quantity">
+                                            ${product.quantity}
+                                          </td>
                                           <td>
-                                            $${Number(product.price).toFixed(2)}
+                                            $${Number(product.price).toFixed(2) * product.quantity}
                                           </td>
                                         </tr>
                                       `
@@ -109,7 +135,7 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
                                 </tbody>
                               </table>
                             </tr>
-                            <br>
+                            <br />
                           `
                         : nothing}
                     `
@@ -120,6 +146,24 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
           : html` <p class="empty-message">No hay ventas registradas.</p> `}
       </section>
     `;
+  }
+
+  get _tplPagination() {
+    return html`
+      <pagination-element
+        .totalPages=${Math.ceil(this.sales.length)}
+        @pagination-element-page-changed=${this._handlePageChanged}
+      ></pagination-element>
+    `;
+  }
+
+  /**
+   * Renders the sales list template.
+   *
+   * @returns {import('lit').TemplateResult}
+   */
+  render() {
+    return html`${this._tplSales} ${this._tplPagination}`;
   }
 }
 
