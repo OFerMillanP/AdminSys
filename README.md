@@ -23,10 +23,22 @@ npm install
 
 ## Comandos principales
 
-- Iniciar servidor de desarrollo y compilación SCSS:
+- Instalar dependencias:
+
+```bash
+npm install
+```
+
+- Iniciar el servidor de desarrollo:
 
 ```bash
 npm run start
+```
+
+- Iniciar el servidor de desarrollo alternativo:
+
+```bash
+npm run serve
 ```
 
 - Iniciar solo la API local:
@@ -35,13 +47,13 @@ npm run start
 npm run api
 ```
 
-- Iniciar servidor de desarrollo + API en Windows:
+- Iniciar servidor de desarrollo y API juntos en Windows:
 
 ```bash
 npm run start:all:w
 ```
 
-- Iniciar servidor de desarrollo + API en Mac y Linux:
+- Iniciar servidor de desarrollo y API juntos en macOS/Linux:
 
 ```bash
 npm run start:all
@@ -65,16 +77,22 @@ npm run lint
 npm run docs
 ```
 
-- Servir la documentación localmente:
+- Servir la documentación generada:
 
 ```bash
 npm run docs:serve
 ```
 
-- Observar cambios en documentación:
+- Observar cambios en la documentación fuente:
 
 ```bash
-npm run docs:watch
+npm run docs:gen:watch
+```
+
+- Analizar componentes y generar `custom-elements.json`:
+
+```bash
+npm run analyze
 ```
 
 ## Estructura del proyecto

@@ -2,83 +2,624 @@
   "version": "experimental",
   "tags": [
     {
-      "name": "my-element",
-      "path": "./my-element.js",
-      "description": "An example element.",
+      "name": "api-manager-element",
+      "path": "./src\\dm\\apiManager.js",
+      "description": "Element responsible for executing API requests and dispatching events with\r\nthe results."
+    },
+    {
+      "name": "manager-element",
+      "path": "./src\\dm\\manager.js",
+      "description": "Manager layer element.\r\n\r\nEncapsulates API calls and local cache management for products, sales, and login.",
       "attributes": [
         {
-          "name": "name",
-          "description": "The name to say \"Hello\" to.",
+          "name": "password",
+          "description": "Password used during login.",
           "type": "string",
-          "default": "\"World\""
+          "default": "\"\""
         },
         {
-          "name": "count",
-          "description": "The number of times the button has been clicked.",
-          "type": "number",
-          "default": "0"
+          "name": "productToSearch",
+          "description": "Search criteria used to filter the product list.",
+          "type": "object",
+          "default": "{}"
+        },
+        {
+          "name": "user",
+          "description": "Username used during login.",
+          "type": "string",
+          "default": "\"\""
         }
       ],
       "properties": [
         {
-          "name": "name",
-          "attribute": "name",
-          "description": "The name to say \"Hello\" to.",
+          "name": "password",
+          "attribute": "password",
+          "description": "Password used during login.",
           "type": "string",
-          "default": "\"World\""
+          "default": "\"\""
         },
         {
-          "name": "count",
-          "attribute": "count",
-          "description": "The number of times the button has been clicked.",
-          "type": "number",
-          "default": "0"
-        }
-      ],
-      "slots": [
+          "name": "productToSearch",
+          "attribute": "productToSearch",
+          "description": "Search criteria used to filter the product list.",
+          "type": "object",
+          "default": "{}"
+        },
         {
-          "name": "",
-          "description": "This element has a slot"
-        }
-      ],
-      "cssParts": [
+          "name": "user",
+          "attribute": "user",
+          "description": "Username used during login.",
+          "type": "string",
+          "default": "\"\""
+        },
         {
-          "name": "button",
-          "description": "The button"
+          "name": "scopedElements",
+          "description": "Obtains the scoped elements definitions map",
+          "type": "ScopedElementsMap"
+        },
+        {
+          "name": "registry",
+          "description": "Obtains the CustomElementRegistry",
+          "type": "CustomElementRegistry | undefined"
         }
       ]
     },
     {
-      "name": "my-element",
-      "path": "./docs-/my-element.bundled.js",
+      "name": "home-element",
+      "path": "./src\\home\\home.js",
+      "description": "Home page container element.\r\n\r\nRenders the main product, register, and sell sections and routes\r\nnavigation events inside the home view.",
       "attributes": [
         {
-          "name": "name",
-          "type": "string"
+          "name": "complete-sale-success",
+          "description": "Whether a complete sale operation completed successfully.",
+          "type": "boolean",
+          "default": "false"
         },
         {
-          "name": "count",
-          "type": "number"
+          "name": "delete-success",
+          "description": "Whether a delete operation completed successfully.",
+          "type": "boolean",
+          "default": "false"
+        },
+        {
+          "name": "edit-success",
+          "description": "Whether an edit operation completed successfully.",
+          "type": "boolean",
+          "default": "false"
+        },
+        {
+          "name": "productToEdit",
+          "description": "Product selected for editing.",
+          "type": "object",
+          "default": "{}"
+        },
+        {
+          "name": "productsToSell",
+          "description": "Products currently selected for sale.",
+          "type": "array",
+          "default": "[]"
+        },
+        {
+          "name": "registerError",
+          "description": "Product registration error details.",
+          "type": "object",
+          "default": "{}"
+        },
+        {
+          "name": "register-success",
+          "description": "Whether the last product registration succeeded.",
+          "type": "boolean",
+          "default": "false"
+        },
+        {
+          "name": "registeredProducts",
+          "description": "Products loaded from the inventory.",
+          "type": "array",
+          "default": "[]"
+        },
+        {
+          "name": "userData",
+          "description": "Session user data from login.",
+          "type": "object",
+          "default": "{}"
+        },
+        {
+          "name": "total",
+          "description": "Current total amount for the sale list.",
+          "type": "number",
+          "default": "0"
+        },
+        {
+          "name": "sales",
+          "description": "List of completed sales transactions.",
+          "type": "array",
+          "default": "[]"
         }
       ],
       "properties": [
         {
-          "name": "name",
-          "attribute": "name",
-          "type": "string"
+          "name": "completeSaleSuccess",
+          "attribute": "complete-sale-success",
+          "description": "Whether a complete sale operation completed successfully.",
+          "type": "boolean",
+          "default": "false"
         },
         {
-          "name": "count",
-          "attribute": "count",
-          "type": "number"
+          "name": "deleteSuccess",
+          "attribute": "delete-success",
+          "description": "Whether a delete operation completed successfully.",
+          "type": "boolean",
+          "default": "false"
         },
         {
-          "name": "hasUpdated",
-          "type": "number"
+          "name": "editSuccess",
+          "attribute": "edit-success",
+          "description": "Whether an edit operation completed successfully.",
+          "type": "boolean",
+          "default": "false"
         },
         {
-          "name": "updateComplete",
-          "type": "Promise<any>"
+          "name": "productToEdit",
+          "attribute": "productToEdit",
+          "description": "Product selected for editing.",
+          "type": "object",
+          "default": "{}"
+        },
+        {
+          "name": "productsToSell",
+          "attribute": "productsToSell",
+          "description": "Products currently selected for sale.",
+          "type": "array",
+          "default": "[]"
+        },
+        {
+          "name": "registerError",
+          "attribute": "registerError",
+          "description": "Product registration error details.",
+          "type": "object",
+          "default": "{}"
+        },
+        {
+          "name": "registerSuccess",
+          "attribute": "register-success",
+          "description": "Whether the last product registration succeeded.",
+          "type": "boolean",
+          "default": "false"
+        },
+        {
+          "name": "registeredProducts",
+          "attribute": "registeredProducts",
+          "description": "Products loaded from the inventory.",
+          "type": "array",
+          "default": "[]"
+        },
+        {
+          "name": "userData",
+          "attribute": "userData",
+          "description": "Session user data from login.",
+          "type": "object",
+          "default": "{}"
+        },
+        {
+          "name": "total",
+          "attribute": "total",
+          "description": "Current total amount for the sale list.",
+          "type": "number",
+          "default": "0"
+        },
+        {
+          "name": "sales",
+          "attribute": "sales",
+          "description": "List of completed sales transactions.",
+          "type": "array",
+          "default": "[]"
+        },
+        {
+          "name": "scopedElements",
+          "description": "Obtains the scoped elements definitions map",
+          "type": "ScopedElementsMap"
+        },
+        {
+          "name": "registry",
+          "description": "Obtains the CustomElementRegistry",
+          "type": "CustomElementRegistry | undefined"
+        }
+      ]
+    },
+    {
+      "name": "products-element",
+      "path": "./src\\home\\products\\products.js",
+      "description": "Products administration page element.\r\n\r\nRenders the product list, edit form, and delete confirmation modal.\r\nDispatches edit and delete events to the parent container.",
+      "attributes": [
+        {
+          "name": "delete-success",
+          "description": "Whether the last delete operation succeeded.",
+          "type": "boolean",
+          "default": "false"
+        },
+        {
+          "name": "edit-success",
+          "description": "Whether the last edit operation succeeded.",
+          "type": "boolean",
+          "default": "false"
+        },
+        {
+          "name": "level-user",
+          "description": "Current authenticated user level for permission checks.",
+          "type": "string",
+          "default": "\"\""
+        },
+        {
+          "name": "productToEdit",
+          "description": "Product currently selected for editing.",
+          "type": "object",
+          "default": "{}"
+        },
+        {
+          "name": "registeredProducts",
+          "description": "Registered products loaded from the API.",
+          "type": "array",
+          "default": "[]"
+        }
+      ],
+      "properties": [
+        {
+          "name": "deleteSuccess",
+          "attribute": "delete-success",
+          "description": "Whether the last delete operation succeeded.",
+          "type": "boolean",
+          "default": "false"
+        },
+        {
+          "name": "editSuccess",
+          "attribute": "edit-success",
+          "description": "Whether the last edit operation succeeded.",
+          "type": "boolean",
+          "default": "false"
+        },
+        {
+          "name": "levelUser",
+          "attribute": "level-user",
+          "description": "Current authenticated user level for permission checks.",
+          "type": "string",
+          "default": "\"\""
+        },
+        {
+          "name": "productToEdit",
+          "attribute": "productToEdit",
+          "description": "Product currently selected for editing.",
+          "type": "object",
+          "default": "{}"
+        },
+        {
+          "name": "registeredProducts",
+          "attribute": "registeredProducts",
+          "description": "Registered products loaded from the API.",
+          "type": "array",
+          "default": "[]"
+        },
+        {
+          "name": "scopedElements",
+          "description": "Obtains the scoped elements definitions map",
+          "type": "ScopedElementsMap"
+        },
+        {
+          "name": "registry",
+          "description": "Obtains the CustomElementRegistry",
+          "type": "CustomElementRegistry | undefined"
+        }
+      ]
+    },
+    {
+      "name": "register-element",
+      "path": "./src\\home\\register\\register.js",
+      "description": "Product registration page element.\r\n\r\nManages form state, validation, and registration events for new products.",
+      "attributes": [
+        {
+          "name": "register-error",
+          "description": "Error code returned after a failed product registration.",
+          "type": "string",
+          "default": "\"\""
+        },
+        {
+          "name": "register-success",
+          "description": "Indicates whether the product was registered successfully.",
+          "type": "boolean",
+          "default": "false"
+        }
+      ],
+      "properties": [
+        {
+          "name": "registerError",
+          "attribute": "register-error",
+          "description": "Error code returned after a failed product registration.",
+          "type": "string",
+          "default": "\"\""
+        },
+        {
+          "name": "registerSuccess",
+          "attribute": "register-success",
+          "description": "Indicates whether the product was registered successfully.",
+          "type": "boolean",
+          "default": "false"
+        },
+        {
+          "name": "scopedElements",
+          "description": "Obtains the scoped elements definitions map",
+          "type": "ScopedElementsMap"
+        },
+        {
+          "name": "registry",
+          "description": "Obtains the CustomElementRegistry",
+          "type": "CustomElementRegistry | undefined"
+        }
+      ]
+    },
+    {
+      "name": "sales-element",
+      "path": "./src\\home\\sales\\sales.js",
+      "description": "Sales page element.\r\n\r\nRenders a table of sales with id, product, quantity, and total price.",
+      "attributes": [
+        {
+          "name": "level",
+          "type": "string",
+          "default": "\"\""
+        },
+        {
+          "name": "sales",
+          "type": "array",
+          "default": "[]"
+        },
+        {
+          "name": "total",
+          "type": "number",
+          "default": "0"
+        },
+        {
+          "name": "complete-sale-success",
+          "type": "boolean",
+          "default": "false"
+        }
+      ],
+      "properties": [
+        {
+          "name": "level",
+          "attribute": "level",
+          "type": "string",
+          "default": "\"\""
+        },
+        {
+          "name": "sales",
+          "attribute": "sales",
+          "type": "array",
+          "default": "[]"
+        },
+        {
+          "name": "total",
+          "attribute": "total",
+          "type": "number",
+          "default": "0"
+        },
+        {
+          "name": "completeSaleSuccess",
+          "attribute": "complete-sale-success",
+          "type": "boolean",
+          "default": "false"
+        },
+        {
+          "name": "scopedElements",
+          "description": "Obtains the scoped elements definitions map",
+          "type": "ScopedElementsMap"
+        },
+        {
+          "name": "registry",
+          "description": "Obtains the CustomElementRegistry",
+          "type": "CustomElementRegistry | undefined"
+        }
+      ]
+    },
+    {
+      "name": "sell-element",
+      "path": "./src\\home\\sell\\sell.js",
+      "description": "Sales page element.\r\n\r\nHandles barcode entry, product quantity updates, and sale completion events.",
+      "attributes": [
+        {
+          "name": "complete-sale-success",
+          "type": "boolean",
+          "default": "false"
+        },
+        {
+          "name": "barcode",
+          "description": "Barcode entered by the user to add a product to the sale.",
+          "type": "string",
+          "default": "\"\""
+        },
+        {
+          "name": "productsToSell",
+          "description": "Products currently added to the sale list.",
+          "type": "array",
+          "default": "[]"
+        },
+        {
+          "name": "total",
+          "description": "Total cost for the products currently in the sale.",
+          "type": "number",
+          "default": "0"
+        }
+      ],
+      "properties": [
+        {
+          "name": "completeSaleSuccess",
+          "attribute": "complete-sale-success",
+          "type": "boolean",
+          "default": "false"
+        },
+        {
+          "name": "barcode",
+          "attribute": "barcode",
+          "description": "Barcode entered by the user to add a product to the sale.",
+          "type": "string",
+          "default": "\"\""
+        },
+        {
+          "name": "productsToSell",
+          "attribute": "productsToSell",
+          "description": "Products currently added to the sale list.",
+          "type": "array",
+          "default": "[]"
+        },
+        {
+          "name": "total",
+          "attribute": "total",
+          "description": "Total cost for the products currently in the sale.",
+          "type": "number",
+          "default": "0"
+        },
+        {
+          "name": "scopedElements",
+          "description": "Obtains the scoped elements definitions map",
+          "type": "ScopedElementsMap"
+        },
+        {
+          "name": "registry",
+          "description": "Obtains the CustomElementRegistry",
+          "type": "CustomElementRegistry | undefined"
+        }
+      ]
+    },
+    {
+      "name": "login-element",
+      "path": "./src\\login\\login.js",
+      "description": "Login page element.\r\n\r\nManages user credential input, validation and dispatches login requests.",
+      "attributes": [
+        {
+          "name": "user",
+          "description": "Username entered in the login form.",
+          "type": "string",
+          "default": "\"\""
+        },
+        {
+          "name": "password",
+          "description": "Password entered in the login form.",
+          "type": "string",
+          "default": "\"\""
+        },
+        {
+          "name": "login-error",
+          "description": "Error code returned by the authentication API.",
+          "type": "string",
+          "default": "\"\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "user",
+          "attribute": "user",
+          "description": "Username entered in the login form.",
+          "type": "string",
+          "default": "\"\""
+        },
+        {
+          "name": "password",
+          "attribute": "password",
+          "description": "Password entered in the login form.",
+          "type": "string",
+          "default": "\"\""
+        },
+        {
+          "name": "loginError",
+          "attribute": "login-error",
+          "description": "Error code returned by the authentication API.",
+          "type": "string",
+          "default": "\"\""
+        }
+      ]
+    },
+    {
+      "name": "main-element",
+      "path": "./src\\main.js",
+      "description": "Main application root element.\r\n\r\nManages authentication state, routes between the login and home views,\r\nand coordinates data exchange with the manager layer.",
+      "properties": [
+        {
+          "name": "scopedElements",
+          "description": "Obtains the scoped elements definitions map",
+          "type": "ScopedElementsMap"
+        },
+        {
+          "name": "registry",
+          "description": "Obtains the CustomElementRegistry",
+          "type": "CustomElementRegistry | undefined"
+        }
+      ]
+    },
+    {
+      "name": "modal-element",
+      "path": "./src\\organisms\\modal\\modal.js",
+      "description": "Reusable modal dialog element.\r\n\r\nRenders modal content based on data passed by the parent and\r\ndispatches confirm/cancel actions.",
+      "attributes": [
+        {
+          "name": "data",
+          "description": "Data to show in the modal",
+          "type": "Object",
+          "default": "\"{}\""
+        },
+        {
+          "name": "show-modal",
+          "description": "Toggle to show modal",
+          "type": "Boolean",
+          "default": "\"''\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "data",
+          "attribute": "data",
+          "description": "Data to show in the modal",
+          "type": "Object",
+          "default": "\"{}\""
+        },
+        {
+          "name": "showModal",
+          "attribute": "show-modal",
+          "description": "Toggle to show modal",
+          "type": "Boolean",
+          "default": "\"''\""
+        },
+        {
+          "name": "scopedElements",
+          "description": "Obtains the scoped elements definitions map",
+          "type": "ScopedElementsMap"
+        },
+        {
+          "name": "registry",
+          "description": "Obtains the CustomElementRegistry",
+          "type": "CustomElementRegistry | undefined"
+        }
+      ]
+    },
+    {
+      "name": "pagination-element",
+      "path": "./src\\organisms\\pagination\\pagination.js",
+      "properties": [
+        {
+          "name": "properties",
+          "type": "{ currentPage: number; totalPages: number; maxVisiblePages: number; }",
+          "default": "{\"currentPage\":{\"type\":\"Number\"},\"totalPages\":{\"type\":\"Number\"},\"maxVisiblePages\":{\"type\":\"Number\"}}"
+        },
+        {
+          "name": "currentPage",
+          "type": "number",
+          "default": "1"
+        },
+        {
+          "name": "totalPages",
+          "type": "number",
+          "default": "1"
+        },
+        {
+          "name": "maxVisiblePages",
+          "type": "number",
+          "default": "5"
         }
       ]
     }
