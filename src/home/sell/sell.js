@@ -293,15 +293,15 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
             </b>
           </div>
           <section class="confirm-sale-payment-methods">
-            <p class="confirm-sale-data-label"><b>Método de pago:</b></p>
-            <mwc-formfield label="Tarjeta de crédito/débito">
+            <p class="confirm-sale-data-label"><b>Payment Method:</b></p>
+            <mwc-formfield label="Credit/Debit Card">
               <mwc-radio
                 name="payment-method"
                 id="payment-card"
                 @change="${this._selectPaymentMethod}"
               ></mwc-radio>
             </mwc-formfield>
-            <mwc-formfield label="Efectivo">
+            <mwc-formfield label="Cash">
               <mwc-radio
                 name="payment-method"
                 id="payment-cash"
@@ -313,7 +313,7 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
                   <div class="confirm-sale-cash-input">
                     <mwc-textfield
                       id="payment-cash-input"
-                      label="Monto recibido"
+                      label="Amount Received"
                       type="number"
                       min="${this.total.toFixed(2)}"
                       step="0.50"

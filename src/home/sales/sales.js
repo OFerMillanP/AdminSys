@@ -29,8 +29,28 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
       total: {
         type: Number,
       },
+      _activeIndex: {
+        type: Number,
+        state: true,
+      },
       _currentPage: {
         type: Number,
+        state: true,
+      },
+      _endDate: {
+        type: String,
+        state: true,
+      },
+      _isShowSales: {
+        type: Boolean,
+        state: true,
+      },
+      _isShowReport: {
+        type: Boolean,
+        state: true,
+      },
+      _startDate: {
+        type: String,
         state: true,
       },
     };
@@ -42,7 +62,26 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
     this.sales = [];
     this.total = 0;
     this.completeSaleSuccess = false;
+    this._activeIndex = 1;
     this._currentPage = 1;
+    this._endDate = '';
+    this._isShowReport = true;
+    this._isShowSales = false;
+    this._startDate = '';
+    this._maxDate = new Date().toISOString().split('T')[0];
+  }
+
+  firstUpdated() {
+    const hoy = new Date();
+    const diaSemana = hoy.getDay();
+    const diferencia = diaSemana === 0 ? 6 : diaSemana - 1;
+    hoy.setDate(hoy.getDate() - diferencia);
+    const anio = hoy.getFullYear();
+    const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+    const dia = String(hoy.getDate()).padStart(2, '0');
+    const fechaLunes = `${anio}-${mes}-${dia}`;
+    this._startDate = fechaLunes;
+    this._endDate = new Date().toISOString().split('T')[0];
   }
 
   /**
@@ -69,16 +108,66 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
     this._currentPage = page;
   }
 
-  static get styles() {
-    return [styles];
+  /**
+   * Shows the requested home page section based on the clicked tab.
+   *
+   * @param {Event} event - The click event from the tab.
+   * @param {HTMLElement} event.target - The clicked tab.
+   */
+  _showSection({target: {id}}) {
+    const sections = {
+      sales: () => {
+        this._resetSections();
+        this._isShowSales = true;
+        this._activeIndex = 0;
+      },
+      reports: () => {
+        this._resetSections();
+        this._isShowReport = true;
+        this._activeIndex = 1;
+      },
+    };
+    sections[id]?.call();
+  }
+
+  /**
+   * Hides all home page sections.
+   */
+  _resetSections() {
+    this._isShowSales = false;
+    this._isShowReport = false;
+  }
+
+  _abrirSelector({target}) {
+    const input = target.shadowRoot.querySelector('input');
+    if (input) {
+      input.showPicker();
+    }
+  }
+
+  _generateReport() {
+   if (this._startDate.length && this._endDate.length) {
+    const startDateParts = this._startDate.split('-');
+    const endDateParts = this._endDate.split('-');
+    dispatchCustomEvent(this, `${SalesElement.is}-generate-report`, {
+      startDate: {
+        year: startDateParts[0],
+        month: startDateParts[1],
+        day: startDateParts[2],
+      },
+      endDate: {
+        year: endDateParts[0],
+        month: endDateParts[1],
+        day: endDateParts[2],
+      },
+    });
+   }
   }
 
   get _tplSales() {
     return html`
       <section class="sales-list">
-        <header class="list-header">
-          <h2>Listado de ventas</h2>
-        </header>
+        <h2>Sales List</h2>
 
         ${this.sales[this._currentPage - 1]?.length > 0
           ? html`
@@ -101,9 +190,7 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
                       >
                         <td>${sale.date}</td>
                         <td class="payment-method">
-                          ${sale.paymentMethod == 'cash'
-                            ? 'Efectivo'
-                            : 'Tarjeta'}
+                          ${sale.paymentMethod == 'cash' ? 'Cash' : 'Card'}
                         </td>
                         <td class="total">$${Number(sale.total).toFixed(2)}</td>
                         <td class="actions">
@@ -127,7 +214,9 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
                                             ${product.quantity}
                                           </td>
                                           <td>
-                                            $${Number(product.price).toFixed(2) * product.quantity}
+                                            $${Number(product.price).toFixed(
+                                              2
+                                            ) * product.quantity}
                                           </td>
                                         </tr>
                                       `
@@ -145,6 +234,24 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
             `
           : html` <p class="empty-message">No hay ventas registradas.</p> `}
       </section>
+      ${this._tplPagination}
+    `;
+  }
+
+  get _tplSalesSection() {
+    return html`
+      <mwc-tab-bar activeIndex="${this._activeIndex}">
+        <mwc-tab
+          label="Sales"
+          id="sales"
+          @click="${this._showSection}"
+        ></mwc-tab>
+        <mwc-tab
+          label="Reports"
+          id="reports"
+          @click="${this._showSection}"
+        ></mwc-tab>
+      </mwc-tab-bar>
     `;
   }
 
@@ -157,13 +264,62 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
     `;
   }
 
+  get _tplReport() {
+    return html`
+      <section class="report-section">
+        <h2>Sales Report</h2>
+        <div class="input-container">
+          <div class="calendar-container">
+            <mwc-textfield
+              raised
+              ?disabled="${!(this.level === 'admin')}"
+              label="Start Date"
+              id="calendar"
+              type="date"
+              iconTrailing="event"
+              max="${this._maxDate}"
+              value="${this._startDate}"
+              @click="${this._abrirSelector}"
+              @change="${(e) => (this._startDate = e.target.value)}"
+            ></mwc-textfield>
+          </div>
+          <div class="calendar-container">
+            <mwc-textfield
+              raised
+              ?disabled="${!(this.level === 'admin')}"
+              label="End Date"
+              id="calendar"
+              type="date"
+              iconTrailing="event"
+              max="${this._maxDate}"
+              value="${this._endDate}"
+              @click="${this._abrirSelector}"
+              @change="${(e) => (this._endDate = e.target.value)}"
+            ></mwc-textfield>
+          </div>
+        </div>
+        <mwc-button
+          raised
+          label="Generate Report"
+          @click="${this._generateReport}"
+        ></mwc-button>
+      </section>
+    `;
+  }
+
+  static get styles() {
+    return [styles];
+  }
+
   /**
    * Renders the sales list template.
    *
    * @returns {import('lit').TemplateResult}
    */
   render() {
-    return html`${this._tplSales} ${this._tplPagination}`;
+    return html`${this._tplSalesSection}
+    ${this._isShowSales ? this._tplSales : nothing}
+    ${this._isShowReport ? this._tplReport : nothing} `;
   }
 }
 

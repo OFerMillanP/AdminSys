@@ -159,7 +159,8 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
     const sections = {
       admin: () => {
         this._resetSections();
-        this._isShowProducts = true;
+        // this._isShowProducts = true;
+        this._isShowSales = true;
         this._activeIndex = 0;
       },
       manager: () => {

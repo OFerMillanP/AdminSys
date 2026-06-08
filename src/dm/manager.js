@@ -381,6 +381,26 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     }
   }
 
+  generateReport({startDate, endDate}, sales) {
+    const salesInRangeToReport = sales.filter((sale) => {
+      const formattedDate = sale.date.substring(0, 10).split('/');
+      const saleDate = new Date(formattedDate[2], formattedDate[1] - 1, formattedDate[0]);
+      const startDateTmp = new Date(startDate.year, startDate.month - 1, startDate.day);
+      const endDateTmp = new Date(endDate.year, endDate.month - 1, endDate.day);
+      return saleDate >= startDateTmp && saleDate <= endDateTmp;
+    });
+    if (salesInRangeToReport.length ) {
+      dispatchCustomEvent(this, 'dm-generate-report', {
+        listSales: salesInRangeToReport,
+        startDate,
+        endDate,
+        totalSales: salesInRangeToReport.reduce((total, sale) => total + Number(sale.total), 0),
+      });
+    } else {
+      dispatchCustomEvent(this, 'dm-generate-report-empty');
+    }
+  }
+
   _registerSaleSuccessResponse({detail}) {
     this._productsToSell = [];
     this.getProductList();

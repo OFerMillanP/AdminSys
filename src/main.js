@@ -205,6 +205,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._userData.name = detail.name;
     this._isLogged = !!Object.keys(detail).length && !!detail.level;
     this._managerRef.value.getProductList();
+    this._getSales();
   }
 
   /**
@@ -220,6 +221,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._isLogged = !!Object.keys(detail).length;
     if (this._isLogged) {
       this._managerRef.value.getProductList();
+      this._getSales();
     }
   }
 
@@ -492,8 +494,8 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
       showProducts: false,
     }));
     let salesToShow = [];
-    for (let i = 0; i < detail.length; i += 20) {
-      salesToShow.push(detail.slice(i, i + 20));
+    for (let i = 0; i < detail.length; i += 1) {
+      salesToShow.push(detail.slice(i, i + 1));
     }
     this._sales = salesToShow;
   }
@@ -515,6 +517,61 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         ),
       ];
     });
+  }
+
+  _generateReportDocument({detail}) {
+    var contenidoOriginal = document.body.innerHTML;
+    setTimeout(() => {
+      // Replace the page body only with the content to print
+      document.body.innerHTML = ticketTplToPrint(this._tplReport(detail));
+      // Call the print function
+      window.print();
+      // Restore the original page content
+      document.body.innerHTML = contenidoOriginal;
+    }, 200);
+  }
+
+  _generateReport({detail}) {
+    this._managerRef.value.generateReport(detail, this._sales.flat());
+  }
+
+  _tplReport({listSales, totalSales, startDate, endDate}) {
+    return `
+      <div class="report-container">
+        <h1>Report</h1>
+        <p><strong>From:</strong> ${startDate.year}-${startDate.month}-${startDate.day}</p>
+        <p><strong>To:</strong> ${endDate.year}-${endDate.month}-${endDate.day}</p>
+        <br>
+        <ul>
+          ${listSales
+            .map(
+              (sale) => `
+                <li>
+                  <h3>Sale #${sale.id} - ${sale.date}</h3>
+                  <h4>Sale Payment: ${sale.paymentMethod}</h4>
+                  <br>
+                  <ul>
+                    ${sale.products
+                      .map(
+                        (product) => `
+                          <li>> ${product.name} 
+                          <br> &nbsp; $${product.price.toFixed(2)} x ${product.quantity} = $${(product.price * product.quantity).toFixed(2)}</li>
+                        `
+                      )
+                      .join('')}
+                  </ul>
+                  <h2>Total: $${sale.total}</h2>
+                  __________________________________________________________
+                </li>
+                <br>
+              `
+            )
+            .join('')}
+        </ul>
+        <br>
+        <h2>Total Sales: $${totalSales}</h2>
+      </div>
+    `;
   }
 
   /**
@@ -599,9 +656,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         <div class="payment-method">
           <b>
             Método de pago:
-            ${
-              sales.paymentMethod === 'card' ? 'Tarjeta Crédito' : 'Efectivo'
-            }<br />
+            ${sales.paymentMethod === 'card' ? 'Card' : 'Cash'}<br />
           </b>
         </div>
 
@@ -652,25 +707,26 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         .sales=${this._sales}
         .total=${this._total}
         .userData=${this._userData}
+        @home-element-get-sales="${this._getSales}"
         @home-page-logout="${this._logout}"
+        @modal-element-confirm-action-success-complete-sale="${this
+          ._closeCompleteSaleSuccessModal}"
+        @products-element-close-success-edit-modal="${this
+          ._closeSuccessEditModal}"
         @products-element-delete-product="${this._deleteProduct}"
         @products-element-edit-product="${this._editProduct}"
         @products-element-search-product="${this._searchProduct}"
         @products-element-select-product-to-edit="${this._selectProductToEdit}"
-        @products-element-close-success-edit-modal="${this
-          ._closeSuccessEditModal}"
-        @register-page-register-product="${this._registerProduct}"
         @register-page-close-error-modal="${this._closeErrorModal}"
-        @modal-element-confirm-action-success-complete-sale="${this
-          ._closeCompleteSaleSuccessModal}"
+        @register-page-register-product="${this._registerProduct}"
+        @sales-element-generate-report="${this._generateReport}"
+        @sales-element-print-ticket="${this._printTicket}"
+        @sales-element-toggle-products="${this._toggleProducts}"
         @sell-element-complete-sale="${this._completeSale}"
         @sell-element-delete-product-to-sell="${this._deleteProductToSell}"
         @sell-element-get-product-to-sell="${this._searchProductToSell}"
-        @sell-element-update-product-to-sell="${this._updateProductToSell}"
         @sell-element-print-ticket="${this._printTicket}"
-        @home-element-get-sales="${this._getSales}"
-        @sales-element-print-ticket="${this._printTicket}"
-        @sales-element-toggle-products="${this._toggleProducts}"
+        @sell-element-update-product-to-sell="${this._updateProductToSell}"
       ></home-element>
     `;
   }
@@ -702,6 +758,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         @dm-get-product-to-sell=${this._setListProductToSell}
         @dm-get-products-success-response=${this._getProductsSuccessResponse}
         @dm-register-sale-success-response=${this._registerSaleSuccessResponse}
+        @dm-generate-report=${this._generateReportDocument}
       ></manager-element>
     `;
   }
@@ -717,8 +774,8 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
    */
   render() {
     return html`
-        ${!this._isLogged ? this._tplLogin : nothing}
-        ${this._isLogged ? this._tplHome : nothing} ${this._tplManager}
+      ${!this._isLogged ? this._tplLogin : nothing}
+      ${this._isLogged ? this._tplHome : nothing} ${this._tplManager}
     `;
   }
 }

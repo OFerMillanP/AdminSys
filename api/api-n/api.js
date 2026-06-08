@@ -200,7 +200,7 @@ let sales = [
         stock: 50,
         description: '',
         date: '07/04/2026 - 10:18:26',
-        quantity: 2,
+        quantity: 1,
       },
       {
         id: 2,

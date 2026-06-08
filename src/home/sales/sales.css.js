@@ -54,6 +54,17 @@ export default css`
     color: #444;
   }
 
+  .input-container {
+    display: flex;
+    align-items: center;
+    padding: 0rem 0 1rem 0rem;
+  }
+
+  .calendar-container {
+    position: relative;
+    padding: 0.5rem;
+  }
+
   table {
     width: 100%;
     border-collapse: collapse;
