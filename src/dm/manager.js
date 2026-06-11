@@ -71,6 +71,13 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
         type: String,
         state: true,
       },
+      /**
+       * Cached list of sales retrieved from the API.
+       */
+      _sales: {
+        type: Array,
+        state: true,
+      },
     };
   }
 
@@ -84,6 +91,7 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     this._products = [];
     this._productsToSell = [];
     this._responseData = {};
+    this._sales = [];
   }
 
   /**
@@ -248,6 +256,14 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     await this._getDataManager().fetch('GET', 'api/v0/sales', 'dm-get-sales');
   }
 
+  async getCloseCashRegister() {
+    await this._getDataManager().fetch(
+      'GET',
+      'api/v0/sales/cash-register',
+      'dm-get-close-cash-register'
+    );
+  }
+
   /**
    * Handles a successful product retrieval and dispatches the event.
    *
@@ -384,17 +400,28 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
   generateReport({startDate, endDate}, sales) {
     const salesInRangeToReport = sales.filter((sale) => {
       const formattedDate = sale.date.substring(0, 10).split('/');
-      const saleDate = new Date(formattedDate[2], formattedDate[1] - 1, formattedDate[0]);
-      const startDateTmp = new Date(startDate.year, startDate.month - 1, startDate.day);
+      const saleDate = new Date(
+        formattedDate[2],
+        formattedDate[1] - 1,
+        formattedDate[0]
+      );
+      const startDateTmp = new Date(
+        startDate.year,
+        startDate.month - 1,
+        startDate.day
+      );
       const endDateTmp = new Date(endDate.year, endDate.month - 1, endDate.day);
       return saleDate >= startDateTmp && saleDate <= endDateTmp;
     });
-    if (salesInRangeToReport.length ) {
+    if (salesInRangeToReport.length) {
       dispatchCustomEvent(this, 'dm-generate-report', {
         listSales: salesInRangeToReport,
         startDate,
         endDate,
-        totalSales: salesInRangeToReport.reduce((total, sale) => total + Number(sale.total), 0),
+        totalSales: salesInRangeToReport.reduce(
+          (total, sale) => total + Number(sale.total),
+          0
+        ),
       });
     } else {
       dispatchCustomEvent(this, 'dm-generate-report-empty');
@@ -453,6 +480,50 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     this.getProductList();
   }
 
+  _getSalesSuccessResponse({detail}) {
+    this._sales = detail;
+    dispatchCustomEvent(this, 'dm-get-sales-success-response', this._sales);
+  }
+
+  _getCloseCashRegisterSuccessResponse({detail}) {
+    this._cashRegisterClosing = detail;
+    dispatchCustomEvent(
+      this,
+      'dm-get-close-cash-register-success-response',
+      this._cashRegisterClosing
+    );
+  }
+
+  // _closeCashRegisterSuccessResponse() {
+  //   this._cashRegisterClosing = detail;
+  //   let lastClosedCashRegister = detail.length ? detail.at(-1) : [];
+  //   let sales = [];
+  //   sales = this._sales.filter((sale) => {
+  //     const formattedDate = sale.date.substring(0, 10).split('/');
+  //     const formattedHour = sale.date.substring(13).split(':');
+  //     const saleDate = new Date(
+  //       formattedDate[2],
+  //       formattedDate[1] - 1,
+  //       formattedDate[0],
+  //       formattedHour[0],
+  //       formattedHour[1],
+  //       formattedHour[2]
+  //     );
+  //     const cashRegisterDate = lastClosedCashRegister.length ? new Date(
+  //       lastClosedCashRegister.date.substring(0, 10).split('/')[2],
+  //       lastClosedCashRegister.date.substring(0, 10).split('/')[1] - 1,
+  //       lastClosedCashRegister.date.substring(0, 10).split('/')[0]
+  //     ) : new Date();
+  //     return saleDate <= cashRegisterDate;
+  //   });
+  //   console.log(sales);
+  //   dispatchCustomEvent(
+  //     this,
+  //     'dm-close-cash-register-success-response',
+  //     sales
+  //   );
+  // }
+
   /**
    * Template getter for the internal API manager element.
    *
@@ -461,6 +532,9 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
   get _tplApiManager() {
     return html`
       <api-manager-element
+        @api-dm-get-sales-success-response=${this._getSalesSuccessResponse}
+        @api-dm-get-close-cash-register-success-response=${this
+          ._getCloseCashRegisterSuccessResponse}
         @api-dm-delete-product-success-response=${this
           ._deleteProductsSuccessResponse}
         @api-dm-edit-product-success-response=${this

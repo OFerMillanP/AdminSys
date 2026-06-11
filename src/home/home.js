@@ -34,7 +34,15 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
   static get properties() {
     return {
       /**
+       * Whether a cash register closing operation completed successfully.
+       * @type {Array}
+       */
+      closedCashRegisters: {
+        type: Array,
+      },
+      /**
        * Whether a complete sale operation completed successfully.
+       * @type {Boolean}
        */
       completeSaleSuccess: {
         type: Boolean,
@@ -42,6 +50,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Whether a delete operation completed successfully.
+       * @type {Boolean}
        */
       deleteSuccess: {
         type: Boolean,
@@ -49,6 +58,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Whether an edit operation completed successfully.
+       * @type {Boolean}
        */
       editSuccess: {
         type: Boolean,
@@ -56,30 +66,35 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Product selected for editing.
+       * @type {Object}
        */
       productToEdit: {
         type: Object,
       },
       /**
        * Products currently selected for sale.
+       * @type {Array}
        */
       productsToSell: {
         type: Array,
       },
       /**
        * Product registration error details.
+       * @type {Object}
        */
       registerError: {
         type: Object,
       },
       /**
        * Products loaded from the inventory.
+       * @type {Array}
        */
       registeredProducts: {
         type: Array,
       },
       /**
        * Whether the last product registration succeeded.
+       * @type {Boolean}
        */
       registerSuccess: {
         type: Boolean,
@@ -136,6 +151,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
 
   constructor() {
     super();
+    this.closedCashRegisters = [];
     this.completeSaleSuccess = false;
     this.deleteSuccess = false;
     this.editSuccess = false;
@@ -159,8 +175,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
     const sections = {
       admin: () => {
         this._resetSections();
-        // this._isShowProducts = true;
-        this._isShowSales = true;
+        this._isShowProducts = true;
         this._activeIndex = 0;
       },
       manager: () => {
@@ -295,6 +310,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
    */
   get _tplSales() {
     return html`<sales-element
+      .closedCashRegisters="${this.closedCashRegisters}"
       .sales="${this.sales}"
       .total="${this.total}"
       level="${this.userData?.level}"

@@ -40,6 +40,10 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
 
   static get properties() {
     return {
+      _closedCashRegisters:{
+        type: Array,
+        state: true
+      },
       /**
        * Whether the user is logged in.
        */
@@ -164,6 +168,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
 
   constructor() {
     super();
+    this._closedCashRegisters = [];
     this._completeSaleSuccess = {};
     this._deleteProductSuccess = false;
     this._editProductSuccess = false;
@@ -222,6 +227,10 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     if (this._isLogged) {
       this._managerRef.value.getProductList();
       this._getSales();
+    }
+    
+    if (this._isLogged && this._userData.level === 'admin') {
+      this._closeCashRegister();
     }
   }
 
@@ -494,8 +503,8 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
       showProducts: false,
     }));
     let salesToShow = [];
-    for (let i = 0; i < detail.length; i += 1) {
-      salesToShow.push(detail.slice(i, i + 1));
+    for (let i = 0; i < detail.length; i += 20) {
+      salesToShow.push(detail.slice(i, i + 20));
     }
     this._sales = salesToShow;
   }
@@ -533,6 +542,14 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
 
   _generateReport({detail}) {
     this._managerRef.value.generateReport(detail, this._sales.flat());
+  }
+
+  _closeCashRegister() {
+    this._managerRef.value.getCloseCashRegister();
+  }
+
+  _getCloseCashRegisterSuccessResponse({detail}) {
+    this._closedCashRegisters = detail;
   }
 
   _tplReport({listSales, totalSales, startDate, endDate}) {
@@ -700,6 +717,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         ?delete-success=${this._deleteProductSuccess}
         ?edit-success=${this._editProductSuccess}
         ?register-success=${this._registerProductSuccess}
+        .closedCashRegisters=${this._closedCashRegisters}
         .productToEdit=${this._productToEdit}
         .productsToSell=${this._productsToSell}
         .registerError=${this._registerError}
@@ -719,6 +737,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         @products-element-select-product-to-edit="${this._selectProductToEdit}"
         @register-page-close-error-modal="${this._closeErrorModal}"
         @register-page-register-product="${this._registerProduct}"
+        @sales-element-close-cash-register="${this._closeCashRegister}"
         @sales-element-generate-report="${this._generateReport}"
         @sales-element-print-ticket="${this._printTicket}"
         @sales-element-toggle-products="${this._toggleProducts}"
@@ -742,7 +761,8 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         ${ref(this._managerRef)}
         .productToSearch=${this._productToSearch}
         product-to-sell=${this._productToSell}
-        @api-dm-get-sales-success-response=${this._getSalesSuccessResponse}
+        @dm-get-close-cash-register-success-response="${this._getCloseCashRegisterSuccessResponse}"
+        @dm-get-sales-success-response=${this._getSalesSuccessResponse}
         @api-dm-login-handle-error=${this._loginHandleError}
         @api-dm-login-success-response=${this._loginSuccessResponse}
         @api-dm-register-product-handle-error=${this

@@ -21,7 +21,7 @@ const corsOptions = {
   optionsSuccessStatus: 200,
 };
 
-api.use(cors(corsOptions));
+api.use(cors());
 api.use(bodyParser.urlencoded({extended: true}));
 api.use(bodyParser.json());
 
@@ -236,6 +236,15 @@ let productsToSend = [];
 let newProduct = products.length;
 
 let newSale = sales.length;
+
+let closedCashRegisters = [
+  {
+    date: '24/05/2026 - 01:00:00',
+    totalCash: '12',
+    totalCard: '25',
+    total: '37'
+  }
+];
 
 /**
  * Returns the current date and time in `DD/MM/YYYY - HH:MM:SS` format.
@@ -464,6 +473,16 @@ api.get('/api/v0/sales', function (req, res) {
     salesToShow = Array.from(sales);
     salesToShow.reverse();
     res.status(200).json(salesToShow);
+  } else {
+    return res
+      .status(400)
+      .json({message: 'Not Authorized', code: 'EGS001', status: false});
+  }
+});
+
+api.get('/api/v0/sales/cash-register', function (req, res) {
+  if (Object.keys(userToSend).length) {
+    res.status(200).json(closedCashRegisters || []);
   } else {
     return res
       .status(400)

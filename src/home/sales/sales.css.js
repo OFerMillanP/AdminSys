@@ -60,9 +60,17 @@ export default css`
     padding: 0rem 0 1rem 0rem;
   }
 
+  .report-section {
+    padding-top: 2rem;
+  }
+
   .calendar-container {
     position: relative;
     padding: 0.5rem;
+  }
+
+  .cash-register-section{
+    padding-top: 2rem;
   }
 
   table {

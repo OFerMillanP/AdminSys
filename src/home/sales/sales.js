@@ -16,6 +16,9 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
 
   static get properties() {
     return {
+      closedCashRegisters:{
+        type: Array
+      },
       completeSaleSuccess: {
         type: Boolean,
         attribute: 'complete-sale-success',
@@ -41,6 +44,10 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
         type: String,
         state: true,
       },
+      _isShowCashRegister: {
+        type: Boolean,
+        state: true,
+      },
       _isShowSales: {
         type: Boolean,
         state: true,
@@ -58,14 +65,16 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
 
   constructor() {
     super();
+    this.closedCashRegisters = [];
+    this.completeSaleSuccess = false;
     this.level = '';
     this.sales = [];
     this.total = 0;
-    this.completeSaleSuccess = false;
-    this._activeIndex = 1;
+    this._activeIndex = 2;
     this._currentPage = 1;
     this._endDate = '';
-    this._isShowReport = true;
+    this._isShowCashRegister = true;
+    this._isShowReport = false;
     this._isShowSales = false;
     this._startDate = '';
     this._maxDate = new Date().toISOString().split('T')[0];
@@ -126,6 +135,11 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
         this._isShowReport = true;
         this._activeIndex = 1;
       },
+      'cash-register': () => {
+        this._resetSections();
+        this._isShowCashRegister = true;
+        this._activeIndex = 2;
+      },
     };
     sections[id]?.call();
   }
@@ -136,6 +150,7 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
   _resetSections() {
     this._isShowSales = false;
     this._isShowReport = false;
+    this._isShowCashRegister = false;
   }
 
   _abrirSelector({target}) {
@@ -234,7 +249,6 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
             `
           : html` <p class="empty-message">No hay ventas registradas.</p> `}
       </section>
-      ${this._tplPagination}
     `;
   }
 
@@ -249,6 +263,11 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
         <mwc-tab
           label="Reports"
           id="reports"
+          @click="${this._showSection}"
+        ></mwc-tab>
+        <mwc-tab
+          label="Cash Register"
+          id="cash-register"
           @click="${this._showSection}"
         ></mwc-tab>
       </mwc-tab-bar>
@@ -272,7 +291,6 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
           <div class="calendar-container">
             <mwc-textfield
               raised
-              ?disabled="${!(this.level === 'admin')}"
               label="Start Date"
               id="calendar"
               type="date"
@@ -286,7 +304,6 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
           <div class="calendar-container">
             <mwc-textfield
               raised
-              ?disabled="${!(this.level === 'admin')}"
               label="End Date"
               id="calendar"
               type="date"
@@ -307,6 +324,44 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
     `;
   }
 
+  get _tplCashRegisterClosing () {
+    return html`
+      <section class="cash-register-section">
+        <h2>Cash Register Closing</h2>
+        <section>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Total Cash</th>
+                <th>Total Card</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${this.closedCashRegisters.map(
+                (ccr) => html`
+                  <tr>
+                    <td>${ccr.date}</td>
+                    <td class="total">$${ccr.totalCash}</td>
+                    <td class="total">$${ccr.totalCard}</td>
+                    <td class="total">$${ccr.total}</td>
+                  </tr>
+                `
+              )}
+            </tbody>
+          </table>
+        </section>
+        <br>
+        <mwc-button
+          raised
+          label="Close Register"
+          @click="${() => dispatchCustomEvent(this, `${SalesElement.is}-close-cash-register`)}"
+        ></mwc-button>
+      </section>
+    `;
+  }
+
   static get styles() {
     return [styles];
   }
@@ -317,9 +372,12 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
    * @returns {import('lit').TemplateResult}
    */
   render() {
-    return html`${this._tplSalesSection}
-    ${this._isShowSales ? this._tplSales : nothing}
-    ${this._isShowReport ? this._tplReport : nothing} `;
+    return html`
+      ${this._tplSalesSection}
+      ${this._isShowSales ? html`${this._tplSales} ${this._tplPagination}` : nothing}
+      ${this._isShowReport ? html`${this._tplReport}` : nothing}
+      ${this._isShowCashRegister ? html`${this._tplCashRegisterClosing}` : nothing}
+    `;
   }
 }
 
