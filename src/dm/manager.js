@@ -44,6 +44,13 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
         attribute: 'user',
       },
       /**
+       * Cached Cash Register Closing
+       */
+      _cashRegisterClosing: {
+        type: Array,
+        state: true,
+      },
+      /**
        * The product selected for editing.
        */
       _productToEdit: {
@@ -86,7 +93,7 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     this.password = '';
     this.productToSearch = {};
     this.user = '';
-    this._apiManager = {};
+    this._cashRegisterClosing = [];
     this._productToEdit = {};
     this._products = [];
     this._productsToSell = [];
@@ -262,6 +269,63 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
       'api/v0/sales/cash-register',
       'dm-get-close-cash-register'
     );
+  }
+
+  async postCloseCashRegister() {
+    let lastClosedCashRegister = this._cashRegisterClosing.length
+      ? this._cashRegisterClosing.at(-1)
+      : [];
+    let sales = [];
+    let formattedDateLastClosedCashRegister = lastClosedCashRegister.date
+      .substring(0, 10)
+      .split('/');
+    let formattedHourLastClosedCashRegister = lastClosedCashRegister.date
+      .substring(13)
+      .split(':');
+    const lastCashRegisterDate = Object.keys(lastClosedCashRegister).length
+      ? new Date(
+          formattedDateLastClosedCashRegister[2],
+          formattedDateLastClosedCashRegister[1] - 1,
+          formattedDateLastClosedCashRegister[0],
+          formattedHourLastClosedCashRegister[0],
+          formattedHourLastClosedCashRegister[1],
+          formattedHourLastClosedCashRegister[2]
+        )
+      : new Date();
+    sales = this._sales.filter((sale) => {
+      const formattedDate = sale.date.substring(0, 10).split('/');
+      const formattedHour = sale.date.substring(13).split(':');
+      const saleDate = new Date(
+        formattedDate[2],
+        formattedDate[1] - 1,
+        formattedDate[0],
+        formattedHour[0],
+        formattedHour[1],
+        formattedHour[2]
+      );
+
+      return lastCashRegisterDate < saleDate && saleDate < new Date();
+    });
+    let totalCard = 0;
+    let totalCash = 0;
+    sales.forEach((sale) => {
+      totalCard = totalCard + (sale.paymentMethod === 'card' ? sale.total : 0);
+      totalCash = totalCash + (sale.paymentMethod === 'cash' ? sale.total : 0);
+    });
+    if (sales.length) {
+      await this._getDataManager().fetch(
+        'POST',
+        'api/v0/sales/cash-register',
+        'dm-post-close-cash-register',
+        {
+          total: totalCard + totalCash,
+          totalCard,
+          totalCash,
+        }
+      );
+    } else {
+      dispatchCustomEvent(this, 'dm-post-close-cash-register-success-response', []);
+    }
   }
 
   /**
@@ -494,35 +558,10 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     );
   }
 
-  // _closeCashRegisterSuccessResponse() {
-  //   this._cashRegisterClosing = detail;
-  //   let lastClosedCashRegister = detail.length ? detail.at(-1) : [];
-  //   let sales = [];
-  //   sales = this._sales.filter((sale) => {
-  //     const formattedDate = sale.date.substring(0, 10).split('/');
-  //     const formattedHour = sale.date.substring(13).split(':');
-  //     const saleDate = new Date(
-  //       formattedDate[2],
-  //       formattedDate[1] - 1,
-  //       formattedDate[0],
-  //       formattedHour[0],
-  //       formattedHour[1],
-  //       formattedHour[2]
-  //     );
-  //     const cashRegisterDate = lastClosedCashRegister.length ? new Date(
-  //       lastClosedCashRegister.date.substring(0, 10).split('/')[2],
-  //       lastClosedCashRegister.date.substring(0, 10).split('/')[1] - 1,
-  //       lastClosedCashRegister.date.substring(0, 10).split('/')[0]
-  //     ) : new Date();
-  //     return saleDate <= cashRegisterDate;
-  //   });
-  //   console.log(sales);
-  //   dispatchCustomEvent(
-  //     this,
-  //     'dm-close-cash-register-success-response',
-  //     sales
-  //   );
-  // }
+  _postCloseCashRegisterSuccessResponse({detail}){
+    this.getCloseCashRegister();
+    dispatchCustomEvent(this,'dm-post-close-cash-register-success-response')
+  }
 
   /**
    * Template getter for the internal API manager element.
@@ -532,6 +571,8 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
   get _tplApiManager() {
     return html`
       <api-manager-element
+        @api-dm-post-close-cash-register-success-response="${this
+          ._postCloseCashRegisterSuccessResponse}"
         @api-dm-get-sales-success-response=${this._getSalesSuccessResponse}
         @api-dm-get-close-cash-register-success-response=${this
           ._getCloseCashRegisterSuccessResponse}

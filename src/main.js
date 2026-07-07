@@ -40,9 +40,9 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
 
   static get properties() {
     return {
-      _closedCashRegisters:{
+      _closedCashRegisters: {
         type: Array,
-        state: true
+        state: true,
       },
       /**
        * Whether the user is logged in.
@@ -62,6 +62,13 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
        * Whether the last product edit operation succeeded.
        */
       _editProductSuccess: {
+        type: Boolean,
+        state: true,
+      },
+      /**
+       * Wheter the report is empty
+       */
+      _isEmptyReport: {
         type: Boolean,
         state: true,
       },
@@ -172,6 +179,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._completeSaleSuccess = {};
     this._deleteProductSuccess = false;
     this._editProductSuccess = false;
+    this._isEmptyReport = false;
     this._isLogged = false;
     this._loginErrorCode = '';
     this._managerRef = createRef();
@@ -182,10 +190,13 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._productsToSell = [];
     this._registerError = {};
     this._registerProductSuccess = false;
-    this._showTicket = false;
     this._sales = [];
+    this._showTicket = false;
     this._total = 0;
-    this._userData = {};
+    this._userData = {
+      name: '',
+      level: '',
+    };
   }
 
   /**
@@ -211,6 +222,10 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._isLogged = !!Object.keys(detail).length && !!detail.level;
     this._managerRef.value.getProductList();
     this._getSales();
+
+    if (this._isLogged && detail.level === 'admin') {
+      this._managerRef.value.getCloseCashRegister();
+    }
   }
 
   /**
@@ -228,9 +243,9 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
       this._managerRef.value.getProductList();
       this._getSales();
     }
-    
-    if (this._isLogged && this._userData.level === 'admin') {
-      this._closeCashRegister();
+
+    if (this._isLogged && detail.level === 'admin') {
+      this._managerRef.value.getCloseCashRegister();
     }
   }
 
@@ -456,11 +471,32 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
   /**
    * Closes the complete sale success modal and resets sale state.
    */
-  _closeCompleteSaleSuccessModal() {
+  async _closeCompleteSaleSuccessModal() {
     this._completeSaleSuccess = {};
     this._productsToSell = [];
     this._total = 0;
+    this._completeSaleSuccess = {};
+    this._printTicket({detail: true});
   }
+
+  // async _openCashRegister() {
+  //   const printer = new ThermalPrinter({
+  //     type: PrinterTypes.EPSON, // Cambia el tipo según tu marca (EPSON, STAR, etc.)
+  //     interface: 'printer:Nombre_De_Tu_Impresora', // Nombre exacto de la impresora en tu SO
+  //     characterSet: CharacterSet.PC850_MULTILINGUAL,
+  //   });
+
+  //   try {
+  //     // Enviar el pulso para abrir el cajón de dinero
+  //     printer.openCashDrawer();
+
+  //     // Ejecutar el comando en la impresora
+  //     await printer.execute();
+  //     console.log('¡Cajón de dinero abierto exitosamente!');
+  //   } catch (error) {
+  //     console.error('Error al intentar abrir el cajón:', error);
+  //   }
+  // }
 
   /**
    * Generates the sale ticket and opens the print dialog.
@@ -545,19 +581,28 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
   }
 
   _closeCashRegister() {
-    this._managerRef.value.getCloseCashRegister();
+    this._managerRef.value.postCloseCashRegister();
+    this._isEmptyReport = false;
   }
 
   _getCloseCashRegisterSuccessResponse({detail}) {
     this._closedCashRegisters = detail;
   }
 
+  _postCloseCashRegisterSuccessResponse({detail}) {
+    this._isEmptyReport = !detail.length;
+  }
+
   _tplReport({listSales, totalSales, startDate, endDate}) {
     return `
       <div class="report-container">
         <h1>Report</h1>
-        <p><strong>From:</strong> ${startDate.year}-${startDate.month}-${startDate.day}</p>
-        <p><strong>To:</strong> ${endDate.year}-${endDate.month}-${endDate.day}</p>
+        <p><strong>From:</strong> ${startDate.year}-${startDate.month}-${
+      startDate.day
+    }</p>
+        <p><strong>To:</strong> ${endDate.year}-${endDate.month}-${
+      endDate.day
+    }</p>
         <br>
         <ul>
           ${listSales
@@ -572,7 +617,11 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
                       .map(
                         (product) => `
                           <li>> ${product.name} 
-                          <br> &nbsp; $${product.price.toFixed(2)} x ${product.quantity} = $${(product.price * product.quantity).toFixed(2)}</li>
+                          <br> &nbsp; $${product.price.toFixed(2)} x ${
+                          product.quantity
+                        } = $${(product.price * product.quantity).toFixed(
+                          2
+                        )}</li>
                         `
                       )
                       .join('')}
@@ -598,7 +647,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
    * @returns {string} The ticket HTML.
    */
   _tplTicket(sales) {
-    return `
+    return Object.keys(sales).length > 0 ? `
       <div class="ticket-container">
         <!-- Header -->
         <div class="ticket-header">
@@ -617,8 +666,8 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
 
         <!-- Items -->
         <div class="ticket-items">
-          ${sales.products
-            .map(
+          ${ 
+            sales.products.map(
               (product) => `<div class="item">
                 <div class="item-name">
                   <b>${product.name}</b>
@@ -687,7 +736,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
           </div>
         </div>
       </div>
-    `;
+    ` : '';
   }
 
   /**
@@ -716,6 +765,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
           .length > 0}"
         ?delete-success=${this._deleteProductSuccess}
         ?edit-success=${this._editProductSuccess}
+        ?is-empty-report=${this._isEmptyReport}
         ?register-success=${this._registerProductSuccess}
         .closedCashRegisters=${this._closedCashRegisters}
         .productToEdit=${this._productToEdit}
@@ -761,8 +811,6 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         ${ref(this._managerRef)}
         .productToSearch=${this._productToSearch}
         product-to-sell=${this._productToSell}
-        @dm-get-close-cash-register-success-response="${this._getCloseCashRegisterSuccessResponse}"
-        @dm-get-sales-success-response=${this._getSalesSuccessResponse}
         @api-dm-login-handle-error=${this._loginHandleError}
         @api-dm-login-success-response=${this._loginSuccessResponse}
         @api-dm-register-product-handle-error=${this
@@ -774,11 +822,16 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         @dm-delete-product-success-response=${this
           ._deleteProductSuccessResponse}
         @dm-edit-product-success-response=${this._editProductSuccessResponse}
+        @dm-generate-report=${this._generateReportDocument}
+        @dm-get-close-cash-register-success-response="${this
+          ._getCloseCashRegisterSuccessResponse}"
         @dm-get-product-success-response=${this._setProductToEdit}
         @dm-get-product-to-sell=${this._setListProductToSell}
         @dm-get-products-success-response=${this._getProductsSuccessResponse}
+        @dm-get-sales-success-response=${this._getSalesSuccessResponse}
+        @dm-post-close-cash-register-success-response=${this
+          ._postCloseCashRegisterSuccessResponse}
         @dm-register-sale-success-response=${this._registerSaleSuccessResponse}
-        @dm-generate-report=${this._generateReportDocument}
       ></manager-element>
     `;
   }

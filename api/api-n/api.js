@@ -490,6 +490,25 @@ api.get('/api/v0/sales/cash-register', function (req, res) {
   }
 });
 
+api.post('/api/v0/sales/cash-register', function (req, res) {
+  if (Object.keys(userToSend).length) {
+    const closedCashRegisterData = req.body;
+    closedCashRegisters.push(
+      {
+        date: getCurrentDate(),
+        totalCash: closedCashRegisterData.totalCash,
+        totalCard: closedCashRegisterData.totalCard,
+        total: closedCashRegisterData.total
+      }
+    );
+     res.status(200).json(closedCashRegisters || []);
+  } else {
+    return res
+      .status(400)
+      .json({message: 'Not Authorized', code: 'EGS001', status: false});
+  }
+});
+
 /**
  * Init server --------------------------------------------------------
  */
