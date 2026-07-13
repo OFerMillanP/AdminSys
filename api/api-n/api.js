@@ -1,7 +1,11 @@
+// import pool from '../database/db.js';
+const pool = require('../database/db.js');
+
 let cors = require('cors');
 let express = require('express');
-var bodyParser = require('body-parser');
 let api = express();
+
+var bodyParser = require('body-parser');
 
 /**
  * Configs --------------------------------------------------------
@@ -28,32 +32,6 @@ api.use(bodyParser.json());
 /**
  * Data --------------------------------------------------------
  */
-
-/**
- * Valid users for API authentication (example data only).
- * Each object contains: `user`, `name`, `password`, `level`.
- * @type {{user:string,name:string,password:string,level:string}[]}
- */
-let validUsers = [
-  {
-    user: 'Anel',
-    name: 'Anel CZV',
-    password: '1234',
-    level: 'admin',
-  },
-  {
-    user: 'Oscar',
-    name: 'Oscar FMP',
-    password: '1234',
-    level: 'manager',
-  },
-  {
-    user: 'Fer',
-    name: 'O Fer MP',
-    password: '1234',
-    level: 'general',
-  },
-];
 
 /**
  * Current session user. Used to preserve state between requests.
@@ -274,9 +252,20 @@ function getCurrentDate() {
  * @param {Object} res - Express response object
  * @returns {200} Vacío (estado reseteado)
  */
-api.get('/api/v0/logout', function (req, res) {
-  userToSend = {};
-  res.status(200);
+api.get('/api/v0/logout', async function (req, res) {
+  try {
+    const res_db = await pool.query(
+      `
+        UPDATE users 
+        SET is_logged = false 
+      `);
+    return res.status(200);
+  } catch (err) {
+    console.error('Error al conectar a la base de datos: ', err.stack);
+    return res
+      .status(500)
+      .json({message: 'Server ERROR', code: 'D00B1', status: false});
+  } finally {}
 });
 
 /**
@@ -284,8 +273,24 @@ api.get('/api/v0/logout', function (req, res) {
  * @route GET /api/v0/login
  * @returns {Object} Usuario logueado o objeto vacío
  */
-api.get('/api/v0/login', function (req, res) {
-  res.status(200).json(userToSend);
+api.get('/api/v0/login', async function (req, res) {
+  try {
+    const res_db = await pool.query(
+      `
+        SELECT u.name, u.last_login, l.name AS level
+        FROM users u
+        INNER JOIN levels l
+        ON u.level = l.id
+        WHERE is_logged = true
+      `);
+    userToSend = Object.assign({}, res_db.rows[0]);
+    return res.status(200).json(userToSend);
+  } catch (err) {
+    console.error('Error al conectar a la base de datos: ', err.stack);
+    return res
+      .status(500)
+      .json({message: 'Server ERROR', code: 'D00B1', status: false});
+  } finally {}
 });
 
 /**
@@ -294,32 +299,47 @@ api.get('/api/v0/login', function (req, res) {
  * @param {{user:string,password:string}} req.body - Credenciales de acceso
  * @returns {201} Usuario autenticado (sin password) | {400} Error con código y mensaje
  */
-api.post('/api/v0/login', function (req, res) {
+api.post('/api/v0/login', async function (req, res) {
   userLoginTry += 1;
-  for (const validUser of validUsers) {
-    if (
-      validUser.user === req.body.user &&
-      validUser.password === req.body.password
-    ) {
-      userLoginTry = 0;
-      userToSend = Object.assign({}, validUser);
-      delete userToSend.password;
-      delete userToSend.user;
-      userToSend.loginDate = getCurrentDate();
+  let res_db = {};
+  try {
+    res_db = await pool.query(
+      `
+        SELECT u.name, u.last_login, l.name AS level FROM users u
+        INNER JOIN levels l
+        ON u.level = l.id
+        WHERE user_name = $1 AND password = $2
+      `, [req.body.user, req.body.password]);
+    userLoginTry = 0;
+    userToSend = Object.assign({}, res_db.rows[0]);
+    if (res_db.rows.length) {
+      await pool.query(
+      `
+        UPDATE users 
+        SET is_logged = $3 , last_login = now()
+        WHERE user_name = $1 AND password = $2
+      `, [req.body.user, req.body.password, true]);
       return res.status(201).json(userToSend);
     }
-  }
-  if (!Object.keys(userToSend).length && userLoginTry <= 3) {
-    userToSend = {};
+    if (!res_db.rows.length && userLoginTry <= 3) {
+      userToSend = {};
+      return res
+        .status(400)
+        .json({message: 'User Not Found', code: 'E001', status: false});
+    }
+    if (!res_db.rows.length && userLoginTry > 3) {
+      userLoginTry = 0;
+      return res
+        .status(400)
+        .json({message: 'To Many Login Tries', code: 'E002', status: false});
+    }
+  } catch (err) {
+    console.error('Error al conectar a la base de datos: ', err.stack);
     return res
-      .status(400)
-      .json({message: 'User Not Found', code: 'E001', status: false});
-  }
-  if (!Object.keys(userToSend).length && userLoginTry > 3) {
-    userLoginTry = 0;
-    return res
-      .status(400)
-      .json({message: 'To Many Login Tries', code: 'E002', status: false});
+      .status(500)
+      .json({message: 'Server ERROR', code: 'D00B1', status: false});
+  } finally {
+    // pool.end(); - para terminar
   }
 });
 
