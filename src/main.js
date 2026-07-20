@@ -61,6 +61,13 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
       /**
        * Whether the last product edit operation succeeded.
        */
+      _editProductErrorResponse: {
+        type: Object,
+        state: true,
+      },
+      /**
+       * Whether the last product edit operation succeeded.
+       */
       _editProductSuccess: {
         type: Boolean,
         state: true,
@@ -178,6 +185,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._closedCashRegisters = [];
     this._completeSaleSuccess = {};
     this._deleteProductSuccess = false;
+    this._editProductErrorResponse = {};
     this._editProductSuccess = false;
     this._isEmptyReport = false;
     this._isLogged = false;
@@ -324,7 +332,11 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._editProductSuccess = !!detail;
   }
 
-  /**
+  _editProductHandleErrorResponse({detail}) {
+    this._editProductErrorResponse = detail;
+  }
+
+  /**t
    * Stores the loaded product list in component state.
    *
    * @param {CustomEvent} event - The products success event.
@@ -433,8 +445,10 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
   /**
    * Closes the edit success modal by clearing the selected product.
    */
-  _closeSuccessEditModal() {
+  _closeEditModal() {
     this._productToEdit = {};
+    this._editProductSuccess = false;
+    this._editProductErrorResponse = {};
   }
 
   /**
@@ -768,6 +782,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         ?is-empty-report=${this._isEmptyReport}
         ?register-success=${this._registerProductSuccess}
         .closedCashRegisters=${this._closedCashRegisters}
+        .editErrorResponse=${this._editProductErrorResponse}
         .productToEdit=${this._productToEdit}
         .productsToSell=${this._productsToSell}
         .registerError=${this._registerError}
@@ -779,8 +794,8 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         @home-page-logout="${this._logout}"
         @modal-element-confirm-action-success-complete-sale="${this
           ._closeCompleteSaleSuccessModal}"
-        @products-element-close-success-edit-modal="${this
-          ._closeSuccessEditModal}"
+        @products-element-close-edit-modal="${this
+          ._closeEditModal}"
         @products-element-delete-product="${this._deleteProduct}"
         @products-element-edit-product="${this._editProduct}"
         @products-element-search-product="${this._searchProduct}"
@@ -822,6 +837,8 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         @dm-delete-product-success-response=${this
           ._deleteProductSuccessResponse}
         @dm-edit-product-success-response=${this._editProductSuccessResponse}
+        @api-dm-edit-product-handle-error=${this
+          ._editProductHandleErrorResponse}
         @dm-generate-report=${this._generateReportDocument}
         @dm-get-close-cash-register-success-response="${this
           ._getCloseCashRegisterSuccessResponse}"

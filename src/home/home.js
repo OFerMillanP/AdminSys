@@ -58,6 +58,13 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Whether an edit operation completed successfully.
+       * @type {Object}
+       */
+      editErrorResponse: {
+        type: Object,
+      },
+      /**
+       * Whether an edit operation completed successfully.
        * @type {Boolean}
        */
       editSuccess: {
@@ -154,6 +161,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
     this.closedCashRegisters = [];
     this.completeSaleSuccess = false;
     this.deleteSuccess = false;
+    this.editErrorResponse = {};
     this.editSuccess = false;
     this.productToEdit = {};
     this.productsToSell = [];
@@ -327,6 +335,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
       level-user="${this.userData?.level}"
       ?delete-success="${this.deleteSuccess}"
       ?edit-success="${this.editSuccess}"
+      .editErrorResponse="${this.editErrorResponse}"
       .productToEdit="${this.productToEdit}"
       .registeredProducts="${this.registeredProducts}"
     ></products-element>`;

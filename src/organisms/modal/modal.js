@@ -70,11 +70,11 @@ export class ModalElement extends ScopedElementsMixin(LitElement) {
    * Handles the confirm button click and dispatches the corresponding event.
    */
   _confirmActionButton() {
-    console.log(
-      `${ModalElement.is}-confirm-action${
-        this.data.code ? `-${this.data.code}` : ''
-      }`
-    );
+    // console.log(
+    //   `${ModalElement.is}-confirm-action${
+    //     this.data.code ? `-${this.data.code}` : ''
+    //   }`
+    // );
     this.shadowRoot.querySelector('#dialog').close();
     dispatchCustomEvent(
       this,

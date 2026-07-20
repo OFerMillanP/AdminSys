@@ -207,12 +207,6 @@ let sales = [
  */
 let productsToSend = [];
 
-/**
- * Next id for new products.
- * @type {number}
- */
-let newProduct = products.length;
-
 let newSale = sales.length;
 
 let closedCashRegisters = [
@@ -259,6 +253,22 @@ async function getUserLogged() {
       WHERE is_logged = true
     `);
   return res_db.rows[0];
+}
+
+async function validateExistProductById(value, res) {
+  const validate_exist_product = await pool.query(
+    `
+      SELECT * FROM products WHERE id = $1
+    `, [value]);
+  return validate_exist_product;
+}
+
+async function validateExistProduct(param, value, res) {
+  const validate_exist_product = await pool.query(
+    `
+      SELECT * FROM products WHERE ${param} = $1
+    `, [value]);
+  return validate_exist_product;
 }
 
 /**
@@ -409,26 +419,23 @@ api.post('/api/v0/products/product', async function (req, res) {
 api.delete('/api/v0/products/product/:id', async function (req, res) {
   try {
     const user_logged = await getUserLogged();
-    const validate_exist_product = await pool.query(
-      `
-        SELECT * FROM products WHERE id = $1
-      `, [req.params.id]);
-  if (!(Object.keys(user_logged).length > 0)) {
-    return res
-      .status(403)
-      .json({message: 'Not Authorized', code: 'EDP002', status: false});
-  }
-  if (validate_exist_product.rows.length && user_logged.level === 'admin') {
-    await pool.query(
-      `
-        DELETE FROM products WHERE id = $1
-      `, [req.params.id]);
-    return res.status(200).json(true);
-  } else {
-    return res
-      .status(400)
-      .json({message: 'Not Found Product', code: 'EDP001', status: false});
-  }
+    if (!(Object.keys(user_logged).length > 0)) {
+      return res
+        .status(403)
+        .json({message: 'Not Authorized', code: 'EDP002', status: false});
+    }
+    if (Object.keys(await validateExistProductById(req.params.id, res)).length === 0) {
+      return res
+        .status(400)
+        .json({message: 'Not Found Product', code: 'EDP001', status: false});
+    }
+    if ( user_logged.level === 'admin') {
+      await pool.query(
+        `
+          DELETE FROM products WHERE id = $1
+        `, [req.params.id]);
+      return res.status(200).json(true);
+    }
   } catch (err) {
     console.error('Error al conectar a la base de datos: ', err.stack);
     return res
@@ -474,13 +481,16 @@ api.get('/api/v0/products', async function (req, res) {
 api.get('/api/v0/products/product/:id', async function (req, res) {
   try {
     const user_logged = await getUserLogged();
-    const res_db = await pool.query(
-      `
-        SELECT * FROM products WHERE id = $1
-      `, [req.params.id]);
-    if (res_db.rows.length > 0 && Object.keys(user_logged).length > 0 && user_logged.level === 'admin') {
-      
-      return res.status(200).json(renameProductKeys(res_db.rows[0], 'barcode_secondary', 'barcodeSecondary'));
+    const validate_exist_product = await validateExistProductById(req.params.id, res);
+    if (Object.keys(validate_exist_product).length === 0) {
+      return res
+        .status(400)
+        .json({message: 'Not Found Product', code: 'EDP001', status: false});
+    }
+    if (Object.keys(user_logged).length > 0 && user_logged.level === 'admin') { 
+      return res
+        .status(200)
+        .json(renameProductKeys(validate_exist_product.rows[0], 'barcode_secondary', 'barcodeSecondary'));
     } else {
       return res
         .status(400)
@@ -502,19 +512,46 @@ api.get('/api/v0/products/product/:id', async function (req, res) {
  * @returns {200} Producto actualizado | {400} Error si no existe
  */
 api.patch('/api/v0/products/product/:id', async function (req, res) {
-  const productToFind = products.find(
-    (product) => product.id === parseInt(req.params.id)
-  );
-  if (productToFind && Object.keys(userToSend).length) {
-    products = products.map((product) =>
-      product.id === parseInt(req.params.id) ? req.body : product
-    );
-    return res.status(200).json(req.body);
-  } else {
+  try {
+    const user_logged = await getUserLogged();
+    const validate_exist_product = await validateExistProductById(req.params.id, res);
+    if (!(Object.keys(user_logged).length > 0)) {
+      return res
+        .status(403)
+        .json({message: 'Not Authorized', code: 'EDP001', status: false});
+    }
+    if (Object.keys(validate_exist_product.rows).length === 0) {
+      return res
+        .status(400)
+        .json({message: 'Not Found Product', code: 'EDP002', status: false});
+    }
+    const validate_exist_product_new_barcode = await validateExistProduct('barcode', req.body.barcode, res);
+    const validate_exist_product_new_barcode_secondary = await validateExistProduct('barcode_secondary', req.body.barcodeSecondary, res);
+    if (validate_exist_product.rows[0].barcode !== req.body.barcode 
+        && validate_exist_product_new_barcode.rows.length > 0) {
+      return res
+        .status(400)
+        .json({message: 'Barcode already exists', code: 'EDP003', status: false});
+    } else if (validate_exist_product.rows[0].barcode_secondary !== req.body.barcodeSecondary 
+        && validate_exist_product_new_barcode_secondary.rows.length > 0) {
+      return res
+        .status(400)
+        .json({message: 'Barcode Secondary already exists', code: 'EDP004', status: false});
+    } else if (user_logged.level === 'admin') {
+      const res_db = await pool.query(
+        `
+          UPDATE products
+          SET name = $1, barcode = $2, barcode_secondary = $3, price = $4, stock = $5, description = $6
+          WHERE id = $7
+        `, [req.body.name, req.body.barcode, req.body.barcodeSecondary, req.body.price, req.body.stock, req.body.description, req.params.id]);
+      return res.status(200).json(req.body);
+    } 
+  } catch (err) {
+    console.error('Error al conectar a la base de datos: ', err.stack);
     return res
-      .status(400)
-      .json({message: 'Not Found Product', code: 'EEP001', status: false});
-  }
+      .status(500)
+      .json({message: 'Server ERROR', code: 'D00B1', status: false});
+  } finally {}
 });
 
 /**

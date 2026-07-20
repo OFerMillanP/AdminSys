@@ -40,6 +40,12 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
       /**
        * Whether the last edit operation succeeded.
        */
+      editErrorResponse: {
+        type: Object,
+      },
+      /**
+       * Whether the last edit operation succeeded.
+       */
       editSuccess: {
         type: Boolean,
         attribute: 'edit-success',
@@ -82,7 +88,15 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
         type: Object,
         state: true,
       },
+      _editErrorResponseModalRef: {
+        type: Object,
+        state: true,
+      },
       _editSuccessModalRef: {
+        type: Object,
+        state: true,
+      },
+      _messageByCode: {
         type: Object,
         state: true,
       },
@@ -106,6 +120,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
   constructor() {
     super();
     this.deleteSuccess = false;
+    this.editErrorResponse = {};
     this.editSuccess = false;
     this.levelUser = '';
     this.productToEdit = {};
@@ -113,7 +128,12 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     this._confirmDelete = false;
     this._currentPage = 1;
     this._deleteModalRef = createRef();
+    this._editErrorResponseModalRef = createRef();
     this._editSuccessModalRef = createRef();
+    this._messageByCode = {
+      'EDP003': 'El código de barras ya está registrado',
+      'EDP004': 'El código de barras secundario ya está registrado',
+    }
     this._productIdToAction = {};
     this._showEditForm = false;
     this._successDeleteModalRef = createRef();
@@ -135,6 +155,12 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     }
     if (changedProperties.has('deleteSuccess') && this.deleteSuccess) {
       this._successDeleteModalRef.value.openModal();
+    }
+    if (changedProperties.has('editSuccess') && this.editSuccess) {
+      this._editSuccessModalRef.value.openModal();
+    }
+    if (changedProperties.has('editErrorResponse') && Object.keys(this.editErrorResponse).length > 0) {
+      this._editErrorResponseModalRef.value.openModal();
     }
   }
 
@@ -208,9 +234,9 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
   /**
    * Closes the edit success modal and resets the edit form state.
    */
-  _closeEditSuccessModal() {
+  _closeEditModal() {
     this._showEditForm = false;
-    dispatchCustomEvent(this, `${ProductsElement.is}-close-success-edit-modal`);
+    dispatchCustomEvent(this, `${ProductsElement.is}-close-edit-modal`);
   }
 
   /**
@@ -230,7 +256,6 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
       `${ProductsElement.is}-edit-product`,
       this.productToEdit
     );
-    this._editSuccessModalRef.value.openModal();
   }
 
   /**
@@ -416,7 +441,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                       <td>${product.barcodeSecondary}</td>
                       <td>${product.name}</td>
                       <td>
-                        <div class="data-number">$${product.price}</div>
+                        <div class="data-number">$ ${product.price}</div>
                       </td>
                       <td>
                         <div class="data-number">${product.stock}</div>
@@ -526,7 +551,28 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
           isEnableConfirmButton: true,
         }}
         @modal-element-confirm-action-success-update=${this
-          ._closeEditSuccessModal}
+          ._closeEditModal}
+      ></modal-element>
+    `;
+  }
+
+  /**
+   * Returns the edit error modal template.
+   *
+   * @returns {import('lit').TemplateResult}
+   */
+  get _tplEditErrorResponseModal() {
+    return html`
+      <modal-element
+        ${ref(this._editErrorResponseModalRef)}
+        .data=${{
+          bodyText: `${this._messageByCode[this.editErrorResponse.code] || 'Error al actualizar el producto.'}`,
+          code: 'error-update',
+          confirmButtonText: 'Aceptar',
+          titleText: `¡Error al Actualizar Producto!`,
+          type: 'error',
+          isEnableConfirmButton: true,
+        }}
       ></modal-element>
     `;
   }
@@ -553,6 +599,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
       ${!this._showEditForm ? this._tplProductList : this._tplEditForm}
       ${this._tplDeleteModal} ${this._tplDeleteSuccessModal}
       ${this._tplEditSuccessModal}
+      ${this._tplEditErrorResponseModal}
       ${!this._showEditForm ? this._tplPagination : nothing}
     `;
   }
