@@ -422,7 +422,9 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                         <div class="data-number">${product.stock}</div>
                       </td>
                       <td>${product.description}</td>
-                      <td>${product.date}</td>
+                      <td>
+                        ${new Date(product.date).toLocaleDateString()} - ${new Date(product.date).toLocaleTimeString()}
+                      </td>
                       ${this.levelUser === 'admin' || this.levelUser === 'manager'
                         ? html`
                             <td>
