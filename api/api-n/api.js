@@ -240,6 +240,26 @@ function getCurrentDate() {
   }:${date.getSeconds() < 10 ? `0${date.getSeconds()}` : date.getSeconds()}`;
   return `${fecha} - ${hora}`;
 }
+  
+function renameProductKeys(product, oldKey, newKey) {
+  let renamedObject = {
+    ...product,
+    [newKey]: product[oldKey],
+  };
+  delete renamedObject[oldKey];
+  return renamedObject;
+}
+
+async function getUserLogged() {
+  const res_db = await pool.query(
+    `
+      SELECT u.name, u.last_login, l.name AS level FROM users u
+      INNER JOIN levels l
+      ON u.level = l.id
+      WHERE is_logged = true
+    `);
+  return res_db.rows[0];
+}
 
 /**
  * Apis --------------------------------------------------------
@@ -275,15 +295,8 @@ api.get('/api/v0/logout', async function (req, res) {
  */
 api.get('/api/v0/login', async function (req, res) {
   try {
-    const res_db = await pool.query(
-      `
-        SELECT u.name, u.last_login, l.name AS level
-        FROM users u
-        INNER JOIN levels l
-        ON u.level = l.id
-        WHERE is_logged = true
-      `);
-    userToSend = Object.assign({}, res_db.rows[0]);
+    const res_db = await getUserLogged();
+    userToSend = Object.assign({}, res_db);
     return res.status(200).json(userToSend);
   } catch (err) {
     console.error('Error al conectar a la base de datos: ', err.stack);
@@ -351,13 +364,7 @@ api.post('/api/v0/login', async function (req, res) {
  */
 api.post('/api/v0/products/product', async function (req, res) {
   try {
-    const user_logged = await pool.query(
-      `
-        SELECT u.name, u.last_login, l.name AS level FROM users u
-        INNER JOIN levels l
-        ON u.level = l.id
-        WHERE is_logged = true
-      `);
+    const user_logged = await getUserLogged();
 
     const validate_exist = await pool.query(
       `
@@ -372,7 +379,7 @@ api.post('/api/v0/products/product', async function (req, res) {
       return res
         .status(400)
         .json({message: 'Negative Values', code: 'ERP002', status: false});
-    } else if (Object.keys(user_logged.rows[0]).length > 0) {
+    } else if (Object.keys(user_logged).length > 0) {
       const product = await pool.query(
       `
         INSERT INTO products (name, barcode, barcode_secondary, price, stock, description)
@@ -401,23 +408,17 @@ api.post('/api/v0/products/product', async function (req, res) {
  */
 api.delete('/api/v0/products/product/:id', async function (req, res) {
   try {
-    const user_logged = await pool.query(
-    `
-      SELECT u.name, u.last_login, l.name AS level FROM users u
-      INNER JOIN levels l
-      ON u.level = l.id
-      WHERE is_logged = true
-    `);
-  const validate_exist_product = await pool.query(
+    const user_logged = await getUserLogged();
+    const validate_exist_product = await pool.query(
       `
         SELECT * FROM products WHERE id = $1
       `, [req.params.id]);
-  if (!(Object.keys(user_logged.rows[0]).length > 0)) {
+  if (!(Object.keys(user_logged).length > 0)) {
     return res
       .status(403)
       .json({message: 'Not Authorized', code: 'EDP002', status: false});
   }
-  if (validate_exist_product.rows.length && user_logged.rows[0].level === 'admin') {
+  if (validate_exist_product.rows.length && user_logged.level === 'admin') {
     await pool.query(
       `
         DELETE FROM products WHERE id = $1
@@ -443,19 +444,14 @@ api.delete('/api/v0/products/product/:id', async function (req, res) {
  */
 api.get('/api/v0/products', async function (req, res) {
   try {
-    const user_logged = await pool.query(
-      `
-        SELECT u.name, u.last_login, l.name AS level FROM users u
-        INNER JOIN levels l
-        ON u.level = l.id
-        WHERE is_logged = true
-      `);
-    if (Object.keys(user_logged.rows[0]).length > 0) {
+    const user_logged = await getUserLogged();
+    if (Object.keys(user_logged).length > 0) {
       const res_db = await pool.query(
         `
           SELECT * FROM products
         `);
-      return res.status(200).json(res_db.rows.reverse());
+      mappingProducts = res_db.rows.map((product) => renameProductKeys(product, 'barcode_secondary', 'barcodeSecondary'));
+      return res.status(200).json(mappingProducts.reverse());
     } else {
       return res
         .status(400)
@@ -477,19 +473,14 @@ api.get('/api/v0/products', async function (req, res) {
  */
 api.get('/api/v0/products/product/:id', async function (req, res) {
   try {
-    const user_logged = await pool.query(
-      `
-        SELECT u.name, u.last_login, l.name AS level FROM users u
-        INNER JOIN levels l
-        ON u.level = l.id
-        WHERE is_logged = true
-      `);
+    const user_logged = await getUserLogged();
     const res_db = await pool.query(
       `
         SELECT * FROM products WHERE id = $1
       `, [req.params.id]);
-    if (res_db.rows.length > 0 && Object.keys(user_logged.rows[0]).length > 0 && user_logged.rows[0].level === 'admin') {
-      return res.status(200).json(res_db.rows[0]);
+    if (res_db.rows.length > 0 && Object.keys(user_logged).length > 0 && user_logged.level === 'admin') {
+      
+      return res.status(200).json(renameProductKeys(res_db.rows[0], 'barcode_secondary', 'barcodeSecondary'));
     } else {
       return res
         .status(400)

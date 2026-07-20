@@ -273,7 +273,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                 autocomplete="off"
                 id="barcode-secondary"
                 type="text"
-                .value="${this.productToEdit['barcode_secondary']}"
+                .value="${this.productToEdit.barcodeSecondary}"
                 @input=${this._handleInput}
               ></mwc-textfield>
             </div>
@@ -413,7 +413,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                   (product) =>
                     html` <tr>
                       <td>${product.barcode}</td>
-                      <td>${product['barcode_secondary']}</td>
+                      <td>${product.barcodeSecondary}</td>
                       <td>${product.name}</td>
                       <td>
                         <div class="data-number">$${product.price}</div>
@@ -551,7 +551,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
       ${!this._showEditForm ? this._tplProductList : this._tplEditForm}
       ${this._tplDeleteModal} ${this._tplDeleteSuccessModal}
       ${this._tplEditSuccessModal}
-      ${this._tplPagination}
+      ${!this._showEditForm ? this._tplPagination : nothing}
     `;
   }
 }
