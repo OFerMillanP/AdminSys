@@ -421,7 +421,7 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
                       </div>
                     </td>
                     <td>${product.barcode}</td>
-                    <td>${product.barcodeSecondary}</td>
+                    <td>${product['barcode_secondary']}</td>
                     <td>${product.name}</td>
                     <td>
                       <div class="data-price">

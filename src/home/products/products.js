@@ -273,7 +273,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                 autocomplete="off"
                 id="barcode-secondary"
                 type="text"
-                .value="${this.productToEdit.barcodeSecondary}"
+                .value="${this.productToEdit['barcode_secondary']}"
                 @input=${this._handleInput}
               ></mwc-textfield>
             </div>
@@ -413,7 +413,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                   (product) =>
                     html` <tr>
                       <td>${product.barcode}</td>
-                      <td>${product.barcodeSecondary}</td>
+                      <td>${product['barcode_secondary']}</td>
                       <td>${product.name}</td>
                       <td>
                         <div class="data-number">$${product.price}</div>

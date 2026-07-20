@@ -349,26 +349,48 @@ api.post('/api/v0/login', async function (req, res) {
  * @param {{barcode:string,price:number,stock:number}} req.body - Datos del producto
  * @returns {200} Producto creado | {400} Error con código y mensaje
  */
-api.post('/api/v0/products/product', function (req, res) {
-  if (products.find((product) => product.barcode === req.body.barcode)) {
+api.post('/api/v0/products/product', async function (req, res) {
+  try {
+    const user_logged = await pool.query(
+      `
+        SELECT u.name, u.last_login, l.name AS level FROM users u
+        INNER JOIN levels l
+        ON u.level = l.id
+        WHERE is_logged = true
+      `);
+
+    const validate_exist = await pool.query(
+      `
+        SELECT * FROM products WHERE barcode = $1
+      `, [req.body.barcode]);
+    
+    if (validate_exist.rows.length) {
+      return res
+        .status(400)
+        .json({message: 'Duplicated product', code: 'ERP001', status: false});
+    } else if (req.body.price <= 0 || req.body.stock < 0) {
+      return res
+        .status(400)
+        .json({message: 'Negative Values', code: 'ERP002', status: false});
+    } else if (Object.keys(user_logged.rows[0]).length > 0) {
+      const product = await pool.query(
+      `
+        INSERT INTO products (name, barcode, barcode_secondary, price, stock, description)
+        VALUES ($1, $2, $3, $4, $5, $6);
+      `, [req.body.name, req.body.barcode, req.body.barcodeSecondary, req.body.price, req.body.stock, req.body.description]);
+      
+      return res.status(200).json(req.body);
+    } else {
+      return res
+        .status(400)
+        .json({message: 'Not Authorized', code: 'ECP001', status: false});
+    }
+  } catch (err) {
+    console.error('Error al conectar a la base de datos: ', err.stack);
     return res
-      .status(400)
-      .json({message: 'Duplicated product', code: 'ERP001', status: false});
-  } else if (req.body.price < 0 || req.body.stock < 0) {
-    return res
-      .status(400)
-      .json({message: 'Negative Values', code: 'ERP002', status: false});
-  } else if (Object.keys(userToSend).length) {
-    req.body.date = getCurrentDate();
-    newProduct += 1;
-    req.body.id = newProduct;
-    products.push(req.body);
-    return res.status(200).json(req.body);
-  } else {
-    return res
-      .status(400)
-      .json({message: 'Not Authorized', code: 'ECP001', status: false});
-  }
+      .status(500)
+      .json({message: 'Server ERROR', code: 'D00B1', status: false});
+  } finally {}
 });
 
 /**
@@ -377,23 +399,41 @@ api.post('/api/v0/products/product', function (req, res) {
  * @param {Object} req.params.id - Id del producto a eliminar
  * @returns {200} true | {400|403} Error con código y mensaje
  */
-api.delete('/api/v0/products/product/:id', function (req, res) {
-  const productToDelete = products.find(
-    (product) => product.id === parseInt(req.params.id)
-  );
-  if (!(userToSend.level === 'admin')) {
+api.delete('/api/v0/products/product/:id', async function (req, res) {
+  try {
+    const user_logged = await pool.query(
+    `
+      SELECT u.name, u.last_login, l.name AS level FROM users u
+      INNER JOIN levels l
+      ON u.level = l.id
+      WHERE is_logged = true
+    `);
+  const validate_exist_product = await pool.query(
+      `
+        SELECT * FROM products WHERE id = $1
+      `, [req.params.id]);
+  if (!(Object.keys(user_logged.rows[0]).length > 0)) {
     return res
       .status(403)
       .json({message: 'Not Authorized', code: 'EDP002', status: false});
   }
-  if (productToDelete && userToSend.level === 'admin' && Object.keys(userToSend).length) {
-    products.splice(products.indexOf(productToDelete), 1);
+  if (validate_exist_product.rows.length && user_logged.rows[0].level === 'admin') {
+    await pool.query(
+      `
+        DELETE FROM products WHERE id = $1
+      `, [req.params.id]);
     return res.status(200).json(true);
   } else {
     return res
       .status(400)
       .json({message: 'Not Found Product', code: 'EDP001', status: false});
   }
+  } catch (err) {
+    console.error('Error al conectar a la base de datos: ', err.stack);
+    return res
+      .status(500)
+      .json({message: 'Server ERROR', code: 'D00B1', status: false});
+  } finally {}
 });
 
 /**
@@ -401,16 +441,32 @@ api.delete('/api/v0/products/product/:id', function (req, res) {
  * @route GET /api/v0/products
  * @returns {Object[]} Lista de productos
  */
-api.get('/api/v0/products', function (req, res) {
-  if (Object.keys(userToSend).length) {
-    productsToSend = Array.from(products);
-    productsToSend.reverse();
-    res.status(200).json(productsToSend);
-  } else {
+api.get('/api/v0/products', async function (req, res) {
+  try {
+    const user_logged = await pool.query(
+      `
+        SELECT u.name, u.last_login, l.name AS level FROM users u
+        INNER JOIN levels l
+        ON u.level = l.id
+        WHERE is_logged = true
+      `);
+    if (Object.keys(user_logged.rows[0]).length > 0) {
+      const res_db = await pool.query(
+        `
+          SELECT * FROM products
+        `);
+      return res.status(200).json(res_db.rows.reverse());
+    } else {
+      return res
+        .status(400)
+        .json({message: 'Not Authorized', code: 'EGP001', status: false});
+    }
+  } catch (err) {
+    console.error('Error al conectar a la base de datos: ', err.stack);
     return res
-      .status(400)
-      .json({message: 'Not Authorized', code: 'EGP001', status: false});
-  }
+      .status(500)
+      .json({message: 'Server ERROR', code: 'D00B1', status: false});
+  } finally {}
 });
 
 /**
@@ -419,17 +475,32 @@ api.get('/api/v0/products', function (req, res) {
  * @param {Object} req.params.id - Id del producto a buscar
  * @returns {200} Producto | {400} Error si no existe
  */
-api.get('/api/v0/products/product/:id', function (req, res) {
-  const productToFind = products.find(
-    (product) => product.id === parseInt(req.params.id)
-  );
-  if (productToFind && Object.keys(userToSend).length) {
-    return res.status(200).json(productToFind);
-  } else {
+api.get('/api/v0/products/product/:id', async function (req, res) {
+  try {
+    const user_logged = await pool.query(
+      `
+        SELECT u.name, u.last_login, l.name AS level FROM users u
+        INNER JOIN levels l
+        ON u.level = l.id
+        WHERE is_logged = true
+      `);
+    const res_db = await pool.query(
+      `
+        SELECT * FROM products WHERE id = $1
+      `, [req.params.id]);
+    if (res_db.rows.length > 0 && Object.keys(user_logged.rows[0]).length > 0 && user_logged.rows[0].level === 'admin') {
+      return res.status(200).json(res_db.rows[0]);
+    } else {
+      return res
+        .status(400)
+        .json({message: 'Not Found Product', code: 'EEP001', status: false});
+    }
+  } catch (err) {
+    console.error('Error al conectar a la base de datos: ', err.stack);
     return res
-      .status(400)
-      .json({message: 'Not Found Product', code: 'EEP001', status: false});
-  }
+      .status(500)
+      .json({message: 'Server ERROR', code: 'D00B1', status: false});
+  } finally {}
 });
 
 /**
@@ -439,7 +510,7 @@ api.get('/api/v0/products/product/:id', function (req, res) {
  * @param {Object} req.body - Nuevo objeto producto
  * @returns {200} Producto actualizado | {400} Error si no existe
  */
-api.patch('/api/v0/products/product/:id', function (req, res) {
+api.patch('/api/v0/products/product/:id', async function (req, res) {
   const productToFind = products.find(
     (product) => product.id === parseInt(req.params.id)
   );
