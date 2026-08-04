@@ -1,9 +1,13 @@
 // import pool from '../database/db.js';
 const pool = require('../database/db.js');
+const utils = require('./utils/utils.js');
 
 let cors = require('cors');
 let express = require('express');
 let api = express();
+
+api.use(cors());
+api.use(express.json());
 
 var bodyParser = require('body-parser');
 
@@ -15,15 +19,6 @@ var bodyParser = require('body-parser');
  * @type {number|string}
  */
 let port = process.env.PORT || 8100;
-
-/**
- * CORS options to allow requests from the local frontend.
- * @type {{origin: string, optionsSuccessStatus: number}}
- */
-const corsOptions = {
-  origin: 'http://localhost:8000',
-  optionsSuccessStatus: 200,
-};
 
 api.use(cors());
 api.use(bodyParser.urlencoded({extended: true}));
@@ -225,16 +220,16 @@ let closedCashRegisters = [
 function getCurrentDate() {
   const date = new Date();
   const fecha = `${
-    date.getDate() < 10 ? `0${date.getDate()}` : date.getDate()
+    date.getDate()
   }/${
-    date.getMonth() + 1 < 10 ? `0${date.getMonth() + 1}` : date.getMonth() + 1
+    date.getMonth() + 1
   }/${date.getFullYear()}`;
   const hora = `${date.getHours()}:${
     date.getMinutes() < 10 ? `0${date.getMinutes()}` : date.getMinutes()
   }:${date.getSeconds() < 10 ? `0${date.getSeconds()}` : date.getSeconds()}`;
-  return `${fecha} - ${hora}`;
+  return `${fecha}, ${hora}`;
 }
-  
+
 function renameProductKeys(product, oldKey, newKey) {
   let renamedObject = {
     ...product,
@@ -284,17 +279,11 @@ async function validateExistProduct(param, value, res) {
  */
 api.get('/api/v0/logout', async function (req, res) {
   try {
-    const res_db = await pool.query(
-      `
-        UPDATE users 
-        SET is_logged = false 
-      `);
+    const res_db = await pool.query(utils.logoutUser);
     return res.status(200);
   } catch (err) {
     console.error('Error al conectar a la base de datos: ', err.stack);
-    return res
-      .status(500)
-      .json({message: 'Server ERROR', code: 'D00B1', status: false});
+    return utils.returnErrorServer(res);
   } finally {}
 });
 
@@ -307,12 +296,15 @@ api.get('/api/v0/login', async function (req, res) {
   try {
     const res_db = await getUserLogged();
     userToSend = Object.assign({}, res_db);
-    return res.status(200).json(userToSend);
+    if (res_db.last_login.toLocaleString().substring(0, 9) !== getCurrentDate().substring(0, 9)) {
+      await pool.query(utils.logoutUser);
+      return res.status(200).json({});
+    } else {
+      return res.status(200).json(userToSend);
+    }
   } catch (err) {
     console.error('Error al conectar a la base de datos: ', err.stack);
-    return res
-      .status(500)
-      .json({message: 'Server ERROR', code: 'D00B1', status: false});
+    return utils.returnErrorServer(res);
   } finally {}
 });
 
@@ -326,13 +318,7 @@ api.post('/api/v0/login', async function (req, res) {
   userLoginTry += 1;
   let res_db = {};
   try {
-    res_db = await pool.query(
-      `
-        SELECT u.name, u.last_login, l.name AS level FROM users u
-        INNER JOIN levels l
-        ON u.level = l.id
-        WHERE user_name = $1 AND password = $2
-      `, [req.body.user, req.body.password]);
+    res_db = await pool.query(utils.getUserAndLevel, [req.body.user, req.body.password]);
     userLoginTry = 0;
     userToSend = Object.assign({}, res_db.rows[0]);
     if (res_db.rows.length) {
@@ -358,9 +344,7 @@ api.post('/api/v0/login', async function (req, res) {
     }
   } catch (err) {
     console.error('Error al conectar a la base de datos: ', err.stack);
-    return res
-      .status(500)
-      .json({message: 'Server ERROR', code: 'D00B1', status: false});
+    return utils.returnErrorServer(res);
   } finally {
     // pool.end(); - para terminar
   }
@@ -404,9 +388,7 @@ api.post('/api/v0/products/product', async function (req, res) {
     }
   } catch (err) {
     console.error('Error al conectar a la base de datos: ', err.stack);
-    return res
-      .status(500)
-      .json({message: 'Server ERROR', code: 'D00B1', status: false});
+    return utils.returnErrorServer(res);
   } finally {}
 });
 
@@ -438,9 +420,7 @@ api.delete('/api/v0/products/product/:id', async function (req, res) {
     }
   } catch (err) {
     console.error('Error al conectar a la base de datos: ', err.stack);
-    return res
-      .status(500)
-      .json({message: 'Server ERROR', code: 'D00B1', status: false});
+    return utils.returnErrorServer(res);
   } finally {}
 });
 
@@ -451,7 +431,7 @@ api.delete('/api/v0/products/product/:id', async function (req, res) {
  */
 api.get('/api/v0/products', async function (req, res) {
   try {
-    const user_logged = await getUserLogged();
+    const user_logged = await getUserLogged() || {};
     if (Object.keys(user_logged).length > 0) {
       const res_db = await pool.query(
         `
@@ -466,9 +446,7 @@ api.get('/api/v0/products', async function (req, res) {
     }
   } catch (err) {
     console.error('Error al conectar a la base de datos: ', err.stack);
-    return res
-      .status(500)
-      .json({message: 'Server ERROR', code: 'D00B1', status: false});
+    return utils.returnErrorServer(res);
   } finally {}
 });
 
@@ -480,7 +458,7 @@ api.get('/api/v0/products', async function (req, res) {
  */
 api.get('/api/v0/products/product/:id', async function (req, res) {
   try {
-    const user_logged = await getUserLogged();
+    const user_logged = await getUserLogged() || {};
     const validate_exist_product = await validateExistProductById(req.params.id, res);
     if (Object.keys(validate_exist_product).length === 0) {
       return res
@@ -498,9 +476,7 @@ api.get('/api/v0/products/product/:id', async function (req, res) {
     }
   } catch (err) {
     console.error('Error al conectar a la base de datos: ', err.stack);
-    return res
-      .status(500)
-      .json({message: 'Server ERROR', code: 'D00B1', status: false});
+    return utils.returnErrorServer(res);
   } finally {}
 });
 
@@ -548,9 +524,7 @@ api.patch('/api/v0/products/product/:id', async function (req, res) {
     } 
   } catch (err) {
     console.error('Error al conectar a la base de datos: ', err.stack);
-    return res
-      .status(500)
-      .json({message: 'Server ERROR', code: 'D00B1', status: false});
+    return utils.returnErrorServer(res);
   } finally {}
 });
 

@@ -257,6 +257,11 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     }
   }
 
+  _getUserInSessionHandleErrorResponse(){
+    this._isLogged = false;
+    // window.location.reload();
+  }
+
   /**
    * Handles login errors from the manager.
    * Stores the error state so the login view can display it.
@@ -834,6 +839,8 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
           ._registerProductSuccessResponse}
         @api-dm-session-active-success-response=${this
           ._getUserInSessionSuccesResponse}
+        @api-dm-session-active-handle-error=${this
+          ._getUserInSessionHandleErrorResponse}
         @dm-delete-product-success-response=${this
           ._deleteProductSuccessResponse}
         @dm-edit-product-success-response=${this._editProductSuccessResponse}
