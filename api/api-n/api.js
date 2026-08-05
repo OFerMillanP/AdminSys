@@ -10,6 +10,7 @@ api.use(cors());
 api.use(express.json());
 
 var bodyParser = require('body-parser');
+const { forEach } = require('pdfkit');
 
 /**
  * Configs --------------------------------------------------------
@@ -534,26 +535,51 @@ api.patch('/api/v0/products/product/:id', async function (req, res) {
  * @param {Object[]} req.body - Lista de productos vendidos con cantidad.
  * @returns {200} Venta registrada
  */
-api.post('/api/v0/sales', function (req, res) {
-  if (Object.keys(userToSend).length) {
-    const sale = req.body;
-    sale.id = newSale + 1;
-    newSale += 1;
-    products.map((product) => {
-      const productInSale = sale.products.find(
-        (productSale) => productSale.barcode === product.barcode
-      );
-      if (productInSale) {
-        product.stock -= productInSale.quantity;
-      }
-    });
-    sales.push(sale);
-    res.status(200).json(sale);
-  } else {
-    return res
-      .status(400)
-      .json({message: 'Not Authorized', code: 'EGS001', status: false});
-  }
+api.post('/api/v0/sales', async function (req, res) {
+   try {
+    const user_logged = await getUserLogged() || {};
+    
+    if ((Object.keys(user_logged).length > 0)) {
+      const sale = req.body;
+
+      await pool.query(
+        `
+        INSERT INTO sales (total, change_to_give, payment_method)
+        VALUES ($1, $2, $3)
+        `, [sale.total, sale.changeToGive, sale.paymentMethod]);
+      
+      const getLastSale = await pool.query(
+        `
+          SELECT id FROM sales
+          ORDER BY id DESC
+          LIMIT 1
+        `);
+      
+      sale.products.forEach(async (product) => {
+        await pool.query(
+        `
+          INSERT INTO sales_products (sale, product, quantity)
+          VALUES ($1, $2, $3)
+        `, [getLastSale.rows[0].id, product.id, product.quantity]);
+        
+        await pool.query(
+        `
+          UPDATE products
+          SET stock = stock - $2
+          WHERE id = $1;
+        `, [product.id, product.quantity]);
+
+      })
+      res.status(200).json({message: 'Sale registered successfully', code: 'ESR001', status: true});
+    } else {
+      return res
+        .status(400)
+        .json({message: 'Not Authorized', code: 'EGS001', status: false});
+    }
+  } catch (err) {
+    console.error('Error al conectar a la base de datos: ', err.stack);
+    return utils.returnErrorServer(res);
+  } finally {}
 });
 
 /**
@@ -561,16 +587,48 @@ api.post('/api/v0/sales', function (req, res) {
  * @route GET /api/v0/sales
  * @returns {Object[]} List of sales
  */
-api.get('/api/v0/sales', function (req, res) {
-  if (Object.keys(userToSend).length) {
-    salesToShow = Array.from(sales);
-    salesToShow.reverse();
-    res.status(200).json(salesToShow);
-  } else {
-    return res
-      .status(400)
-      .json({message: 'Not Authorized', code: 'EGS001', status: false});
-  }
+api.get('/api/v0/sales', async function (req, res) {
+   try {
+    if (Object.keys(userToSend).length) {
+      const getSales = await pool.query(
+        `
+          SELECT * FROM sales
+          ORDER BY id DESC
+        `);
+
+      const salesWithProducts = await Promise.all(
+        getSales.rows.map(async (sale) => {
+          const getProductsFromSale = await pool.query(
+            `
+              SELECT p.id, p.name, p.barcode,
+              p.barcode_secondary, p.price, p.description,
+              sp.quantity
+              FROM products p
+              INNER JOIN sales_products sp
+              ON sp.product = p.id
+              INNER JOIN sales s
+              ON sp.sale = s.id
+              WHERE s.id = $1
+            `, [sale.id]);
+
+          return {
+            ...sale,
+            showProducts: false,
+            products: getProductsFromSale.rows,
+          };
+        })
+      );
+
+      return res.status(200).json(salesWithProducts);
+    } else {
+      return res
+        .status(400)
+        .json({message: 'Not Authorized', code: 'EGS001', status: false});
+    }
+  } catch (err) {
+    console.error('Error al conectar a la base de datos: ', err.stack);
+    return utils.returnErrorServer(res);
+  } finally {}
 });
 
 api.get('/api/v0/sales/cash-register', function (req, res) {

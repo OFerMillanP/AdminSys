@@ -498,6 +498,10 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._printTicket({detail: true});
   }
 
+  _closeRegisterSuccessModal(){
+    this._registerProductSuccess = false;
+  }
+
   // async _openCashRegister() {
   //   const printer = new ThermalPrinter({
   //     type: PrinterTypes.EPSON, // Cambia el tipo según tu marca (EPSON, STAR, etc.)
@@ -816,6 +820,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         @sell-element-get-product-to-sell="${this._searchProductToSell}"
         @sell-element-print-ticket="${this._printTicket}"
         @sell-element-update-product-to-sell="${this._updateProductToSell}"
+        @modal-element-confirm-action-success-register="${this._closeRegisterSuccessModal}"
       ></home-element>
     `;
   }

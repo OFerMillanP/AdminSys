@@ -1,9 +1,7 @@
 /node_modules/
 build/
 components
-api/database/db.js
-/api/database/db.js
-*/db.js
+api\database\db.js
+api-n\node_modules
 
 # only generated for size check
-my-element.bundled.js
