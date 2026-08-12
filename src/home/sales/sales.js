@@ -70,12 +70,12 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
     this.level = '';
     this.sales = [];
     this.total = 0;
-    this._activeIndex = 2;
+    this._activeIndex = 0;
     this._currentPage = 1;
     this._endDate = '';
-    this._isShowCashRegister = true;
+    this._isShowCashRegister = false;
     this._isShowReport = false;
-    this._isShowSales = false;
+    this._isShowSales = true;
     this._startDate = '';
     this._maxDate = new Date().toISOString().split('T')[0];
   }
@@ -130,14 +130,14 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
         this._isShowSales = true;
         this._activeIndex = 0;
       },
-      reports: () => {
-        this._resetSections();
-        this._isShowReport = true;
-        this._activeIndex = 1;
-      },
       'cash-register': () => {
         this._resetSections();
         this._isShowCashRegister = true;
+        this._activeIndex = 1;
+      },
+      reports: () => {
+        this._resetSections();
+        this._isShowReport = true;
         this._activeIndex = 2;
       },
     };
@@ -261,15 +261,18 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
           @click="${this._showSection}"
         ></mwc-tab>
         <mwc-tab
-          label="Reports"
-          id="reports"
-          @click="${this._showSection}"
-        ></mwc-tab>
-        <mwc-tab
           label="Cash Register"
           id="cash-register"
           @click="${this._showSection}"
         ></mwc-tab>
+        ${this.level === 'admin' ? 
+          html`
+            <mwc-tab
+              label="Reports"
+              id="reports"
+              @click="${this._showSection}"
+            ></mwc-tab>
+          ` : nothing}
       </mwc-tab-bar>
     `;
   }

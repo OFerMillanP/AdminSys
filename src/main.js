@@ -230,10 +230,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._isLogged = !!Object.keys(detail).length && !!detail.level;
     this._managerRef.value.getProductList();
     this._getSales();
-
-    if (this._isLogged && detail.level === 'admin') {
-      this._managerRef.value.getCloseCashRegister();
-    }
+    this._managerRef.value.getCloseCashRegister();
   }
 
   /**
@@ -719,7 +716,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
           </div>
           <div class="total-row total">
             <span>TOTAL:</span>
-            <span>$${sales.total.toFixed(2)}</span>
+            <span>$${Number(sales.total).toFixed(2)}</span>
           </div>
           ${
             sales.paymentMethod === 'cash'
@@ -734,7 +731,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
                 </div>
                 <div class="total-row total">
                   <span>Change:</span>
-                  <span> $${sales.changeToGive.toFixed(2)} </span>
+                  <span> $${parseFloat(sales.changeToGive).toFixed(2)} </span>
                 </div>
               `
               : ''

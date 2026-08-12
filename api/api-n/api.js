@@ -30,189 +30,10 @@ api.use(bodyParser.json());
  */
 
 /**
- * Current session user. Used to preserve state between requests.
- * @type {Object}
- */
-let userToSend = {};
-
-/**
  * Counter for failed login attempts in the session.
  * @type {number}
  */
 let userLoginTry = 0;
-
-let products = [
-  {
-    id: 0,
-    name: 'GOMA',
-    barcode: '11111',
-    barcodeSecondary: '',
-    price: 5,
-    stock: 50,
-    description: 'Goma de Migajon Marca Pelican',
-    date: '07/04/2026 - 10:14:26',
-  },
-  {
-    id: 1,
-    name: 'SACAPUNTAS',
-    barcode: '2',
-    barcodeSecondary: '2222',
-    price: 5,
-    stock: 50,
-    description: '',
-    date: '07/04/2026 - 10:15:26',
-  },
-  {
-    id: 2,
-    name: 'LAPIZ',
-    barcode: '3',
-    barcodeSecondary: '',
-    price: 5,
-    stock: 50,
-    description: '',
-    date: '07/04/2026 - 10:16:26',
-  },
-  {
-    id: 3,
-    name: 'CUADERNO',
-    barcode: '4',
-    barcodeSecondary: '',
-    price: 5,
-    stock: 50,
-    description: '',
-    date: '07/04/2026 - 10:17:26',
-  },
-  {
-    id: 4,
-    name: 'HOJA DE COLOR',
-    barcode: '5',
-    barcodeSecondary: '5555',
-    price: 1,
-    stock: 50,
-    description: '',
-    date: '07/04/2026 - 10:18:26',
-  },
-  {
-    id: 5,
-    name: 'HOJA BLANCA',
-    barcode: '6',
-    barcodeSecondary: '',
-    price: 0.5,
-    stock: 50,
-    description: '',
-    date: '07/04/2026 - 10:19:26',
-  },
-];
-
-/**
- * Registered sales stored in memory.
- * @type {Array<Object>}
- */
-let sales = [
-  {
-    products: [
-      {
-        id: 1,
-        name: 'SACAPUNTAS',
-        barcode: '2',
-        barcodeSecondary: '2222',
-        price: 5,
-        stock: 50,
-        description: '',
-        date: '07/04/2026 - 10:15:26',
-        quantity: 2,
-      },
-      {
-        id: 2,
-        name: 'LAPIZ',
-        barcode: '3',
-        barcodeSecondary: '',
-        price: 5,
-        stock: 48,
-        description: '',
-        date: '07/04/2026 - 10:16:26',
-        quantity: 1,
-      },
-      {
-        id: 3,
-        name: 'CUADERNO',
-        barcode: '4',
-        barcodeSecondary: '',
-        price: 5,
-        stock: 50,
-        description: '',
-        date: '07/04/2026 - 10:17:26',
-        quantity: 1,
-      },
-      {
-        id: 0,
-        name: 'GOMA',
-        barcode: '11111',
-        barcodeSecondary: '',
-        price: 5,
-        stock: 50,
-        description: 'Goma de Migajon Marca Pelican',
-        date: '07/04/2026 - 10:14:26',
-        quantity: 1,
-      },
-    ],
-    total: 25,
-    date: '25/05/2026 - 18:09:50',
-    changeToGive: 0,
-    paymentMethod: 'card',
-    id: 2,
-    showProducts: false,
-  },
-  {
-    products: [
-      {
-        id: 4,
-        name: 'HOJA DE COLOR',
-        barcode: '5',
-        barcodeSecondary: '5555',
-        price: 1,
-        stock: 50,
-        description: '',
-        date: '07/04/2026 - 10:18:26',
-        quantity: 1,
-      },
-      {
-        id: 2,
-        name: 'LAPIZ',
-        barcode: '3',
-        barcodeSecondary: '',
-        price: 5,
-        stock: 50,
-        description: '',
-        date: '07/04/2026 - 10:16:26',
-        quantity: 2,
-      },
-    ],
-    total: 12,
-    date: '25/05/2026 - 18:09:26',
-    changeToGive: 3,
-    paymentMethod: 'cash',
-    id: 1,
-    showProducts: false,
-  },
-];
-
-/**
- * Products prepared to send in the listing response.
- * @type {Array<Object>}
- */
-let productsToSend = [];
-
-let newSale = sales.length;
-
-let closedCashRegisters = [
-  {
-    date: '24/05/2026 - 01:00:00',
-    totalCash: '12',
-    totalCard: '25',
-    total: '37'
-  }
-];
 
 /**
  * Returns the current date and time in `DD/MM/YYYY - HH:MM:SS` format.
@@ -231,10 +52,10 @@ function getCurrentDate() {
   return `${fecha}, ${hora}`;
 }
 
-function renameProductKeys(product, oldKey, newKey) {
+function renameObjectKeys(objectToChange, oldKey, newKey) {
   let renamedObject = {
-    ...product,
-    [newKey]: product[oldKey],
+    ...objectToChange,
+    [newKey]: objectToChange[oldKey],
   };
   delete renamedObject[oldKey];
   return renamedObject;
@@ -438,7 +259,7 @@ api.get('/api/v0/products', async function (req, res) {
         `
           SELECT * FROM products
         `);
-      mappingProducts = res_db.rows.map((product) => renameProductKeys(product, 'barcode_secondary', 'barcodeSecondary'));
+      let mappingProducts = res_db.rows.map((product) => renameObjectKeys(product, 'barcode_secondary', 'barcodeSecondary'));
       return res.status(200).json(mappingProducts.reverse());
     } else {
       return res
@@ -466,14 +287,14 @@ api.get('/api/v0/products/product/:id', async function (req, res) {
         .status(400)
         .json({message: 'Not Found Product', code: 'EDP001', status: false});
     }
-    if (Object.keys(user_logged).length > 0 && user_logged.level === 'admin') { 
+    if (Object.keys(user_logged).length > 0 && (user_logged.level === 'admin' || user_logged.level === 'manager')) { 
       return res
         .status(200)
-        .json(renameProductKeys(validate_exist_product.rows[0], 'barcode_secondary', 'barcodeSecondary'));
+        .json(renameObjectKeys(validate_exist_product.rows[0], 'barcode_secondary', 'barcodeSecondary'));
     } else {
       return res
         .status(400)
-        .json({message: 'Not Found Product', code: 'EEP001', status: false});
+        .json({message: 'Not Authorized', code: 'EGS001', status: false});
     }
   } catch (err) {
     console.error('Error al conectar a la base de datos: ', err.stack);
@@ -514,7 +335,7 @@ api.patch('/api/v0/products/product/:id', async function (req, res) {
       return res
         .status(400)
         .json({message: 'Barcode Secondary already exists', code: 'EDP004', status: false});
-    } else if (user_logged.level === 'admin') {
+    } else if (user_logged.level === 'admin' || user_logged.level === 'manager') {
       const res_db = await pool.query(
         `
           UPDATE products
@@ -610,20 +431,28 @@ api.get('/api/v0/sales', async function (req, res) {
               ON sp.sale = s.id
               WHERE s.id = $1
             `, [sale.id]);
-
+            
           sale = {
             ...sale,
             paymentMethod: sale.payment_method,
             changeToGive: sale.change_to_give,
             showProducts: false,
             products: getProductsFromSale.rows,
+            date: new Date(sale.date).toLocaleString('es-MX', { 
+              day: '2-digit', 
+              month: '2-digit', 
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: false
+            })
           };
           delete sale.payment_method;
           delete sale.change_to_give;
           return sale
         })
       );
-
       return res.status(200).json(salesWithProducts);
     } else {
       return res
@@ -636,33 +465,75 @@ api.get('/api/v0/sales', async function (req, res) {
   } finally {}
 });
 
-api.get('/api/v0/sales/cash-register', function (req, res) {
-  if (Object.keys(userToSend).length) {
-    res.status(200).json(closedCashRegisters || []);
-  } else {
-    return res
-      .status(400)
-      .json({message: 'Not Authorized', code: 'EGS001', status: false});
-  }
+/**
+ * Returns the list of closed sales.
+ * @route GET /api/v0/sales/cash-register
+ * @returns {Object[]} List of closed sales
+ */
+api.get('/api/v0/sales/cash-register', async function (req, res) {
+   try {
+    const user_logged = await getUserLogged() || {};
+    if (Object.keys(user_logged).length > 0) {
+      const res_db = await pool.query(
+        `
+          SELECT * FROM cash_register_closed
+        `);
+      let mappingData = res_db.rows.map((data) => {
+        data = {
+          ...data,
+          totalCash: data.total_cash,
+          totalCard: data.total_card,
+          date: new Date(data.date).toLocaleString('es-MX', { 
+            day: '2-digit', 
+            month: '2-digit', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+          })
+        }
+        delete data.total_cash;
+        delete data.total_card;
+        return data
+      });
+      return res.status(200).json(mappingData.reverse());
+    } else {
+      return res
+        .status(400)
+        .json({message: 'Not Authorized', code: 'EGP001', status: false});
+    }
+  } catch (err) {
+    console.error('Error al conectar a la base de datos: ', err.stack);
+    return utils.returnErrorServer(res);
+  } finally {}
 });
 
-api.post('/api/v0/sales/cash-register', function (req, res) {
-  if (Object.keys(userToSend).length) {
-    const closedCashRegisterData = req.body;
-    closedCashRegisters.push(
-      {
-        date: getCurrentDate(),
-        totalCash: closedCashRegisterData.totalCash,
-        totalCard: closedCashRegisterData.totalCard,
-        total: closedCashRegisterData.total
-      }
-    );
-     res.status(200).json(closedCashRegisters || []);
-  } else {
-    return res
-      .status(400)
-      .json({message: 'Not Authorized', code: 'EGS001', status: false});
-  }
+/**
+ * Registers a new sale and updates stock for sold products.
+ * @route POST /api/v0/sales/cash-register
+ * @param {Object[]} req.body - Lista de ventas realizadas en un lapso de tiempo.
+ * @returns {200} Corte de caja realizado y registrado
+ */
+api.post('/api/v0/sales/cash-register', async function (req, res) {
+  try {
+    const user_logged = await getUserLogged() || {};
+    if (Object.keys(user_logged).length > 0) {
+      const res_db = await pool.query(
+        `
+          INSERT INTO cash_register_closed (total_cash, total_card, total)
+          VALUES ($1, $2, $3)
+        `, [req.body.totalCash, req.body.totalCard, req.body.total]);
+      return res.status(200).json({});
+    } else {
+      return res
+        .status(400)
+        .json({message: 'Not Authorized', code: 'EGP001', status: false});
+    }
+  } catch (err) {
+    console.error('Error al conectar a la base de datos: ', err.stack);
+    return utils.returnErrorServer(res);
+  } finally {}
 });
 
 /**

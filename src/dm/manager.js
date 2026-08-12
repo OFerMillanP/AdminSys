@@ -276,11 +276,9 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
       ? this._cashRegisterClosing.at(-1)
       : [];
     let sales = [];
-    let formattedDateLastClosedCashRegister = lastClosedCashRegister.date
-      .substring(0, 10)
+    let formattedDateLastClosedCashRegister = lastClosedCashRegister.date?.substring(0, 10)
       .split('/');
-    let formattedHourLastClosedCashRegister = lastClosedCashRegister.date
-      .substring(13)
+    let formattedHourLastClosedCashRegister = lastClosedCashRegister.date?.substring(11)
       .split(':');
     const lastCashRegisterDate = Object.keys(lastClosedCashRegister).length
       ? new Date(
@@ -291,7 +289,7 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
           formattedHourLastClosedCashRegister[1],
           formattedHourLastClosedCashRegister[2]
         )
-      : new Date();
+      : new Date(0);
     sales = this._sales.filter((sale) => {
       const formattedDate = sale.date.substring(0, 10).split('/');
       const formattedHour = sale.date.substring(13).split(':');
@@ -301,7 +299,7 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
         formattedDate[0],
         formattedHour[0],
         formattedHour[1],
-        formattedHour[2]
+        formattedHour[2].substring(0,2)
       );
 
       return lastCashRegisterDate < saleDate && saleDate < new Date();
@@ -309,8 +307,8 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     let totalCard = 0;
     let totalCash = 0;
     sales.forEach((sale) => {
-      totalCard = totalCard + (sale.paymentMethod === 'card' ? sale.total : 0);
-      totalCash = totalCash + (sale.paymentMethod === 'cash' ? sale.total : 0);
+      totalCard = totalCard + parseFloat(sale.paymentMethod === 'card' ? parseFloat(sale.total) : 0);
+      totalCash = totalCash + parseFloat(sale.paymentMethod === 'cash' ? parseFloat(sale.total) : 0);
     });
     if (sales.length) {
       await this._getDataManager().fetch(
@@ -318,9 +316,9 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
         'api/v0/sales/cash-register',
         'dm-post-close-cash-register',
         {
-          total: totalCard + totalCash,
-          totalCard,
-          totalCash,
+          total: parseFloat(totalCard + totalCash).toFixed(2),
+          totalCard: parseFloat(totalCard).toFixed(2),
+          totalCash: parseFloat(totalCash).toFixed(2),
         }
       );
     } else {
@@ -463,11 +461,11 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
 
   generateReport({startDate, endDate}, sales) {
     const salesInRangeToReport = sales.filter((sale) => {
-      const formattedDate = sale.date.substring(0, 10).split('-');
+      const formattedDate = sale.date.substring(0, 10).split('/');
       const saleDate = new Date(
-        formattedDate[0],
+        formattedDate[2],
         formattedDate[1] - 1,
-        formattedDate[2]
+        formattedDate[0]
       );
       const startDateTmp = new Date(
         startDate.year,
