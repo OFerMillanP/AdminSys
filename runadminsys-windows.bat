@@ -5,4 +5,5 @@ echo Ejecutando el Administrador de Systemas
 
 cd ~\Documentos\Repositorios\AdminSys-1
 
-npm run start:all:w
+npm run start:all:w & start /b run-db.bat
+

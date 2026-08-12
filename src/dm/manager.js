@@ -463,11 +463,11 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
 
   generateReport({startDate, endDate}, sales) {
     const salesInRangeToReport = sales.filter((sale) => {
-      const formattedDate = sale.date.substring(0, 10).split('/');
+      const formattedDate = sale.date.substring(0, 10).split('-');
       const saleDate = new Date(
-        formattedDate[2],
+        formattedDate[0],
         formattedDate[1] - 1,
-        formattedDate[0]
+        formattedDate[2]
       );
       const startDateTmp = new Date(
         startDate.year,

@@ -611,11 +611,16 @@ api.get('/api/v0/sales', async function (req, res) {
               WHERE s.id = $1
             `, [sale.id]);
 
-          return {
+          sale = {
             ...sale,
+            paymentMethod: sale.payment_method,
+            changeToGive: sale.change_to_give,
             showProducts: false,
             products: getProductsFromSale.rows,
           };
+          delete sale.payment_method;
+          delete sale.change_to_give;
+          return sale
         })
       );
 
