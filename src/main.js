@@ -584,6 +584,26 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     });
   }
 
+  
+  /**
+   * Toggles the visibility of barcodes for a specific sale.
+   *
+   * @param {CustomEvent} event - The event containing the sale identifier.
+   * @param {Object} event.detail - The event details.
+   * @param {string} event.detail.id - The sale id.
+   */
+  _toggleBarcodes({detail: {id}}) {
+    this._products = this._products.map((product) => {
+      return [
+        ...product.map((product) =>
+          product.id.toString() === id
+            ? {...product, showBarcodes: product.barcodeList.length ? !product.showBarcodes : product.showBarcodes}
+            : product
+        ),
+      ];
+    });
+  }
+
   _generateReportDocument({detail}) {
     var contenidoOriginal = document.body.innerHTML;
     setTimeout(() => {
@@ -806,6 +826,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         @products-element-edit-product="${this._editProduct}"
         @products-element-search-product="${this._searchProduct}"
         @products-element-select-product-to-edit="${this._selectProductToEdit}"
+        @products-element-toggle-barcodes="${this._toggleBarcodes}"
         @register-page-close-error-modal="${this._closeErrorModal}"
         @register-page-register-product="${this._registerProduct}"
         @sales-element-close-cash-register="${this._closeCashRegister}"

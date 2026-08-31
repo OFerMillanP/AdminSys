@@ -54,8 +54,7 @@
     "node-thermal-printer": "^4.6.0",
     "pdfkit": "^0.18.0",
     "pdfmake": "^0.3.9",
-    "pg": "^8.22.0",
-    "uuid": "^14.0.0"
+    "pg": "^8.22.0"
   },
   "devDependencies": {
     "@11ty/eleventy": "^0.10.0",

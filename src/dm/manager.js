@@ -351,9 +351,6 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
           product.barcode
             .toLowerCase()
             .includes(this.productToSearch.value.toLowerCase()) ||
-          product.barcodeSecondary
-            .toLowerCase()
-            .includes(this.productToSearch.value.toLowerCase()) ||
           product.description
             .toLowerCase()
             .includes(this.productToSearch.value.toLowerCase())
@@ -376,16 +373,16 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
   getProductToSell(barcode) {
     const registeredProduct = this._products.find(
       (product) =>
-        product.barcode === barcode || product.barcodeSecondary === barcode
+        product.barcode === barcode
     );
     const productInList = this._productsToSell.find(
       (product) =>
-        product.barcode === barcode || product.barcodeSecondary === barcode
+        product.barcode === barcode
     );
     if (registeredProduct) {
       this._productsToSell = productInList
         ? this._productsToSell.map((product) =>
-            product.barcode === barcode || product.barcodeSecondary === barcode
+            product.barcode === barcode
               ? {
                   ...product,
                   quantity:

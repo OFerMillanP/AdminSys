@@ -65,7 +65,7 @@ export default css`
     border: none;
     border-radius: 0.5rem;
     font-size: x-large;
-    color: #513737;
+    color: #b02b2b;
     text-shadow: 1px 1px 2px #00000055;
     background-color: transparent;
     cursor: pointer;

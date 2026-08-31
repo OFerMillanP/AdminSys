@@ -267,6 +267,17 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
+   * Toggles the display of barcodes for a selected sale row.
+   *
+   * @param {Event} event - The click event from the sale row.
+   * @param {HTMLElement} event.currentTarget - The row target element.
+   * @param {string} event.currentTarget.id - The sale identifier.
+   */
+  _toggleBarcodes({currentTarget: {id}}) {
+    dispatchCustomEvent(this, `${ProductsElement.is}-toggle-barcodes`, {id});
+  }
+
+  /**
    * Returns the edit form template for the selected product.
    *
    * @returns {import('lit').TemplateResult}
@@ -288,17 +299,6 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                 type="text"
                 autocomplete="off"
                 .value="${this.productToEdit.barcode}"
-                @input=${this._handleInput}
-              ></mwc-textfield>
-            </div>
-            <div class="input-container">
-              <mwc-textfield
-                raised
-                label="Barcode (Secondary)"
-                autocomplete="off"
-                id="barcode-secondary"
-                type="text"
-                .value="${this.productToEdit.barcodeSecondary}"
                 @input=${this._handleInput}
               ></mwc-textfield>
             </div>
@@ -406,9 +406,6 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                     <div class="header-table">Barcode</div>
                   </th>
                   <th>
-                    <div class="header-table">Barcode (Secondary)</div>
-                  </th>
-                  <th>
                     <div class="header-table">Product Name</div>
                   </th>
                   <th>
@@ -436,9 +433,13 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                 ${repeat(
                   this.registeredProducts[this._currentPage - 1] || {},
                   (product) =>
-                    html` <tr>
+                    html`
+                      <tr 
+                        id="${product.id}"
+                        class="${product.barcodeList.length ? 'extra-barcodes' : ''}"
+                        @click=${this._toggleBarcodes}
+                      >
                       <td>${product.barcode}</td>
-                      <td>${product.barcodeSecondary}</td>
                       <td>${product.name}</td>
                       <td>
                         <div class="data-number">$ ${product.price}</div>
@@ -476,12 +477,36 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                                   : nothing}
                               </div>
                             </td>
+                            <br>
                           `
                         : nothing}
-                    </tr>`
+                    </tr>
+                    ${product.barcodeList && product.showBarcodes
+                      ? html`
+                          <tr class="products-row">
+                            <table class="products-row">
+                              <thead></thead>
+                              <tbody>
+                                ${product.barcodeList.map(
+                                  (barcode) =>
+                                    html`
+                                      <tr class="barcodes">
+                                        <td class="barcode">
+                                          ${barcode.barcode}
+                                        </td>
+                                      </tr>
+                                    `
+                                )}
+                              </tbody>
+                            </table>
+                          </tr>
+                          <br />
+                        `
+                      : nothing}`
                 )}
               </tbody>
-            </table>`
+            </table>
+            `
           : 'No se han encontrado productos'}
       </div>
     `;

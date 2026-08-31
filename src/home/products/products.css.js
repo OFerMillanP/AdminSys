@@ -128,6 +128,10 @@ export default css`
     margin: 0 auto 15px;
   }
 
+  .extra-barcodes {
+    background-color: #501f6f67;
+  }
+
   table {
     width: 100%;
     border-collapse: collapse; /* Bordes unidos */

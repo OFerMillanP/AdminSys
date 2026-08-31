@@ -236,6 +236,18 @@ export default css`
     line-height: 60px;
     margin: 0 auto 15px;
   }
+  
+  .register-icon{
+    margin: 0 0 0 0.5rem;
+    background: #f5f5f5;
+    box-shadow: 0px 0px 8px 2px #68686842;
+    transition: margin .25s ease; 
+    cursor: pointer;
+  }
+
+  .register-icon:hover{
+    margin: 0 0 0.5rem 0.5rem;
+  }
 
   /* Animación básica */
   @keyframes fadeIn {

@@ -10,7 +10,6 @@ api.use(cors());
 api.use(express.json());
 
 var bodyParser = require('body-parser');
-const { forEach } = require('pdfkit');
 
 /**
  * Configs --------------------------------------------------------
@@ -181,7 +180,6 @@ api.post('/api/v0/login', async function (req, res) {
 api.post('/api/v0/products/product', async function (req, res) {
   try {
     const user_logged = await getUserLogged();
-
     const validate_exist = await pool.query(
       `
         SELECT * FROM products WHERE barcode = $1
@@ -196,11 +194,30 @@ api.post('/api/v0/products/product', async function (req, res) {
         .status(400)
         .json({message: 'Negative Values', code: 'ERP002', status: false});
     } else if (Object.keys(user_logged).length > 0) {
-      const product = await pool.query(
+      await pool.query(
       `
         INSERT INTO products (name, barcode, barcode_secondary, price, stock, description)
         VALUES ($1, $2, $3, $4, $5, $6);
       `, [req.body.name, req.body.barcode, req.body.barcodeSecondary, req.body.price, req.body.stock, req.body.description]);
+
+      const getLastProduct = await pool.query(
+        `
+          SELECT id FROM products
+          ORDER BY id DESC
+          LIMIT 1
+        `);
+
+      console.log(req.body.barcodeList);
+      req.body.barcodeList.forEach(
+        async (barcode) => {
+           await pool.query(
+          `
+           INSERT INTO barcodes (product_id, primary_barcode, barcode)
+            VALUES ($1, $2, $3)
+          `, [getLastProduct.rows[0].id, req.body.barcode, barcode.value]);
+          
+        }
+      );
       
       return res.status(200).json(req.body);
     } else {
@@ -259,8 +276,26 @@ api.get('/api/v0/products', async function (req, res) {
         `
           SELECT * FROM products
         `);
-      let mappingProducts = res_db.rows.map((product) => renameObjectKeys(product, 'barcode_secondary', 'barcodeSecondary'));
-      return res.status(200).json(mappingProducts.reverse());
+      let fullpProducts = await Promise.all(
+        res_db.rows.map(async (product) => {
+          const getProductsFromSale = await pool.query(
+            `
+              SELECT b.product_id, b.barcode, b.primary_barcode
+              FROM products p
+              INNER JOIN barcodes b
+              ON b.product_id = p.id
+              WHERE b.product_id = $1
+            `, [product.id]);
+            
+          product = {
+            ...product,
+            barcodeList: getProductsFromSale.rows,
+            showBarcodes: false
+          };
+          return product;
+        })
+      ) 
+      return res.status(200).json(fullpProducts.reverse());
     } else {
       return res
         .status(400)

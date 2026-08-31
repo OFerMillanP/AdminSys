@@ -1,4 +1,4 @@
-import {LitElement, html} from 'lit';
+import {LitElement, html, nothing} from 'lit';
 import {ref, createRef} from 'lit/directives/ref.js';
 import {ScopedElementsMixin} from '@open-wc/scoped-elements/html-element.js';
 
@@ -38,6 +38,10 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
         type: String,
         attribute: 'register-error',
       },
+      _barcodeList:{
+        type: Array,
+        state: true,
+      },
       /**
        * Name of the product being registered.
        */
@@ -49,13 +53,6 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
        * Primary barcode of the product.
        */
       _productBarcode: {
-        type: String,
-        state: true,
-      },
-      /**
-       * Secondary barcode of the product.
-       */
-      _productBarcodeSecondary: {
         type: String,
         state: true,
       },
@@ -125,10 +122,10 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
     super();
     this.registerError = '';
     this.registerSuccess = false;
+    this._barcodeList = [];
     this._errorMessage = '';
     this._errorRegisterModalRef = createRef();
     this._productBarcode = '';
-    this._productBarcodeSecondary = '';
     this._productDescription = '';
     this._productName = '';
     this._productPrice = 0;
@@ -177,10 +174,10 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
     this._showErrorMessage = false;
     this._productName = '';
     this._productBarcode = '';
-    this._productBarcodeSecondary = '';
     this._productDescription = '';
     this._productPrice = 0;
     this._productStock = 0;
+    this._barcodeList = [];
   }
 
   /**
@@ -192,9 +189,6 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
     const inputs = {
       barcode: () => {
         this._productBarcode = value.toUpperCase() || '';
-      },
-      'barcode-secondary': () => {
-        this._productBarcodeSecondary = value.toUpperCase() || '';
       },
       'product-name': () => {
         this._productName = value.toUpperCase() || '';
@@ -251,12 +245,33 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
       dispatchCustomEvent(this, 'register-page-register-product', {
         name: this._productName,
         barcode: this._productBarcode,
-        barcodeSecondary: this._productBarcodeSecondary,
+        barcodeList: this._barcodeList,
         price: parseFloat(this._productPrice, 10),
         stock: parseInt(this._productStock, 10),
         description: this._productDescription,
       });
     }
+  }
+
+  _addBarcode(){
+    if (!!this._productBarcode) {
+      this._barcodeList = [...this._barcodeList, 
+        {
+          label: `Extra Barcode`,
+          id: `${window.crypto.randomUUID()}`,
+          value: ''
+        }
+      ]
+    }
+  }
+
+  _removeBarcode({target: {id}}){
+    this._barcodeList = this._barcodeList.filter(barcode => barcode.id !== id)
+  }
+
+  _barcodeListHandleInput({target: {id, value}}){
+    let updateExtraBarcode = this._barcodeList.findIndex(barcode => barcode.id === id);
+    this._barcodeList[updateExtraBarcode].value = value;
   }
 
   /**
@@ -329,18 +344,33 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
                 .value="${this._productBarcode}"
                 @input=${this._handleInput}
               ></mwc-textfield>
+              <mwc-icon 
+                slot="icon"
+                class="register-icon"
+                @click="${this._addBarcode}"
+              >add</mwc-icon>
             </div>
-            <div class="input-container">
-              <mwc-textfield
-                raised
-                label="Barcode (Secondary)"
-                autocomplete="off"
-                id="barcode-secondary"
-                type="text"
-                .value="${this._productBarcodeSecondary}"
-                @input=${this._handleInput}
-              ></mwc-textfield>
-            </div>
+            ${this._barcodeList.map((barcode) =>
+              html`
+               <div class="input-container">
+                <mwc-textfield
+                  raised
+                  label="${barcode.label}"
+                  autocomplete="off"
+                  id="${barcode.id}"
+                  type="text"
+                  .value="${barcode.value}"
+                  @input="${this._barcodeListHandleInput}"
+                ></mwc-textfield>
+                <mwc-icon 
+                  slot="icon"
+                  class="register-icon"
+                  id="${barcode.id}"
+                  @click="${this._removeBarcode}"
+                >remove</mwc-icon>
+               </div>
+              `
+            )}
             <div class="input-container">
               <mwc-textfield
                 raised
