@@ -346,7 +346,7 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
               ></mwc-textfield>
               <mwc-icon 
                 slot="icon"
-                class="register-icon"
+                class="register-icon${this._productBarcode.length ? ' enabled' : ''}"
                 @click="${this._addBarcode}"
               >add</mwc-icon>
             </div>
@@ -364,7 +364,7 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
                 ></mwc-textfield>
                 <mwc-icon 
                   slot="icon"
-                  class="register-icon"
+                  class="register-icon enabled"
                   id="${barcode.id}"
                   @click="${this._removeBarcode}"
                 >remove</mwc-icon>

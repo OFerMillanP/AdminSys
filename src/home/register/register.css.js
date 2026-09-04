@@ -237,16 +237,28 @@ export default css`
     margin: 0 auto 15px;
   }
   
-  .register-icon{
+  .register-icon.enabled{
     margin: 0 0 0 0.5rem;
     background: #f5f5f5;
     box-shadow: 0px 0px 8px 2px #68686842;
     transition: margin .25s ease; 
+    color: #000;
+    border-radius: 20px;
     cursor: pointer;
   }
 
-  .register-icon:hover{
+  .register-icon.enabled:hover{
     margin: 0 0 0.5rem 0.5rem;
+  }
+
+   .register-icon{
+    margin: 0 0 0 0.5rem;
+    background: #f5f5f5;
+    box-shadow: 0px 0px 8px 2px #68686842;
+    transition: margin .25s ease;
+    color: #a09999;
+    border-radius: 20px;
+    cursor: context-menu
   }
 
   /* Animación básica */
