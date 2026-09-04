@@ -51,15 +51,6 @@ function getCurrentDate() {
   return `${fecha}, ${hora}`;
 }
 
-function renameObjectKeys(objectToChange, oldKey, newKey) {
-  let renamedObject = {
-    ...objectToChange,
-    [newKey]: objectToChange[oldKey],
-  };
-  delete renamedObject[oldKey];
-  return renamedObject;
-}
-
 async function getUserLogged() {
   const res_db = await pool.query(
     `
@@ -180,12 +171,22 @@ api.post('/api/v0/login', async function (req, res) {
 api.post('/api/v0/products/product', async function (req, res) {
   try {
     const user_logged = await getUserLogged();
-    const validate_exist = await pool.query(
+    const validateExist = await pool.query(
       `
-        SELECT * FROM products WHERE barcode = $1
+        SELECT * FROM products WHERE barcode = $1;
       `, [req.body.barcode]);
-    
-    if (validate_exist.rows.length) {
+      let existBarcode = await Promise.all(
+        req.body.barcodeList.map(async (barcode) => {
+          let validateExistBarcodes = await pool.query(
+          `
+            SELECT * FROM barcodes WHERE barcode = $1;
+          `, [barcode.value]);
+          return validateExistBarcodes.rows.length;
+        })
+      )
+    if (validateExist.rows.length || !!existBarcode.find((value) => value == 1)) {
+      console.log(existBarcode.find((value) => value == 1))
+      console.log(!!existBarcode.find((value) => value == 1))
       return res
         .status(400)
         .json({message: 'Duplicated product', code: 'ERP001', status: false});
@@ -196,9 +197,9 @@ api.post('/api/v0/products/product', async function (req, res) {
     } else if (Object.keys(user_logged).length > 0) {
       await pool.query(
       `
-        INSERT INTO products (name, barcode, barcode_secondary, price, stock, description)
-        VALUES ($1, $2, $3, $4, $5, $6);
-      `, [req.body.name, req.body.barcode, req.body.barcodeSecondary, req.body.price, req.body.stock, req.body.description]);
+        INSERT INTO products (name, barcode, price, stock, description)
+        VALUES ($1, $2, $3, $4, $5);
+      `, [req.body.name, req.body.barcode, req.body.price, req.body.stock, req.body.description]);
 
       const getLastProduct = await pool.query(
         `
@@ -207,7 +208,6 @@ api.post('/api/v0/products/product', async function (req, res) {
           LIMIT 1
         `);
 
-      console.log(req.body.barcodeList);
       req.body.barcodeList.forEach(
         async (barcode) => {
            await pool.query(
@@ -251,6 +251,10 @@ api.delete('/api/v0/products/product/:id', async function (req, res) {
         .json({message: 'Not Found Product', code: 'EDP001', status: false});
     }
     if ( user_logged.level === 'admin') {
+      await pool.query(
+        `
+          DELETE FROM barcodes WHERE product_id = $1
+        `, [req.params.id]);
       await pool.query(
         `
           DELETE FROM products WHERE id = $1
@@ -325,7 +329,7 @@ api.get('/api/v0/products/product/:id', async function (req, res) {
     if (Object.keys(user_logged).length > 0 && (user_logged.level === 'admin' || user_logged.level === 'manager')) { 
       return res
         .status(200)
-        .json(renameObjectKeys(validate_exist_product.rows[0], 'barcode_secondary', 'barcodeSecondary'));
+        .json(validate_exist_product.rows[0]);
     } else {
       return res
         .status(400)
@@ -359,24 +363,18 @@ api.patch('/api/v0/products/product/:id', async function (req, res) {
         .json({message: 'Not Found Product', code: 'EDP002', status: false});
     }
     const validate_exist_product_new_barcode = await validateExistProduct('barcode', req.body.barcode, res);
-    const validate_exist_product_new_barcode_secondary = await validateExistProduct('barcode_secondary', req.body.barcodeSecondary, res);
     if (validate_exist_product.rows[0].barcode !== req.body.barcode 
         && validate_exist_product_new_barcode.rows.length > 0) {
       return res
         .status(400)
         .json({message: 'Barcode already exists', code: 'EDP003', status: false});
-    } else if (validate_exist_product.rows[0].barcode_secondary !== req.body.barcodeSecondary 
-        && validate_exist_product_new_barcode_secondary.rows.length > 0) {
-      return res
-        .status(400)
-        .json({message: 'Barcode Secondary already exists', code: 'EDP004', status: false});
     } else if (user_logged.level === 'admin' || user_logged.level === 'manager') {
-      const res_db = await pool.query(
+      await pool.query(
         `
           UPDATE products
-          SET name = $1, barcode = $2, barcode_secondary = $3, price = $4, stock = $5, description = $6
-          WHERE id = $7
-        `, [req.body.name, req.body.barcode, req.body.barcodeSecondary, req.body.price, req.body.stock, req.body.description, req.params.id]);
+          SET name = $1, barcode = $2, price = $3, stock = $4, description = $5
+          WHERE id = $6
+        `, [req.body.name, req.body.barcode, req.body.price, req.body.stock, req.body.description, req.params.id]);
       return res.status(200).json(req.body);
     } 
   } catch (err) {
@@ -456,8 +454,7 @@ api.get('/api/v0/sales', async function (req, res) {
         getSales.rows.map(async (sale) => {
           const getProductsFromSale = await pool.query(
             `
-              SELECT p.id, p.name, p.barcode,
-              p.barcode_secondary, p.price, p.description,
+              SELECT p.id, p.name, p.barcode, p.price, p.description,
               sp.quantity
               FROM products p
               INNER JOIN sales_products sp

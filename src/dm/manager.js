@@ -344,8 +344,17 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     let filteredProducts = [];
     if (this.productToSearch.value !== '') {
       filteredProducts = this._products.filter(
-        (product) =>
-          product.name
+        (product) => {
+          let barcodeProducts = [];
+          if (product.barcodeList.length) {
+            barcodeProducts = product.barcodeList.map(
+              (barcode) => {
+                return barcode.barcode?.toLowerCase()
+                  .includes(this.productToSearch.value.toLowerCase()) ? 1 : 0
+                }
+            );
+          }
+          return product.name
             .toLowerCase()
             .includes(this.productToSearch.value.toLowerCase()) ||
           product.barcode
@@ -353,7 +362,9 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
             .includes(this.productToSearch.value.toLowerCase()) ||
           product.description
             .toLowerCase()
-            .includes(this.productToSearch.value.toLowerCase())
+            .includes(this.productToSearch.value.toLowerCase()) || 
+          barcodeProducts.find((barcode) => barcode == 1 )
+          }
       );
     } else {
       filteredProducts = this._products;
