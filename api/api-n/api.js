@@ -185,8 +185,6 @@ api.post('/api/v0/products/product', async function (req, res) {
         })
       )
     if (validateExist.rows.length || !!existBarcode.find((value) => value == 1)) {
-      console.log(existBarcode.find((value) => value == 1))
-      console.log(!!existBarcode.find((value) => value == 1))
       return res
         .status(400)
         .json({message: 'Duplicated product', code: 'ERP001', status: false});
@@ -280,7 +278,7 @@ api.get('/api/v0/products', async function (req, res) {
         `
           SELECT * FROM products
         `);
-      let fullpProducts = await Promise.all(
+      let fullProducts = await Promise.all(
         res_db.rows.map(async (product) => {
           const getProductsFromSale = await pool.query(
             `
@@ -299,7 +297,7 @@ api.get('/api/v0/products', async function (req, res) {
           return product;
         })
       ) 
-      return res.status(200).json(fullpProducts.reverse());
+      return res.status(200).json(fullProducts.reverse());
     } else {
       return res
         .status(400)
@@ -326,10 +324,29 @@ api.get('/api/v0/products/product/:id', async function (req, res) {
         .status(400)
         .json({message: 'Not Found Product', code: 'EDP001', status: false});
     }
-    if (Object.keys(user_logged).length > 0 && (user_logged.level === 'admin' || user_logged.level === 'manager')) { 
+    if (Object.keys(user_logged).length > 0 && (user_logged.level === 'admin' || user_logged.level === 'manager')) {
+      let fullProducts = await Promise.all(
+        validate_exist_product.rows.map(async (product) => {
+          const getProductsFromSale = await pool.query(
+            `
+              SELECT b.product_id, b.barcode, b.primary_barcode, b.id
+              FROM products p
+              INNER JOIN barcodes b
+              ON b.product_id = p.id
+              WHERE b.product_id = $1
+            `, [product.id]);
+            
+          product = {
+            ...product,
+            barcodeList: getProductsFromSale.rows,
+            showBarcodes: false
+          };
+          return product;
+        })
+      )  
       return res
         .status(200)
-        .json(validate_exist_product.rows[0]);
+        .json(fullProducts[0]);
     } else {
       return res
         .status(400)

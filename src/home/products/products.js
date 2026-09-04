@@ -170,6 +170,14 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
    * @param {InputEvent} event - The input event.
    */
   _handleInput({target: {id, value}}) {
+    this.productToEdit.barcodeList = [...
+      this.productToEdit.barcodeList.map((barcode) => {
+        if (barcode.id === id) {
+          return {...barcode, barcode: value}
+        }
+        return barcode
+      })
+    ]
     const inputs = {
       barcode: () => {
         this.productToEdit.barcode = value.toUpperCase() || '';
@@ -302,6 +310,25 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                 @input=${this._handleInput}
               ></mwc-textfield>
             </div>
+
+            ${this.productToEdit.barcodeList.map((barcode) => 
+              html`
+                <div class="input-container">
+                  <mwc-textfield
+                    raised
+                    ?disabled="${!(this.levelUser === 'admin')}"
+                    label="Extra Barcode"
+                    autocomplete="off"
+                    id="${barcode.id}"
+                    type="text"
+                    autocomplete="off"
+                    .value="${barcode.barcode}"
+                    @input=${this._handleInput}
+                  ></mwc-textfield>
+                </div>
+              `
+            )}
+
             <div class="input-container">
               <mwc-textfield
                 raised
