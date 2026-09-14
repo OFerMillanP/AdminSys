@@ -430,49 +430,33 @@ api.patch('/api/v0/products/product/:id', async function (req, res) {
           WHERE id = $6
         `, [productToUpdate.name, productToUpdate.barcode, productToUpdate.price, productToUpdate.stock, productToUpdate.description, productToUpdateId]);
 
-      console.log('primaryBarcodeExistent: ',primaryBarcodeExistent);
-      console.log('extraBarcodesExistent: ',extraBarcodesExistent);
-      return res.status(200).json(productToUpdate);
-    } else {
-      let extraBarcodesExistent = await getBarcodes('product_id', productToUpdateId);
-      extraBarcodeHasChanged(productToUpdate.barcodeList, extraBarcodesExistent).forEach(async (barcode) => {
+      let extraBarcodesExistentByProductId = await getBarcodes('product_id', productToUpdateId);
+      await Promise.all(extraBarcodeHasChanged(productToUpdate.barcodeList, extraBarcodesExistentByProductId).map(async (barcode) => {
         await pool.query(
         ` 
           UPDATE barcodes
           SET barcode = $1
           WHERE id = $2
         `, [barcode.before.barcode, barcode.before.id]);
-      })      
+      }))
+      return res.status(200).json(productToUpdate);
+    } else {
+      let extraBarcodesExistent = await getBarcodes('product_id', productToUpdateId);
+      await Promise.all(extraBarcodeHasChanged(productToUpdate.barcodeList, extraBarcodesExistent).map(async (barcode) => {
+        await pool.query(
+        ` 
+          UPDATE barcodes
+          SET barcode = $1
+          WHERE id = $2
+        `, [barcode.before.barcode, barcode.before.id]);
+      }))    
       return res.status(200).json(productToUpdate);
     }
 
-    /** Validar si es el código primario el que cambio*/
-
-    /** Si cambio el primario, validar sino es un oque ya existía */
-
-    /** Si no es el primario obtener el que cambió*/
-
-    // const validate_exist_product_new_barcode = await validateExistProduct('barcode', req.body.barcode, res);
-    // const validate_exist_barcode_new_barcode = await validateExistBarcode('barcode', req.body.barcode, res);
-    //   console.log(req.body.barcode);
-    //   console.log(validate_exist_barcode_new_barcode.rows)
-    //   console.log(validate_exist_product_new_barcode.rows)
-    // if (validate_exist_product.rows[0].barcode !== req.body.barcode 
-    //     && validate_exist_product_new_barcode.rows.length > 0) {
-    //     console.log('____Already exist____');
-    //   // return res
-    //   //   .status(400) 
-    //   //   .json({message: 'Barcode already exists', code: 'EDP003', status: false});
-    // } else if (user_logged.level === 'admin' || user_logged.level === 'manager') {
-    //   console.log('____To success____');
-      // await pool.query(
-      //   ` 
-      //     UPDATE products
-      //     SET name = $1, barcode = $2, price = $3, stock = $4, description = $5
-      //     WHERE id = $6
-      //   `, [req.body.name, req.body.barcode, req.body.price, req.body.stock, req.body.description, req.params.id]);
-      // return res.status(200).json(req.body);
-    // } 
+    /** Falta 
+     * -- borrar
+     * -- agregar
+     * */
   } catch (err) {
     console.error('Error al conectar a la base de datos: ', err.stack);
     return utils.returnErrorServer(res);
