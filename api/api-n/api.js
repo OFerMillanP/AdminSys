@@ -62,21 +62,48 @@ async function getUserLogged() {
   return res_db.rows[0];
 }
 
-async function validateExistProductById(value, res) {
-  const validate_exist_product = await pool.query(
+async function getProductById(value) {
+  const productById = await pool.query(
     `
       SELECT * FROM products WHERE id = $1
     `, [value]);
-  return validate_exist_product;
+  return productById.rows[0];
 }
 
-async function validateExistProduct(param, value, res) {
-  const validate_exist_product = await pool.query(
+async function getBarcodes(param, value) {
+  const barcodes = await pool.query(
+    `
+      SELECT * FROM barcodes WHERE ${param} = $1
+    `, [value]);
+  return barcodes.rows;
+}
+
+async function getProducts(param, value) {
+  const barcodes = await pool.query(
     `
       SELECT * FROM products WHERE ${param} = $1
     `, [value]);
-  return validate_exist_product;
+  return barcodes.rows;
 }
+
+async function validateExistBarcode(param, value) {
+  const validateExist = await pool.query(
+    `
+      SELECT * FROM barcodes WHERE ${param} = $1
+    `, [value]);
+  return validateExist;
+}
+
+const listEquals = (list1, list2) => 
+  list1.length === list2.length && 
+  list1.every((value, index) => value == list2[index]);
+
+const extraBarcodeHasChanged = (newObject, oldObject) => 
+  newObject.map((value, index) => 
+    value.barcode !== oldObject[index].barcode ?
+    { index, after: oldObject[index], before: value } : 
+    null
+  ).filter(Boolean);
 
 /**
  * Apis --------------------------------------------------------
@@ -91,7 +118,7 @@ async function validateExistProduct(param, value, res) {
  */
 api.get('/api/v0/logout', async function (req, res) {
   try {
-    const res_db = await pool.query(utils.logoutUser);
+    await pool.query(utils.logoutUser);
     return res.status(200);
   } catch (err) {
     console.error('Error al conectar a la base de datos: ', err.stack);
@@ -243,7 +270,7 @@ api.delete('/api/v0/products/product/:id', async function (req, res) {
         .status(403)
         .json({message: 'Not Authorized', code: 'EDP002', status: false});
     }
-    if (Object.keys(await validateExistProductById(req.params.id, res)).length === 0) {
+    if (Object.keys(await getProductById(req.params.id, res)).length === 0) {
       return res
         .status(400)
         .json({message: 'Not Found Product', code: 'EDP001', status: false});
@@ -276,7 +303,7 @@ api.get('/api/v0/products', async function (req, res) {
     if (Object.keys(user_logged).length > 0) {
       const res_db = await pool.query(
         `
-          SELECT * FROM products
+          SELECT * FROM products ORDER BY date ASC
         `);
       let fullProducts = await Promise.all(
         res_db.rows.map(async (product) => {
@@ -317,36 +344,31 @@ api.get('/api/v0/products', async function (req, res) {
  */
 api.get('/api/v0/products/product/:id', async function (req, res) {
   try {
-    const user_logged = await getUserLogged() || {};
-    const validate_exist_product = await validateExistProductById(req.params.id, res);
-    if (Object.keys(validate_exist_product).length === 0) {
+    const userLogged = await getUserLogged() || {};
+    let productGotById = await getProductById(req.params.id, res);
+    if (Object.keys(productGotById).length === 0) {
       return res
         .status(400)
         .json({message: 'Not Found Product', code: 'EDP001', status: false});
     }
-    if (Object.keys(user_logged).length > 0 && (user_logged.level === 'admin' || user_logged.level === 'manager')) {
-      let fullProducts = await Promise.all(
-        validate_exist_product.rows.map(async (product) => {
-          const getProductsFromSale = await pool.query(
-            `
-              SELECT b.product_id, b.barcode, b.primary_barcode, b.id
-              FROM products p
-              INNER JOIN barcodes b
-              ON b.product_id = p.id
-              WHERE b.product_id = $1
-            `, [product.id]);
-            
-          product = {
-            ...product,
-            barcodeList: getProductsFromSale.rows,
-            showBarcodes: false
-          };
-          return product;
-        })
-      )  
+    if (Object.keys(userLogged).length > 0 && (userLogged.level === 'admin' || userLogged.level === 'manager')) {
+      let getProductsFromSale = await pool.query(
+        `
+          SELECT b.product_id, b.barcode, b.primary_barcode, b.id
+          FROM products p
+          INNER JOIN barcodes b
+          ON b.product_id = p.id
+          WHERE b.product_id = $1
+        `, [productGotById.id]);
+        
+      productGotById = {
+        ...productGotById,
+        barcodeList: getProductsFromSale.rows,
+        showBarcodes: false
+      };
       return res
         .status(200)
-        .json(fullProducts[0]);
+        .json(productGotById);
     } else {
       return res
         .status(400)
@@ -367,33 +389,90 @@ api.get('/api/v0/products/product/:id', async function (req, res) {
  */
 api.patch('/api/v0/products/product/:id', async function (req, res) {
   try {
-    const user_logged = await getUserLogged();
-    const validate_exist_product = await validateExistProductById(req.params.id, res);
-    if (!(Object.keys(user_logged).length > 0)) {
+    const productToUpdate = req.body;
+    const productToUpdateId =  req.params.id;
+    const userLogged = await getUserLogged();
+    let productGotById = await getProductById(req.params.id, res);
+    if (!(Object.keys(userLogged).length > 0)) {
       return res
         .status(403)
-        .json({message: 'Not Authorized', code: 'EDP001', status: false});
+        .json({message: 'Not Authorized', code: 'EDP001', status: false}); 
     }
-    if (Object.keys(validate_exist_product.rows).length === 0) {
+    if (Object.keys(productGotById).length === 0) {
       return res
         .status(400)
         .json({message: 'Not Found Product', code: 'EDP002', status: false});
     }
-    const validate_exist_product_new_barcode = await validateExistProduct('barcode', req.body.barcode, res);
-    if (validate_exist_product.rows[0].barcode !== req.body.barcode 
-        && validate_exist_product_new_barcode.rows.length > 0) {
-      return res
-        .status(400)
+
+    productGotById = {
+      ...productGotById,
+      barcodeList: (await getBarcodes('product_id', productToUpdateId))
+    }
+
+    if (productGotById.barcode !== productToUpdate.barcode) {
+      const primaryBarcodeExistent = await getProducts('barcode', productToUpdate.barcode);
+      if (primaryBarcodeExistent.length) {
+        return res
+        .status(400) 
         .json({message: 'Barcode already exists', code: 'EDP003', status: false});
-    } else if (user_logged.level === 'admin' || user_logged.level === 'manager') {
+      }
+      const extraBarcodesExistent = await getBarcodes('barcode', productToUpdate.barcode);
+      if (extraBarcodesExistent.length > 0) {
+         return res
+        .status(400) 
+        .json({message: 'Barcode already exists', code: 'EDP004', status: false});
+      }
+
       await pool.query(
-        `
+        ` 
           UPDATE products
           SET name = $1, barcode = $2, price = $3, stock = $4, description = $5
           WHERE id = $6
-        `, [req.body.name, req.body.barcode, req.body.price, req.body.stock, req.body.description, req.params.id]);
-      return res.status(200).json(req.body);
-    } 
+        `, [productToUpdate.name, productToUpdate.barcode, productToUpdate.price, productToUpdate.stock, productToUpdate.description, productToUpdateId]);
+
+      console.log('primaryBarcodeExistent: ',primaryBarcodeExistent);
+      console.log('extraBarcodesExistent: ',extraBarcodesExistent);
+      return res.status(200).json(productToUpdate);
+    } else {
+      let extraBarcodesExistent = await getBarcodes('product_id', productToUpdateId);
+      extraBarcodeHasChanged(productToUpdate.barcodeList, extraBarcodesExistent).forEach(async (barcode) => {
+        await pool.query(
+        ` 
+          UPDATE barcodes
+          SET barcode = $1
+          WHERE id = $2
+        `, [barcode.before.barcode, barcode.before.id]);
+      })      
+      return res.status(200).json(productToUpdate);
+    }
+
+    /** Validar si es el código primario el que cambio*/
+
+    /** Si cambio el primario, validar sino es un oque ya existía */
+
+    /** Si no es el primario obtener el que cambió*/
+
+    // const validate_exist_product_new_barcode = await validateExistProduct('barcode', req.body.barcode, res);
+    // const validate_exist_barcode_new_barcode = await validateExistBarcode('barcode', req.body.barcode, res);
+    //   console.log(req.body.barcode);
+    //   console.log(validate_exist_barcode_new_barcode.rows)
+    //   console.log(validate_exist_product_new_barcode.rows)
+    // if (validate_exist_product.rows[0].barcode !== req.body.barcode 
+    //     && validate_exist_product_new_barcode.rows.length > 0) {
+    //     console.log('____Already exist____');
+    //   // return res
+    //   //   .status(400) 
+    //   //   .json({message: 'Barcode already exists', code: 'EDP003', status: false});
+    // } else if (user_logged.level === 'admin' || user_logged.level === 'manager') {
+    //   console.log('____To success____');
+      // await pool.query(
+      //   ` 
+      //     UPDATE products
+      //     SET name = $1, barcode = $2, price = $3, stock = $4, description = $5
+      //     WHERE id = $6
+      //   `, [req.body.name, req.body.barcode, req.body.price, req.body.stock, req.body.description, req.params.id]);
+      // return res.status(200).json(req.body);
+    // } 
   } catch (err) {
     console.error('Error al conectar a la base de datos: ', err.stack);
     return utils.returnErrorServer(res);

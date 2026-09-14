@@ -547,7 +547,6 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
    */
   _editProductSuccessResponse({detail}) {
     dispatchCustomEvent(this, 'dm-edit-product-success-response', detail);
-    this.getProductList();
   }
 
   _getSalesSuccessResponse({detail}) {

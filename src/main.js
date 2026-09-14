@@ -331,6 +331,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
    * @param {boolean} event.detail - The edit result.
    */
   _editProductSuccessResponse({detail}) {
+    this._managerRef.value.getProductList();
     this._editProductSuccess = !!detail;
   }
 

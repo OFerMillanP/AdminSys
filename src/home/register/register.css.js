@@ -251,7 +251,7 @@ export default css`
     margin: 0 0 0.5rem 0.5rem;
   }
 
-   .register-icon{
+  .register-icon{
     margin: 0 0 0 0.5rem;
     background: #f5f5f5;
     box-shadow: 0px 0px 8px 2px #68686842;

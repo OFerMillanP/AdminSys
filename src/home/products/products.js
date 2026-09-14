@@ -180,22 +180,19 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     ]
     const inputs = {
       barcode: () => {
-        this.productToEdit.barcode = value.toUpperCase() || '';
-      },
-      'barcode-secondary': () => {
-        this.productToEdit.barcodeSecondary = value.toUpperCase() || '';
+        this.productToEdit = {...this.productToEdit, barcode:  value.toUpperCase() || ''};
       },
       'product-name': () => {
-        this.productToEdit.name = value.toUpperCase() || '';
+        this.productToEdit = {...this.productToEdit, name:  value.toUpperCase() || ''};
       },
       price: () => {
-        this.productToEdit.price = value || 0;
+        this.productToEdit = {...this.productToEdit, price:  value.toUpperCase() || ''};
       },
       stock: () => {
-        this.productToEdit.stock = value || 0;
+        this.productToEdit = {...this.productToEdit, stock:  value.toUpperCase() || ''};
       },
       description: () => {
-        this.productToEdit.description = value || '';
+        this.productToEdit = {...this.productToEdit, pridescriptionce:  value.toUpperCase() || ''};
       },
       search: () => {
         dispatchCustomEvent(this, `${ProductsElement.is}-search-product`, {
@@ -285,6 +282,31 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     dispatchCustomEvent(this, `${ProductsElement.is}-toggle-barcodes`, {id});
   }
 
+  _removeBarcode({target: {id}}){
+    this.productToEdit.barcodeList = [...
+      this.productToEdit.barcodeList.filter((barcode) => barcode.id !== id)
+    ];
+    this.productToEdit = {
+      ...this.productToEdit,
+      remove: [...this.productToEdit.remove || [], id]
+    };
+  }
+
+  _addBarcode({target: {id, value}}){
+    this.productToEdit = {
+      ...this.productToEdit,
+      add: [...this.productToEdit.add || [], {id: id, value: value}]
+    };
+    console.log(this.productToEdit);
+  }
+
+  _isFilledForm(){
+    return !this.productToEdit.barcode.length ||
+    !this.productToEdit.name.length ||
+    !this.productToEdit.stock.length ||
+    !this.productToEdit.price
+  }
+
   /**
    * Returns the edit form template for the selected product.
    *
@@ -309,6 +331,11 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                 .value="${this.productToEdit.barcode}"
                 @input=${this._handleInput}
               ></mwc-textfield>
+              <mwc-icon 
+                slot="icon"
+                class="register-icon${this.productToEdit.barcode.length ? ' enabled' : ''}"
+                @click="${this._addBarcode}"
+              >add</mwc-icon>
             </div>
 
             ${this.productToEdit.barcodeList.map((barcode) => 
@@ -325,6 +352,12 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                     .value="${barcode.barcode}"
                     @input=${this._handleInput}
                   ></mwc-textfield>
+                  <mwc-icon 
+                    slot="icon"
+                    class="register-icon enabled"
+                    id="${barcode.id}"
+                    @click="${this._removeBarcode}"
+                  >remove</mwc-icon>
                 </div>
               `
             )}
@@ -389,6 +422,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                 class="save"
                 raised
                 label="Save"
+                ?disabled="${this._isFilledForm()}"
                 @click=${this._updateProduct}
               ></mwc-button>
               <mwc-button
