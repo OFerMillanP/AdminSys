@@ -384,16 +384,16 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
   getProductToSell(barcode) {
     const registeredProduct = this._products.find(
       (product) =>
-        product.barcode === barcode
+        product.barcode === barcode || product.barcodeList.find((barcodeObj) => barcodeObj.barcode === barcode)
     );
     const productInList = this._productsToSell.find(
       (product) =>
-        product.barcode === barcode
+        product.barcode === barcode || product.barcodeList.find((barcodeObj) => barcodeObj.barcode === barcode)
     );
     if (registeredProduct) {
       this._productsToSell = productInList
         ? this._productsToSell.map((product) =>
-            product.barcode === barcode
+            product.barcode === barcode || product.barcodeList.find((barcodeObj) => barcodeObj.barcode === barcode)
               ? {
                   ...product,
                   quantity:
@@ -403,7 +403,9 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
                 }
               : product
           )
-        : [...this._productsToSell, {...registeredProduct, quantity: 1}];
+        : registeredProduct.stock > 0
+        ? [...this._productsToSell, {...registeredProduct, quantity: 1}]
+        : this._productsToSell;
     }
     dispatchCustomEvent(this, 'dm-get-product-to-sell', {
       products: this._productsToSell,
@@ -419,7 +421,8 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
   deleteProductToSell(barcode) {
     const productsToSell = this._productsToSell.filter(
       (product) =>
-        product.barcode !== barcode && product.barcodeSecondary !== barcode
+        product.barcode !== barcode &&
+      !product.barcodeList.find((barcodeObj) => barcodeObj.barcode === barcode)
     );
     this._productsToSell = productsToSell;
     dispatchCustomEvent(this, 'dm-get-product-to-sell', {
@@ -436,7 +439,7 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
    */
   updateProductToSell(barcode, change) {
     this._productsToSell = this._productsToSell.map((product) =>
-      product.barcode === barcode || product.barcodeSecondary === barcode
+      product.barcode === barcode || product.barcodeList.find((barcodeObj) => barcodeObj.barcode === barcode)
         ? {...product, quantity: Math.max(1, product.quantity + change)}
         : product
     );

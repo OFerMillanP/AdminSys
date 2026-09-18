@@ -86,25 +86,6 @@ async function getProducts(param, value) {
   return barcodes.rows;
 }
 
-async function validateExistBarcode(param, value) {
-  const validateExist = await pool.query(
-    `
-      SELECT * FROM barcodes WHERE ${param} = $1
-    `, [value]);
-  return validateExist;
-}
-
-const listEquals = (list1, list2) => 
-  list1.length === list2.length && 
-  list1.every((value, index) => value == list2[index]);
-
-const extraBarcodeHasChanged = (newObject, oldObject) => 
-  newObject.map((value, index) => 
-    value.barcode !== oldObject[index].barcode ?
-    { index, after: oldObject[index], before: value } : 
-    null
-  ).filter(Boolean);
-
 /**
  * Apis --------------------------------------------------------
  */
@@ -235,7 +216,7 @@ api.post('/api/v0/products/product', async function (req, res) {
 
       req.body.barcodeList.forEach(
         async (barcode) => {
-           await pool.query(
+          await pool.query(
           `
            INSERT INTO barcodes (product_id, primary_barcode, barcode)
             VALUES ($1, $2, $3)
@@ -429,34 +410,39 @@ api.patch('/api/v0/products/product/:id', async function (req, res) {
           SET name = $1, barcode = $2, price = $3, stock = $4, description = $5
           WHERE id = $6
         `, [productToUpdate.name, productToUpdate.barcode, productToUpdate.price, productToUpdate.stock, productToUpdate.description, productToUpdateId]);
-
-      let extraBarcodesExistentByProductId = await getBarcodes('product_id', productToUpdateId);
-      await Promise.all(extraBarcodeHasChanged(productToUpdate.barcodeList, extraBarcodesExistentByProductId).map(async (barcode) => {
-        await pool.query(
-        ` 
-          UPDATE barcodes
-          SET barcode = $1
-          WHERE id = $2
-        `, [barcode.before.barcode, barcode.before.id]);
-      }))
-      return res.status(200).json(productToUpdate);
-    } else {
-      let extraBarcodesExistent = await getBarcodes('product_id', productToUpdateId);
-      await Promise.all(extraBarcodeHasChanged(productToUpdate.barcodeList, extraBarcodesExistent).map(async (barcode) => {
-        await pool.query(
-        ` 
-          UPDATE barcodes
-          SET barcode = $1
-          WHERE id = $2
-        `, [barcode.before.barcode, barcode.before.id]);
-      }))    
-      return res.status(200).json(productToUpdate);
     }
 
-    /** Falta 
-     * -- borrar
-     * -- agregar
-     * */
+    if (productToUpdate.barcodeList.length) {
+      await Promise.all(productToUpdate.barcodeList.map(async (barcode) => {
+        if (barcode.action === 'add') {
+          await pool.query(
+            `
+              INSERT INTO barcodes (product_id, primary_barcode, barcode)
+              VALUES ($1, $2, $3)
+            `, [productToUpdate.id, productToUpdate.barcode, barcode.barcode]
+          );
+        }
+        if (barcode.action === 'remove') {
+          await pool.query(
+            ` 
+              DELETE FROM barcodes
+              WHERE id = $1
+            `, [barcode.id]
+          );
+        }
+        if (barcode.action === 'edit') {
+          await pool.query(
+            ` 
+              DELETE FROM barcodes
+              WHERE id = $1
+            `, [barcode.id]
+          );
+        }
+      }))
+    }
+    
+    return res.status(200).json(productToUpdate);
+
   } catch (err) {
     console.error('Error al conectar a la base de datos: ', err.stack);
     return utils.returnErrorServer(res);

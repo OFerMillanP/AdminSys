@@ -173,7 +173,11 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     this.productToEdit.barcodeList = [...
       this.productToEdit.barcodeList.map((barcode) => {
         if (barcode.id === id) {
-          return {...barcode, barcode: value}
+          return {
+            ...barcode,
+            barcode: value,
+            action: barcode.action?.length ? barcode.action : 'edit'
+          }
         }
         return barcode
       })
@@ -283,21 +287,39 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
   }
 
   _removeBarcode({target: {id}}){
-    this.productToEdit.barcodeList = [...
-      this.productToEdit.barcodeList.filter((barcode) => barcode.id !== id)
-    ];
     this.productToEdit = {
       ...this.productToEdit,
-      remove: [...this.productToEdit.remove || [], id]
-    };
+      barcodeList: [...
+        this.productToEdit.barcodeList.map((barcode) => {
+          if (barcode.id === id) {
+            return {
+              ...barcode,
+              action: 'remove'
+            }
+          }
+          return barcode
+        })
+      ]
+    }
   }
 
-  _addBarcode({target: {id, value}}){
-    this.productToEdit = {
-      ...this.productToEdit,
-      add: [...this.productToEdit.add || [], {id: id, value: value}]
-    };
-    console.log(this.productToEdit);
+  _addBarcode(){
+    if (!!this.productToEdit) {
+      this.productToEdit = 
+        {
+          ...this.productToEdit,
+          barcodeList: [
+            ...this.productToEdit.barcodeList || [], 
+            {
+              product_id: this.productToEdit.id,
+              barcode: '',
+              primary_barcode: this.productToEdit.barcode,
+              id: `${window.crypto.randomUUID()}`,
+              action: 'add'
+            }
+          ]
+        }
+    }
   }
 
   _isFilledForm(){
@@ -339,27 +361,28 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
             </div>
 
             ${this.productToEdit.barcodeList.map((barcode) => 
-              html`
-                <div class="input-container">
-                  <mwc-textfield
-                    raised
-                    ?disabled="${!(this.levelUser === 'admin')}"
-                    label="Extra Barcode"
-                    autocomplete="off"
-                    id="${barcode.id}"
-                    type="text"
-                    autocomplete="off"
-                    .value="${barcode.barcode}"
-                    @input=${this._handleInput}
-                  ></mwc-textfield>
-                  <mwc-icon 
-                    slot="icon"
-                    class="register-icon enabled"
-                    id="${barcode.id}"
-                    @click="${this._removeBarcode}"
-                  >remove</mwc-icon>
-                </div>
-              `
+              barcode.action !== 'remove' ? 
+                html`
+                  <div class="input-container">
+                    <mwc-textfield
+                      raised
+                      ?disabled="${!(this.levelUser === 'admin')}"
+                      label="Extra Barcode"
+                      autocomplete="off"
+                      id="${barcode.id}"
+                      type="text"
+                      autocomplete="off"
+                      .value="${barcode.barcode}"
+                      @input=${this._handleInput}
+                    ></mwc-textfield>
+                    <mwc-icon 
+                      slot="icon"
+                      class="register-icon enabled"
+                      id="${barcode.id}"
+                      @click="${this._removeBarcode}"
+                    >remove</mwc-icon>
+                  </div>
+                ` : nothing
             )}
 
             <div class="input-container">
