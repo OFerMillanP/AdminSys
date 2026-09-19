@@ -131,8 +131,8 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     this._editErrorResponseModalRef = createRef();
     this._editSuccessModalRef = createRef();
     this._messageByCode = {
-      'EDP003': 'El código de barras ya está registrado',
-      'EDP004': 'El código de barras secundario ya está registrado',
+      'EDP003': 'El código de barras principal ya está registrado',
+      'EDP004': 'Un código de barras secundario ya está registrado',
     }
     this._productIdToAction = {};
     this._showEditForm = false;

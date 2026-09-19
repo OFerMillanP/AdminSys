@@ -78,6 +78,14 @@ async function getBarcodes(param, value) {
   return barcodes.rows;
 }
 
+async function getBarcodesAndPrimaryBarcode(value) {
+  const barcodes = await pool.query(
+    `
+      SELECT * FROM barcodes WHERE barcode = $1 OR primary_barcode = $1
+    `, [value]);
+  return barcodes.rows;
+}
+
 async function getProducts(param, value) {
   const barcodes = await pool.query(
     `
@@ -399,9 +407,9 @@ api.patch('/api/v0/products/product/:id', async function (req, res) {
       }
       const extraBarcodesExistent = await getBarcodes('barcode', productToUpdate.barcode);
       if (extraBarcodesExistent.length > 0) {
-         return res
-        .status(400) 
-        .json({message: 'Barcode already exists', code: 'EDP004', status: false});
+        return res
+          .status(400) 
+          .json({message: 'Barcode already exists', code: 'EDP004', status: false});
       }
 
       await pool.query(
@@ -413,6 +421,23 @@ api.patch('/api/v0/products/product/:id', async function (req, res) {
     }
 
     if (productToUpdate.barcodeList.length) {
+      let errorOcurs = await Promise.all(productToUpdate.barcodeList.map(async (barcode) => {
+        const extraBarcodesExistent = await getBarcodesAndPrimaryBarcode(barcode.barcode);
+        if (barcode.action === 'add' && extraBarcodesExistent.length) {
+          return 'error'
+        } else if (barcode.action === 'edit' && (extraBarcodesExistent.length && extraBarcodesExistent[0].id !== barcode.id)) {
+          return 'error'
+        } else {
+          return ''
+        }
+      }))
+      
+      if (errorOcurs.find((value) => value === 'error')) {
+        return res
+          .status(400) 
+          .json({message: 'Barcode already exists', code: 'EDP004', status: false});
+      }
+
       await Promise.all(productToUpdate.barcodeList.map(async (barcode) => {
         if (barcode.action === 'add') {
           await pool.query(
@@ -420,6 +445,15 @@ api.patch('/api/v0/products/product/:id', async function (req, res) {
               INSERT INTO barcodes (product_id, primary_barcode, barcode)
               VALUES ($1, $2, $3)
             `, [productToUpdate.id, productToUpdate.barcode, barcode.barcode]
+          ); 
+        }
+        if (barcode.action === 'edit') {
+          await pool.query(
+            ` 
+              UPDATE barcodes
+              SET barcode = $1
+              WHERE id = $2
+            `, [barcode.barcode, barcode.id]
           );
         }
         if (barcode.action === 'remove') {
@@ -430,17 +464,8 @@ api.patch('/api/v0/products/product/:id', async function (req, res) {
             `, [barcode.id]
           );
         }
-        if (barcode.action === 'edit') {
-          await pool.query(
-            ` 
-              DELETE FROM barcodes
-              WHERE id = $1
-            `, [barcode.id]
-          );
-        }
       }))
     }
-    
     return res.status(200).json(productToUpdate);
 
   } catch (err) {
