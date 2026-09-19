@@ -409,7 +409,7 @@ api.patch('/api/v0/products/product/:id', async function (req, res) {
       if (extraBarcodesExistent.length > 0) {
         return res
           .status(400) 
-          .json({message: 'Barcode already exists', code: 'EDP004', status: false});
+          .json({message: 'Barcode already exists', code: 'EDP003', status: false});
       }
 
       await pool.query(
@@ -431,7 +431,7 @@ api.patch('/api/v0/products/product/:id', async function (req, res) {
           return ''
         }
       }))
-      
+
       if (errorOcurs.find((value) => value === 'error')) {
         return res
           .status(400) 
