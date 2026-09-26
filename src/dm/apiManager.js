@@ -31,9 +31,9 @@ export class ApiManagerElement extends LitElement {
     * @param {string} event - The base name of the event to dispatch.
     * @param {Object} [body={}] - The request body for POST/PATCH.
    */
-  async fetch(method = '', service = '', event = '', body = {}) {
+  async fetch(method = '', service = '', event = '', body = {}, uri = 'http://localhost:8100/') {
     dispatchCustomEvent(this, 'show-spinner');
-    const url = 'http://localhost:8100/' + service;
+    const url = uri + service;
     let responseData = {};
     try {
       let request = {

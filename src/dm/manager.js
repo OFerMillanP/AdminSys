@@ -572,9 +572,9 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
-   * Updates a product through the API.
+   * PostBarcode to generate image
    *
-   * @param {Object} product - The updated product object.
+   * @param {Object} barcpde - The barcode object with a string barcode.
    * @return {Promise<void>}
    */
   async postGenerateBarcode(barcode) {
@@ -583,6 +583,21 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
       `api/v0/barcode/generate`,
       'dm-generate-barcode',
       { barcode: barcode }
+    );
+  }
+
+  /**
+   * Request open cash register
+   *
+   * @return {Promise<void>}
+   */
+  async openCashRegister() {
+    await this._getDataManager().fetch(
+      'GET',
+      `api/v0/open-register`,
+      'dm-open-cash-register',
+      true,
+      'http://localhost:8101/'
     );
   }
 

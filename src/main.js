@@ -498,7 +498,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._productsToSell = [];
     this._total = 0;
     this._completeSaleSuccess = {};
-    this._printTicket({detail: true});
+    this._managerRef.value.openCashRegister();
   }
 
   _closeRegisterSuccessModal(){
@@ -517,24 +517,10 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     }
   }
 
-  // async _openCashRegister() {
-  //   const printer = new ThermalPrinter({
-  //     type: PrinterTypes.EPSON, // Cambia el tipo según tu marca (EPSON, STAR, etc.)
-  //     interface: 'printer:Nombre_De_Tu_Impresora', // Nombre exacto de la impresora en tu SO
-  //     characterSet: CharacterSet.PC850_MULTILINGUAL,
-  //   });
-
-  //   try {
-  //     // Enviar el pulso para abrir el cajón de dinero
-  //     printer.openCashDrawer();
-
-  //     // Ejecutar el comando en la impresora
-  //     await printer.execute();
-  //     console.log('¡Cajón de dinero abierto exitosamente!');
-  //   } catch (error) {
-  //     console.error('Error al intentar abrir el cajón:', error);
-  //   }
-  // }
+  _openCahsRegister(){
+    console.log('try to open cash register');
+    this._managerRef.value.openCashRegister();
+  }
 
   /**
    * Generates the sale ticket and opens the print dialog.

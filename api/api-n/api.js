@@ -514,9 +514,47 @@ api.post('/api/v0/sales', async function (req, res) {
           SET stock = stock - $2
           WHERE id = $1;
         `, [product.id, product.quantity]);
+      });
 
-      })
-      res.status(200).json({message: 'Sale registered successfully', code: 'ESR001', status: true});
+      const getSale = await pool.query(
+        `
+          SELECT * FROM sales
+          WHERE id = $1
+        `, [getLastSale.rows[0].id]);
+
+      let saleSaved = getSale.rows[0];
+
+      const getProductsFromSale = await pool.query(
+        `
+          SELECT p.id, p.name, p.barcode, p.price, p.description,
+          sp.quantity
+          FROM products p
+          INNER JOIN sales_products sp
+          ON sp.product = p.id
+          INNER JOIN sales s
+          ON sp.sale = s.id
+          WHERE s.id = $1
+        `, [saleSaved.id]);
+
+      saleSaved = {
+        ...saleSaved,
+        paymentMethod: saleSaved.payment_method,
+        changeToGive: saleSaved.change_to_give,
+        products: getProductsFromSale.rows,
+        date: new Date(saleSaved.date).toLocaleString('es-MX', { 
+          day: '2-digit', 
+          month: '2-digit', 
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        })
+      };
+      delete sale.payment_method;
+      delete sale.change_to_give;
+
+      res.status(200).json(saleSaved);
     } else {
       return res
         .status(400)

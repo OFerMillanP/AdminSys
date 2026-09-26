@@ -17,6 +17,7 @@
     "analyze": "wca analyze \"**/*.js\" --outFile custom-elements.json",
     "serve": "es-dev-server --node-resolve --watch",
     "api": "cd api/api-n && npm run start && cd ../..",
+    "api:pyhthon": "cd api && python3 api.py && cd ..", 
     "start:all:w": "start /b npm run start & start /b npm run api",
     "start:all": "npm run start & npm run api",
     "start": "npm-run-all -p start-server",
