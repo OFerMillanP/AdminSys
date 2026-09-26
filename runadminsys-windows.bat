@@ -5,5 +5,5 @@ echo Ejecutando el Administrador de Systemas
 
 cd ~\Documentos\Repositorios\AdminSys
 
-npm run start:all:w & start /b run-db.bat
+npm run start:all:w & start /b npm run api:python & start /b run-db.bat
 
