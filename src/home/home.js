@@ -5,6 +5,7 @@ import {SellElement} from './sell/sell.js';
 import {ProductsElement} from './products/products.js';
 import {RegisterElement} from './register/register.js';
 import {SalesElement} from './sales/sales.js';
+import {ToolsElement} from './tools/tools.js';
 
 import {dispatchCustomEvent} from '../../utils/utils.js';
 
@@ -24,10 +25,11 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
 
   static get scopedElements() {
     return {
-      'sell-element': SellElement,
       'products-element': ProductsElement,
       'register-element': RegisterElement,
       'sales-element': SalesElement,
+      'sell-element': SellElement,
+      'tools-element': ToolsElement,
     };
   }
 
@@ -70,6 +72,9 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
       editSuccess: {
         type: Boolean,
         attribute: 'edit-success',
+      },
+      generatedBarcode: {
+        type: Object,
       },
       /**
        * Product selected for editing.
@@ -126,30 +131,38 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
         type: Array,
       },
       /**
-       * Toggle to show the sell section.
+       * Toggle to show the sell tab.
        */
       _isShowSell: {
         type: Boolean,
         state: true,
       },
       /**
-       * Toggle to show the products section.
+       * Toggle to show the products tab.
        */
       _isShowProducts: {
         type: Boolean,
         state: true,
       },
       /**
-       * Toggle to show the register section.
+       * Toggle to show the register tab.
        */
       _isShowRegister: {
         type: Boolean,
         state: true,
       },
       /**
-       * Toggle to show the delete section.
+       * Toggle to show the sales tab.
        */
       _isShowSales: {
+        type: Boolean,
+        state: true,
+      },
+      
+      /**
+       * Toggle to show the tools tab.
+       */
+      _isShowTools: {
         type: Boolean,
         state: true,
       },
@@ -163,6 +176,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
     this.deleteSuccess = false;
     this.editErrorResponse = {};
     this.editSuccess = false;
+    this.generatedBarcode = {}
     this.productToEdit = {};
     this.productsToSell = [];
     this.registerError = {};
@@ -176,6 +190,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
     this._isShowRegister = false;
     this._isShowSales = false;
     this._isShowSell = false;
+    this._isShowTools = false;
   }
 
   firstUpdated() {
@@ -215,6 +230,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
     this._isShowProducts = false;
     this._isShowRegister = false;
     this._isShowSales = false;
+    this._isShowTools = false;
   }
 
   /**
@@ -235,16 +251,21 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
         this._isShowRegister = true;
         this._activeIndex = 1;
       },
-      sell: () => {
-        this._resetSections();
-        this._isShowSell = true;
-        this._activeIndex = 2;
-      },
       sales: () => {
         this._resetSections();
         this._isShowSales = true;
         this._activeIndex = 3;
         dispatchCustomEvent(this, `${HomeElement.is}-get-sales`);
+      },
+      sell: () => {
+        this._resetSections();
+        this._isShowSell = true;
+        this._activeIndex = 2;
+      },
+      tools: () => {
+        this._resetSections();
+        this._isShowTools = true;
+        this._activeIndex = 4;
       },
     };
     sections[id].call();
@@ -284,6 +305,11 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
               id="sales"
               @click="${this._showSection}"
             ></mwc-tab>
+            <mwc-tab
+              label="Tools"
+              id="tools"
+              @click="${this._showSection}"
+            ></mwc-tab>
           </mwc-tab-bar>
         </nav>
         <mwc-button
@@ -293,10 +319,11 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
           @click=${this._logout}
         ></mwc-button>
       </header>
-      ${this._isShowSell ? this._tplSell : nothing}
       ${this._isShowProducts ? this._tplProducts : nothing}
       ${this._isShowRegister ? this._tplRegister : nothing}
       ${this._isShowSales ? this._tplSales : nothing}
+      ${this._isShowSell ? this._tplSell : nothing}
+      ${this._isShowTools ? this._tplTools : nothing}
     `;
   }
 
@@ -350,6 +377,18 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
       ?register-success="${this.registerSuccess}"
       register-error="${this.registerError.code}"
     ></register-element>`;
+  }
+
+  /**
+   * Returns the register section template.
+   * @returns {import('lit').TemplateResult}
+   */
+  get _tplTools() {
+    return html`
+      <tools-element
+        .generatedBarcode="${this.generatedBarcode}"
+      ></tools-element>
+    `;
   }
 
   static get styles() {

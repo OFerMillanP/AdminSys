@@ -33,6 +33,7 @@ api.use(bodyParser.json());
  * @type {number}
  */
 let userLoginTry = 0;
+let lastBarcode = '';
 
 /**
  * Returns the current date and time in `DD/MM/YYYY - HH:MM:SS` format.
@@ -642,12 +643,12 @@ api.post('/api/v0/sales/cash-register', async function (req, res) {
   try {
     const user_logged = await getUserLogged() || {};
     if (Object.keys(user_logged).length > 0) {
-      const res_db = await pool.query(
+      await pool.query(
         `
           INSERT INTO cash_register_closed (total_cash, total_card, total)
           VALUES ($1, $2, $3)
         `, [req.body.totalCash, req.body.totalCard, req.body.total]);
-      return res.status(200).json({});
+      return res.status(200);
     } else {
       return res
         .status(400)
@@ -658,6 +659,35 @@ api.post('/api/v0/sales/cash-register', async function (req, res) {
     return utils.returnErrorServer(res);
   } finally {}
 });
+
+/**
+ * Registers a new sale and updates stock for sold products.
+ * @route POST api/v0/barcode/generate
+ * @param {Object[]} req.body - Lista de ventas realizadas en un lapso de tiempo.
+ * @returns {200} Corte de caja realizado y registrado
+ */
+api.post('/api/v0/barcode/generate', async function (req, res) {
+  try {
+    const user_logged = await getUserLogged() || {};
+    let barcode = req.body.barcode;
+    if (Object.keys(user_logged).length > 0 && lastBarcode !== barcode) {
+      utils.guardarCodigoBarras(barcode);
+      lastBarcode = req.body.barcode;
+      return res.status(200).json(barcode);
+    } else if (lastBarcode === barcode){
+        return res.status(200).json(barcode);
+    } else {
+      return res
+        .status(400)
+        .json({message: 'Not Authorized', code: 'EGP001', status: false});
+    }
+  } catch (err) {
+    console.error('Error al conectar a la base de datos: ', err.stack);
+    return utils.returnErrorServer(res);
+  } finally {}
+});
+
+api.use('/resources/img', express.static('resources/img')); 
 
 /**
  * Init server --------------------------------------------------------

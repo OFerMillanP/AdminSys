@@ -3,7 +3,7 @@
 echo In iciando tareas...
 echo Ejecutando el Administrador de Systemas
 
-cd ~\Documentos\Repositorios\AdminSys-1
+cd ~\Documentos\Repositorios\AdminSys
 
 npm run start:all:w & start /b run-db.bat
 

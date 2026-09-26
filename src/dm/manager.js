@@ -566,9 +566,24 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     );
   }
 
-  _postCloseCashRegisterSuccessResponse({detail}){
+  _postCloseCashRegisterSuccessResponse(){
     this.getCloseCashRegister();
     dispatchCustomEvent(this,'dm-post-close-cash-register-success-response')
+  }
+
+  /**
+   * Updates a product through the API.
+   *
+   * @param {Object} product - The updated product object.
+   * @return {Promise<void>}
+   */
+  async postGenerateBarcode(barcode) {
+    await this._getDataManager().fetch(
+      'POST',
+      `api/v0/barcode/generate`,
+      'dm-generate-barcode',
+      { barcode: barcode }
+    );
   }
 
   /**

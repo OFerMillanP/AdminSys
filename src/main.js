@@ -72,6 +72,10 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         type: Boolean,
         state: true,
       },
+      _generatedBarcode: {
+        type: Object,
+        state: true
+      },
       /**
        * Wheter the report is empty
        */
@@ -187,6 +191,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._deleteProductSuccess = false;
     this._editProductErrorResponse = {};
     this._editProductSuccess = false;
+    this._generatedBarcode = {};
     this._isEmptyReport = false;
     this._isLogged = false;
     this._loginErrorCode = '';
@@ -498,6 +503,18 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
 
   _closeRegisterSuccessModal(){
     this._registerProductSuccess = false;
+  }
+
+  _requestGenerateBarcode({detail}) {
+    if (this._generatedBarcode.barcode !== detail) {
+      this._managerRef.value.postGenerateBarcode(detail);
+    }
+  }
+
+  _generateBarcodeSuccessResponse({detail}) {
+    if (this._generatedBarcode.barcode !== detail) {
+      this._generatedBarcode = {...this._generatedBarcode, barcode: detail};
+    }
   }
 
   // async _openCashRegister() {
@@ -817,6 +834,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         .sales=${this._sales}
         .total=${this._total}
         .userData=${this._userData}
+        .generatedBarcode="${this._generatedBarcode}"
         @home-element-get-sales="${this._getSales}"
         @home-page-logout="${this._logout}"
         @modal-element-confirm-action-success-complete-sale="${this
@@ -840,6 +858,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         @sell-element-print-ticket="${this._printTicket}"
         @sell-element-update-product-to-sell="${this._updateProductToSell}"
         @modal-element-confirm-action-success-register="${this._closeRegisterSuccessModal}"
+        @tools-element-request-generate-barcode="${this._requestGenerateBarcode}"
       ></home-element>
     `;
   }
@@ -865,11 +884,12 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
           ._getUserInSessionSuccesResponse}
         @api-dm-session-active-handle-error=${this
           ._getUserInSessionHandleErrorResponse}
+        @api-dm-generate-barcode-success-response=${this._generateBarcodeSuccessResponse}
+        @api-dm-edit-product-handle-error=${this
+          ._editProductHandleErrorResponse}
         @dm-delete-product-success-response=${this
           ._deleteProductSuccessResponse}
         @dm-edit-product-success-response=${this._editProductSuccessResponse}
-        @api-dm-edit-product-handle-error=${this
-          ._editProductHandleErrorResponse}
         @dm-generate-report=${this._generateReportDocument}
         @dm-get-close-cash-register-success-response="${this
           ._getCloseCashRegisterSuccessResponse}"
