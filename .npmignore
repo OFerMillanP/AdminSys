@@ -8,3 +8,5 @@ node_modules/*
 screenshots/*
 test/*
 test_e2e/*
+api/database/db.js
+api-n/node_modules/*
