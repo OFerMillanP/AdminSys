@@ -419,7 +419,18 @@ api.patch('/api/v0/products/product/:id', async function (req, res) {
           SET name = $1, barcode = $2, price = $3, stock = $4, description = $5
           WHERE id = $6
         `, [productToUpdate.name, productToUpdate.barcode, productToUpdate.price, productToUpdate.stock, productToUpdate.description, productToUpdateId]);
-    }
+    } else if(productGotById.name !== productToUpdate.name ||
+        productGotById.price !== productToUpdate.price ||
+        productGotById.stock !== productToUpdate.stock ||
+        productGotById.description !== productToUpdate.description) {
+          
+        await pool.query(
+          ` 
+            UPDATE products
+            SET name = $1, barcode = $2, price = $3, stock = $4, description = $5
+            WHERE id = $6
+          `, [productToUpdate.name, productToUpdate.barcode, productToUpdate.price, productToUpdate.stock, productToUpdate.description, productToUpdateId]);
+      }
 
     if (productToUpdate.barcodeList.length) {
       let errorOcurs = await Promise.all(productToUpdate.barcodeList.map(async (barcode) => {

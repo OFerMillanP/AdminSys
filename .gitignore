@@ -2,6 +2,7 @@
 build/
 components
 /api/database/db.js
-/api-n/node_modules
+/api/api-n/node_modules
+/api/api-n/package-lock.json
 
 # only generated for size check

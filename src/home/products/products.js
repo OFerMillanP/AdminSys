@@ -409,6 +409,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                 type="number"
                 min="0"
                 iconTrailing="attach_money"
+                .step="${0.1}"
                 .value="${this.productToEdit.price}"
                 @input=${this._handleInput}
               ></mwc-textfield>
