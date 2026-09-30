@@ -194,7 +194,7 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
         this._productName = value.toUpperCase() || '';
       },
       price: () => {
-        this._productPrice = value || 0;
+        this._productPrice = Number(value) || 0;
       },
       stock: () => {
         this._productStock = value || 0;
@@ -393,6 +393,7 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
                 type="number"
                 min="0"
                 iconTrailing="attach_money"
+                .step="${0.1}"
                 .value="${this._productPrice.toString()}"
                 @input=${this._handleInput}
               ></mwc-textfield>
