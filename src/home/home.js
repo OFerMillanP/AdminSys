@@ -260,7 +260,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
       sell: () => {
         this._resetSections();
         this._isShowSell = true;
-        this._activeIndex = 2;
+        this._activeIndex = this.userData?.level === 'general' ? 1 : 2;
       },
       tools: () => {
         this._resetSections();
@@ -305,11 +305,14 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
               id="sales"
               @click="${this._showSection}"
             ></mwc-tab>
-            <mwc-tab
-              label="Tools"
-              id="tools"
-              @click="${this._showSection}"
-            ></mwc-tab>
+            ${this.userData?.level === 'admin' ?
+              html`
+                <mwc-tab
+                  label="Tools"
+                  id="tools"
+                  @click="${this._showSection}"
+                ></mwc-tab>
+              ` : nothing}
           </mwc-tab-bar>
         </nav>
         <mwc-button

@@ -147,7 +147,7 @@ api.post('/api/v0/login', async function (req, res) {
   userLoginTry += 1;
   let res_db = {};
   try {
-    res_db = await pool.query(utils.getUserAndLevel, [req.body.user, req.body.password]);
+    res_db = await pool.query(utils.getUserAndLevel, [req.body.user, btoa(req.body.password)]);
     userLoginTry = 0;
     userToSend = Object.assign({}, res_db.rows[0]);
     if (res_db.rows.length) {
@@ -156,7 +156,7 @@ api.post('/api/v0/login', async function (req, res) {
         UPDATE users 
         SET is_logged = $3 , last_login = now()
         WHERE user_name = $1 AND password = $2
-      `, [req.body.user, req.body.password, true]);
+      `, [req.body.user, btoa(req.body.password), true]);
       return res.status(201).json(userToSend);
     }
     if (!res_db.rows.length && userLoginTry <= 3) {
@@ -419,11 +419,11 @@ api.patch('/api/v0/products/product/:id', async function (req, res) {
           SET name = $1, barcode = $2, price = $3, stock = $4, description = $5
           WHERE id = $6
         `, [productToUpdate.name, productToUpdate.barcode, productToUpdate.price, productToUpdate.stock, productToUpdate.description, productToUpdateId]);
-    } else if(productGotById.name !== productToUpdate.name ||
-        productGotById.price !== productToUpdate.price ||
-        productGotById.stock !== productToUpdate.stock ||
-        productGotById.description !== productToUpdate.description) {
-          
+    } else if( productGotById.name !== productToUpdate.name ||
+      productGotById.price !== productToUpdate.price ||
+      productGotById.stock !== productToUpdate.stock ||
+      productGotById.description !== productToUpdate.description) {
+
         await pool.query(
           ` 
             UPDATE products
