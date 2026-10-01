@@ -170,18 +170,20 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
    * @param {InputEvent} event - The input event.
    */
   _handleInput({target: {id, value}}) {
-    this.productToEdit.barcodeList = [...
-      this.productToEdit.barcodeList.map((barcode) => {
-        if (barcode.id === id) {
-          return {
-            ...barcode,
-            barcode: value,
-            action: barcode.action?.length ? barcode.action : 'edit'
+    if (Object.keys(this.productToEdit).length) {
+      this.productToEdit.barcodeList = [...
+        this.productToEdit?.barcodeList.map((barcode) => {
+          if (barcode.id === id) {
+            return {
+              ...barcode,
+              barcode: value,
+              action: barcode.action?.length ? barcode.action : 'edit'
+            }
           }
-        }
-        return barcode
-      })
-    ]
+          return barcode
+        })
+      ]
+    }
     const inputs = {
       barcode: () => {
         this.productToEdit = {...this.productToEdit, barcode:  value.toUpperCase() || ''};
@@ -196,7 +198,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
         this.productToEdit = {...this.productToEdit, stock:  value.toUpperCase() || ''};
       },
       description: () => {
-        this.productToEdit = {...this.productToEdit, pridescriptionce:  value.toUpperCase() || ''};
+        this.productToEdit = {...this.productToEdit, description:  value || ''};
       },
       search: () => {
         dispatchCustomEvent(this, `${ProductsElement.is}-search-product`, {
@@ -290,7 +292,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     this.productToEdit = {
       ...this.productToEdit,
       barcodeList: [...
-        this.productToEdit.barcodeList.map((barcode) => {
+        this.productToEdit.barcodeList?.map((barcode) => {
           if (barcode.id === id) {
             return {
               ...barcode,
@@ -360,7 +362,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
               >add</mwc-icon>
             </div>
 
-            ${this.productToEdit.barcodeList.map((barcode) => 
+            ${this.productToEdit.barcodeList?.map((barcode) => 
               barcode.action !== 'remove' ? 
                 html`
                   <div class="input-container">
