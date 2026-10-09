@@ -88,6 +88,7 @@ export class ModalElement extends ScopedElementsMixin(LitElement) {
    * Handles the cancel button click and dispatches the cancel action event.
    */
   _cancelActionButton() {
+    // console.log('Cancel: ',`${ModalElement.is}-cancel-action`);
     this.shadowRoot.querySelector('#dialog')?.close();
     dispatchCustomEvent(
       this,

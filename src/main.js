@@ -518,7 +518,6 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
   }
 
   _openCahsRegister(){
-    console.log('try to open cash register');
     this._managerRef.value.openCashRegister();
   }
 
@@ -533,9 +532,27 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._showTicket = true;
     var contenidoOriginal = document.body.innerHTML;
     setTimeout(() => {
-      // Replace the page body only with the content to print
-      document.body.innerHTML = ticketTplToPrint(this._tplTicket(sales));
-      // Call the print function
+
+      if ( detail.paymentMethod === 'card') {
+        document.body.innerHTML = ticketTplToPrint(
+          this._tplTicket(sales) + `
+            <div class="ticket-footer">
+              <div class="footer-message">
+                Tienda
+              </div>
+            </div>
+          `);
+        window.print();
+      }
+      
+      document.body.innerHTML = ticketTplToPrint(
+        this._tplTicket(sales) + `
+          <div class="ticket-footer">
+            <div class="footer-message">
+              Cliente
+            </div>
+          </div>
+        `);
       window.print();
       // Restore the original page content
       document.body.innerHTML = contenidoOriginal;
@@ -690,8 +707,8 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
    * @param {Object} sales - The sale data to print.
    * @returns {string} The ticket HTML.
    */
-  _tplTicket(sales) {
-    return Object.keys(sales).length > 0 ? `
+  _tplTicket(sales, isCash = true) {
+    let ticket =  `
       <div class="ticket-container">
         <!-- Header -->
         <div class="ticket-header">
@@ -780,7 +797,20 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
           </div>
         </div>
       </div>
-    ` : '';
+    `;
+    // let fullTicket = isCash ? ticket : ticket + `
+    //   <div class="ticket-footer">
+    //     <div class="footer-message">
+    //       Tienda
+    //     </div>
+    //   </div>
+    // ` + ticket + `
+    //   <div class="ticket-footer">
+    //     <div class="footer-message">
+    //       Cliente
+    //     </div>
+    //   </div>`;
+    return Object.keys(sales).length > 0 ? ticket : '';
   }
 
   /**

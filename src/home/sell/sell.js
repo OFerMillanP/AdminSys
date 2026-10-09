@@ -119,7 +119,7 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
     this._changeToGive = 0;
     this._confirmCompleteSaleModalRef = createRef();
     this._enableCompleteSale = false;
-    this._showInputForCash = false;
+    this._showInputForCash = true;
     this._showTicket = false;
     this._successCompleteSaleModalRef = createRef();
   }
@@ -297,6 +297,7 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
             <mwc-formfield label="Credit/Debit Card">
               <mwc-formfield label="Cash">
                 <mwc-radio
+                  checked
                   name="payment-method"
                   id="payment-cash"
                   @change="${this._selectPaymentMethod}"

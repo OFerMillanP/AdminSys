@@ -1,8 +1,12 @@
 import {LitElement, html, nothing} from 'lit';
 import {ScopedElementsMixin} from '@open-wc/scoped-elements/html-element.js';
 
-import styles from './sales.css.js';
 import {dispatchCustomEvent} from '../../../utils/utils.js';
+import {ref, createRef} from 'lit/directives/ref.js';
+
+import {ModalElement} from '../../organisms/modal/modal.js';
+
+import styles from './sales.css.js';
 
 /**
  * Sales page element.
@@ -12,6 +16,12 @@ import {dispatchCustomEvent} from '../../../utils/utils.js';
 export class SalesElement extends ScopedElementsMixin(LitElement) {
   static get is() {
     return 'sales-element';
+  }
+  
+  static get scopedElements() {
+    return {
+      'modal-element': ModalElement
+    };
   }
 
   static get properties() {
@@ -35,6 +45,10 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
       _activeIndex: {
         type: Number,
         state: true,
+      },
+      _confirmClosedCashRegisterModalRef: {
+        type: Object,
+        state: true
       },
       _currentPage: {
         type: Number,
@@ -71,6 +85,7 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
     this.sales = [];
     this.total = 0;
     this._activeIndex = 0;
+    this._confirmClosedCashRegisterModalRef = createRef();
     this._currentPage = 1;
     this._endDate = '';
     this._isShowCashRegister = false;
@@ -177,6 +192,10 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
       },
     });
    }
+  }
+
+  _closeCashRegister() {
+    this._confirmClosedCashRegisterModalRef.value.openModal();
   }
 
   get _tplSales() {
@@ -359,11 +378,38 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
         <mwc-button
           raised
           label="Close Register"
-          @click="${() => dispatchCustomEvent(this, `${SalesElement.is}-close-cash-register`)}"
+          @click="${this._closeCashRegister}"
         ></mwc-button>
       </section>
     `;
   }
+  // @click="${() => dispatchCustomEvent(this, `${SalesElement.is}-close-cash-register`)}"
+
+  /**
+     * Returns the success modal template.
+     *
+     * @returns {import('lit').TemplateResult}
+     */
+    get _tplConfirmClosedCashRegisterModal() {
+      return html`
+        <modal-element
+          ${ref(this._confirmClosedCashRegisterModalRef)}
+          .data=${{
+            titleText: 'Do you want to confirm the cash register cut-off?',
+            bodyText:
+            'This action cannot be undone.',
+            cancelButtonText: 'Cancel',
+            code: 'confirm-closed-register-cash',
+            confirmButtonText: 'Confirm',
+            type: 'warning',
+            isEnableConfirmButton: true,
+          }}
+          @modal-element-confirm-action-confirm-closed-register-cash=${() =>
+            dispatchCustomEvent(this, `${SalesElement.is}-close-cash-register`)}
+        ></modal-element>
+      `;
+    // @modal-element-cancel-action=${() => {console.log('cancel')}}
+    }
 
   static get styles() {
     return [styles];
@@ -377,6 +423,7 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
   render() {
     return html`
       ${this._tplSalesSection}
+      ${this._tplConfirmClosedCashRegisterModal}
       ${this._isShowSales ? html`${this._tplSales} ${this._tplPagination}` : nothing}
       ${this._isShowReport ? html`${this._tplReport}` : nothing}
       ${this._isShowCashRegister ? html`${this._tplCashRegisterClosing}` : nothing}
