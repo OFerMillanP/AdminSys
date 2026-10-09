@@ -1,6 +1,8 @@
 /node_modules/
 build/
 components
+api/database
+api/api-n/node_modules
 /api/database/db.js
 /api/api-n/node_modules
 /api/api-n/package-lock.json
