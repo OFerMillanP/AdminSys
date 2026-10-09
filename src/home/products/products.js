@@ -216,7 +216,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
    */
   _selectProductToEdit({target: {id}}) {
     dispatchCustomEvent(this, `${ProductsElement.is}-select-product-to-edit`, {
-      id: parseInt(id),
+      id: id,
     });
   }
 
@@ -306,7 +306,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
   }
 
   _addBarcode(){
-    if (!!this.productToEdit) {
+    if (!!this.productToEdit && this.levelUser === 'admin') {
       this.productToEdit = 
         {
           ...this.productToEdit,
@@ -355,12 +355,15 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                 .value="${this.productToEdit.barcode}"
                 @input=${this._handleInput}
               ></mwc-textfield>
-              <mwc-icon 
-                slot="icon"
-                class="register-icon${this.productToEdit.barcode.length ? ' enabled' : ''}"
-                @click="${this._addBarcode}"
-              >add</mwc-icon>
-            </div>
+              ${this.levelUser === 'admin' ? 
+                html`
+                  <mwc-icon 
+                    slot="icon"
+                    class="register-icon${this.productToEdit.barcode.length ? ' enabled' : ''}"
+                    @click="${this._addBarcode}"
+                  >add</mwc-icon>
+                ` : nothing}
+              </div>
 
             ${this.productToEdit.barcodeList?.map((barcode) => 
               barcode.action !== 'remove' ? 

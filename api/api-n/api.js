@@ -109,7 +109,7 @@ async function getProducts(param, value) {
 api.get('/api/v0/logout', async function (req, res) {
   try {
     await pool.query(utils.logoutUser);
-    return res.status(200);
+    return res.status(200).json({});
   } catch (err) {
     console.error('Error al conectar a la base de datos: ', err.stack);
     return utils.returnErrorServer(res);
@@ -644,7 +644,7 @@ api.get('/api/v0/sales', async function (req, res) {
  * @returns {Object[]} List of closed sales
  */
 api.get('/api/v0/sales/cash-register', async function (req, res) {
-   try {
+  try {
     const user_logged = await getUserLogged() || {};
     if (Object.keys(user_logged).length > 0) {
       const res_db = await pool.query(

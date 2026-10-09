@@ -286,7 +286,7 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
         <section slot="content-data" class="confirm-sale-data">
           <div class="confirm-sale-data-row">
             <b>
-              <span class="confirm-sale-data-label">Total a pagar:</span>
+              <span class="confirm-sale-data-label">Total Pay:</span>
               <span class="confirm-sale-data-value"
                 >$${this.total.toFixed(2)}</span
               >
@@ -295,16 +295,16 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
           <section class="confirm-sale-payment-methods">
             <p class="confirm-sale-data-label"><b>Payment Method:</b></p>
             <mwc-formfield label="Credit/Debit Card">
+              <mwc-formfield label="Cash">
+                <mwc-radio
+                  name="payment-method"
+                  id="payment-cash"
+                  @change="${this._selectPaymentMethod}"
+                ></mwc-radio>
+              </mwc-formfield>
               <mwc-radio
                 name="payment-method"
                 id="payment-card"
-                @change="${this._selectPaymentMethod}"
-              ></mwc-radio>
-            </mwc-formfield>
-            <mwc-formfield label="Cash">
-              <mwc-radio
-                name="payment-method"
-                id="payment-cash"
                 @change="${this._selectPaymentMethod}"
               ></mwc-radio>
             </mwc-formfield>

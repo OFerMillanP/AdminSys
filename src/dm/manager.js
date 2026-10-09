@@ -623,6 +623,7 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
           ._getProductsSuccessResponse}
         @api-dm-register-sale-success-response=${this
           ._registerSaleSuccessResponse}
+        @api-dm-logout-success-response=${() => {window.location.reload();}}
       ></api-manager-element>
     `;
   }
