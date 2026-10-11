@@ -233,8 +233,8 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
     }
   }
 
-  _setBarcode({target: {name}}) {
-    this._barcode = name;
+  _setBarcode({target: {id}}) {
+    this._barcode = id;
     this._sendBarcode();
     this._selectedPossibleProductIndex = -1;
     this.posibleProducts = [];
@@ -551,7 +551,7 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
                     (product, index) =>
                       html`
                         <li
-                          name="${product.name}"
+                          id="${product.name}"
                           class=${index === this._selectedPossibleProductIndex
                             ? 'selected'
                             : ''}

@@ -20,7 +20,7 @@
     "api": "cd api/api-n && npm run start && cd ../..",
     "api:all": "npm run api:python & npm run api",
     "api:python": "cd api && python3 api.py && cd ..",
-    "start:all:w": "start /b npm run start & start /b npm run api",
+    "start:all:w": "start /b npm run start & start /b npm run api:all",
     "start:all": "npm run start & npm run api:all",
     "start": "npm-run-all -p start-server",
     "start-server": "es-dev-server --node-resolve --open --watch",

@@ -286,7 +286,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
   get _tplHome() {
     return html`
       <header class="main-header">
-        <div class="name-header">Welcome ${this.userData?.name}</div>
+        <div class="name-header">Buhonería</div>
         <nav class="navbar">
           <mwc-tab-bar activeIndex="${this._activeIndex}">
             <mwc-tab

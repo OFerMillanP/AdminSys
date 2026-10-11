@@ -568,9 +568,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
       document.body.innerHTML = ticketTplToPrint(
         this._tplTicket(sales) + `
           <div class="ticket-footer">
-            <div class="footer-message">
               Cliente
-            </div>
           </div>
         `);
       window.print();
@@ -732,12 +730,12 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
       <div class="ticket-container">
         <!-- Header -->
         <div class="ticket-header">
-          <div class="store-name">🛍️ Anel Store</div>
+          <div class="store-name">🛍️ Buhoneria</div>
           <div class="store-info">
-            Dirección: Av. Ing. Jorge Luque Loyola 71, CP. 57500, Nezahualcoyotl
+            Av. Ing. Jorge Luque Loyola 71, CP. 57500, Nezahualcoyotl
             Edo Mex<br />
-            Tel: +52 55 70609743<br />
-            Horario: Lun-Dom 9:00-21:00
+            55 7060 9743<br />
+            Lun-Dom 9:00-21:00
           </div>
           <div class="ticket-number">
             Ticket #${sales.id}<br />
@@ -809,27 +807,11 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
 
         <!-- Footer -->
         <div class="ticket-footer">
-          <div class="footer-message">
             ¡Gracias por su compra!<br />
             Conserve este ticket como comprobante<br />
-            <br />
-            Operador: ${this._userData.name}
-          </div>
         </div>
       </div>
     `;
-    // let fullTicket = isCash ? ticket : ticket + `
-    //   <div class="ticket-footer">
-    //     <div class="footer-message">
-    //       Tienda
-    //     </div>
-    //   </div>
-    // ` + ticket + `
-    //   <div class="ticket-footer">
-    //     <div class="footer-message">
-    //       Cliente
-    //     </div>
-    //   </div>`;
     return Object.keys(sales).length > 0 ? ticket : '';
   }
 
