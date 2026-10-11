@@ -1,10 +1,8 @@
-#!/bin/zsh
-
 @echo off
-echo In iciando tareas...
+echo Iniciando tareas...
 echo Ejecutando el Administrador de Systemas
 
 cd ~\Documentos\Repositorios\AdminSys
 
-npm run start:all:w & start /b npm run api:python & start /b run-db.bat
+start /b npm run start:all:w & start /b npm run api & start /b run-db.bat
 
