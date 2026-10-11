@@ -384,16 +384,22 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
   getProductToSell(barcode) {
     const registeredProduct = this._products.find(
       (product) =>
-        product.barcode === barcode || product.barcodeList.find((barcodeObj) => barcodeObj.barcode === barcode)
+        (product.barcode === barcode ||
+          product.name.toUpperCase() === barcode.toUpperCase()) ||
+          product.barcodeList.find((barcodeObj) => barcodeObj.barcode === barcode)
     );
     const productInList = this._productsToSell.find(
       (product) =>
-        product.barcode === barcode || product.barcodeList.find((barcodeObj) => barcodeObj.barcode === barcode)
+        (product.barcode === barcode ||
+          product.name.toUpperCase() === barcode.toUpperCase()) ||
+          product.barcodeList.find((barcodeObj) => barcodeObj.barcode === barcode)
     );
     if (registeredProduct) {
       this._productsToSell = productInList
         ? this._productsToSell.map((product) =>
-            product.barcode === barcode || product.barcodeList.find((barcodeObj) => barcodeObj.barcode === barcode)
+            (product.barcode === barcode ||
+              product.name.toUpperCase() === barcode.toUpperCase()) ||
+              product.barcodeList.find((barcodeObj) => barcodeObj.barcode === barcode)
               ? {
                   ...product,
                   quantity:
@@ -499,6 +505,30 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     } else {
       dispatchCustomEvent(this, 'dm-generate-report-empty');
     }
+  }
+
+  getPosibleProducts(keyWord) {
+    let productsList = this._products.filter(
+        (product) => {
+          let barcodeProducts = [];
+          if (product.barcodeList.length) {
+            barcodeProducts = product.barcodeList.map(
+              (barcode) => {
+                return barcode.barcode?.toUpperCase()
+                  .includes(keyWord.toUpperCase()) ? 1 : 0
+                }
+            );
+          }
+          return product.name
+            .toUpperCase()
+            .includes(keyWord.toUpperCase()) ||
+          product.barcode
+            .toUpperCase()
+            .includes(keyWord.toUpperCase()) ||
+          barcodeProducts.find((barcode) => barcode == 1 )
+          }
+      );
+    dispatchCustomEvent(this, 'dm-posible-products', keyWord.length ? productsList : [])
   }
 
   _registerSaleSuccessResponse({detail}) {

@@ -15,6 +15,9 @@ import '@material/mwc-tab-bar/mwc-tab-bar.js';
 import '@material/mwc-tab/mwc-tab.js';
 import '@material/mwc-textarea/mwc-textarea.js';
 import '@material/mwc-textfield/mwc-textfield.js';
+import '@material/mwc-select/mwc-select.js';
+import '@material/mwc-list/mwc-check-list-item.js';
+import '@material/mwc-menu/mwc-menu.js';
 
 import styles from './main.css.js';
 
@@ -102,6 +105,13 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
        */
       _managerRef: {
         type: Object,
+        state: true,
+      },
+      /**
+       * Contains List of posible products to sell
+       */
+      _posibleProducts: {
+        type: Array,
         state: true,
       },
       /**
@@ -196,6 +206,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._isLogged = false;
     this._loginErrorCode = '';
     this._managerRef = createRef();
+    this._posibleProducts = [];
     this._productToEdit = {};
     this._productToSearch = {};
     this._productToSell = '';
@@ -378,6 +389,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
   _searchProductToSell({detail: {barcode}}) {
     this._productToSell = barcode;
     this._managerRef.value.getProductToSell(barcode);
+    this._posibleProducts = [];
   }
 
   /**
@@ -490,6 +502,10 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._completeSaleSuccess = detail;
   }
 
+  _setPosibleProducts({detail}) {
+    this._posibleProducts = detail;
+  }
+
   /**
    * Closes the complete sale success modal and resets sale state.
    */
@@ -517,8 +533,12 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     }
   }
 
-  _openCahsRegister(){
+  _openCahsRegister() {
     this._managerRef.value.openCashRegister();
+  }
+
+  _getPosibleProductsList({detail}) {
+    this._managerRef.value.getPosibleProducts(detail)
   }
 
   /**
@@ -843,6 +863,8 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         ?register-success=${this._registerProductSuccess}
         .closedCashRegisters=${this._closedCashRegisters}
         .editErrorResponse=${this._editProductErrorResponse}
+        .generatedBarcode="${this._generatedBarcode}"
+        .posibleProducts="${this._posibleProducts}"
         .productToEdit=${this._productToEdit}
         .productsToSell=${this._productsToSell}
         .registerError=${this._registerError}
@@ -850,13 +872,13 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         .sales=${this._sales}
         .total=${this._total}
         .userData=${this._userData}
-        .generatedBarcode="${this._generatedBarcode}"
         @home-element-get-sales="${this._getSales}"
         @home-page-logout="${this._logout}"
         @modal-element-confirm-action-success-complete-sale="${this
           ._closeCompleteSaleSuccessModal}"
         @products-element-close-edit-modal="${this
           ._closeEditModal}"
+        @modal-element-confirm-action-success-register="${this._closeRegisterSuccessModal}"
         @products-element-delete-product="${this._deleteProduct}"
         @products-element-edit-product="${this._editProduct}"
         @products-element-search-product="${this._searchProduct}"
@@ -870,10 +892,11 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         @sales-element-toggle-products="${this._toggleProducts}"
         @sell-element-complete-sale="${this._completeSale}"
         @sell-element-delete-product-to-sell="${this._deleteProductToSell}"
+        @sell-element-get-posible-product="${this._getPosibleProductsList}"
         @sell-element-get-product-to-sell="${this._searchProductToSell}"
         @sell-element-print-ticket="${this._printTicket}"
         @sell-element-update-product-to-sell="${this._updateProductToSell}"
-        @modal-element-confirm-action-success-register="${this._closeRegisterSuccessModal}"
+        @sell-element-clean-posible-products="${() => { this._posibleProducts = []}}"
         @tools-element-request-generate-barcode="${this._requestGenerateBarcode}"
       ></home-element>
     `;
@@ -916,6 +939,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         @dm-post-close-cash-register-success-response=${this
           ._postCloseCashRegisterSuccessResponse}
         @dm-register-sale-success-response=${this._registerSaleSuccessResponse}
+        @dm-posible-products=${this._setPosibleProducts}
       ></manager-element>
     `;
   }

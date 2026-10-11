@@ -32,10 +32,43 @@ export default css`
   }
 
   .input-container {
+    position: relative;
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: stretch;
     margin: 1rem;
     width: 40%;
+  }
+
+  .possible-products {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1;
+    box-sizing: border-box;
+    width: 100%;
+    max-height: 12.5rem;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+    background: #fff;
+    box-shadow: 0 2px 6px #0003;
+  }
+
+  .possible-products li {
+    box-sizing: border-box;
+    height: 2.5rem;
+    padding: 0.5rem;
+    overflow: hidden;
+    line-height: 1.5rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .possible-products li:hover {
+    background: #f2f2f2;
   }
 
   .data-price {

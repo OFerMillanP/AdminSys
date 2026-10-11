@@ -41,6 +41,12 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
         attribute: 'barcode',
       },
       /**
+       * Products to set in a sell
+       */
+      posibleProducts: {
+        type: Array,
+      },
+      /**
        * Products currently added to the sale list.
        */
       productsToSell: {
@@ -114,6 +120,7 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
     super();
     this.completeSaleSuccess = false;
     this.barcode = '';
+    this.posibleProducts = [];
     this.productsToSell = [];
     this.total = 0;
     this._changeToGive = 0;
@@ -151,6 +158,7 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
       },
     };
     inputs[id]?.call();
+    dispatchCustomEvent(this, `${SellElement.is}-get-posible-product`, value.toUpperCase() || '')
   }
 
   /**
@@ -159,15 +167,29 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
    * @param {KeyboardEvent} event - The keydown event.
    * @event sell-element-get-product-to-sell - Dispatched when the user presses Enter with a barcode.
    */
-  _sendBarcode(event) {
+  _manageKeyDowns(event) {
     if (event.key === 'Enter') {
-      if (this.barcode) {
-        dispatchCustomEvent(this, `${SellElement.is}-get-product-to-sell`, {
-          barcode: this.barcode,
-        });
-        this.barcode = '';
-      }
+      this._sendBarcode();
     }
+    if (event.key === 'Escape') {
+      this.barcode = '';
+      dispatchCustomEvent(this, `${SellElement.is}-clean-posible-products`);
+    }
+  }
+
+  _sendBarcode() {
+    if (this.barcode) {
+      dispatchCustomEvent(this, `${SellElement.is}-get-product-to-sell`, {
+        barcode: this.barcode,
+      });
+      this.barcode = '';
+    }
+  }
+
+  _setBarcode({target: {id}}) {
+    this.barcode = id;
+    this._sendBarcode();
+    this.posibleProducts = [];
   }
 
   /**
@@ -388,9 +410,6 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
                 <div class="header-table">Barcode</div>
               </th>
               <th>
-                <div class="header-table">Barcode (Secondary)</div>
-              </th>
-              <th>
                 <div class="header-table">Product Name</div>
               </th>
               <th>
@@ -407,7 +426,7 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
           <tbody>
             ${map(
               this.productsToSell || [],
-              (product, index) =>
+              (product) =>
                 html`
                   <tr>
                     <td>
@@ -422,7 +441,6 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
                       </div>
                     </td>
                     <td>${product.barcode}</td>
-                    <td>${product['barcode_secondary']}</td>
                     <td>${product.name}</td>
                     <td>
                       <div class="data-price">
@@ -476,8 +494,23 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
             id="barcode"
             .value="${this.barcode}"
             @input=${this._handleInput}
-            @keydown=${this._sendBarcode}
+            @keydown=${this._manageKeyDowns}
           ></mwc-textfield>
+          ${this.posibleProducts.length
+            ? html`
+                <ul class="possible-products">
+                  ${this.posibleProducts.map(
+                    (product) =>
+                      html`<li
+                        id="${product.name}"
+                        @click=${this._setBarcode}
+                      >
+                        ${product.name}
+                      </li>`
+                  )}
+                </ul>
+              `
+            : nothing}
         </section>
         <section class="sale">
           <section class="total">Total: $${this.total.toFixed(2)}</section>

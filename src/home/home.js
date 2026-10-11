@@ -80,6 +80,13 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
        * Product selected for editing.
        * @type {Object}
        */
+      posibleProducts: {
+        type: Array,
+      },
+      /**
+       * Product selected for editing.
+       * @type {Object}
+       */
       productToEdit: {
         type: Object,
       },
@@ -177,14 +184,15 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
     this.editErrorResponse = {};
     this.editSuccess = false;
     this.generatedBarcode = {}
+    this.posibleProducts = [];
     this.productToEdit = {};
     this.productsToSell = [];
     this.registerError = {};
     this.registerSuccess = false;
     this.registeredProducts = [];
-    this.userData = {};
-    this.total = 0;
     this.sales = [];
+    this.total = 0;
+    this.userData = {};
     this._activeIndex = 0;
     this._isShowProducts = false;
     this._isShowRegister = false;
@@ -336,6 +344,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
    */
   get _tplSell() {
     return html`<sell-element
+      .posibleProducts="${this.posibleProducts}"
       .productsToSell="${this.productsToSell}"
       .total="${this.total}"
       ?complete-sale-success="${this.completeSaleSuccess}"
