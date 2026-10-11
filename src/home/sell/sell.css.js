@@ -71,6 +71,10 @@ export default css`
     background: #f2f2f2;
   }
 
+  .possible-products li.selected {
+    background: #e0e0e0;
+  }
+
   .data-price {
     display: flex;
     justify-content: center;

@@ -34,13 +34,6 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
         attribute: 'complete-sale-success',
       },
       /**
-       * Barcode entered by the user to add a product to the sale.
-       */
-      barcode: {
-        type: String,
-        attribute: 'barcode',
-      },
-      /**
        * Products to set in a sell
        */
       posibleProducts: {
@@ -57,6 +50,13 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
        */
       total: {
         type: Number,
+      },
+      /**
+       * Barcode entered by the user to add a product to the sale.
+       */
+      _barcode: {
+        type: String,
+        attribute: 'barcode',
       },
       /**
        * Change to give to the customer after completing the sale.
@@ -81,6 +81,10 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
        */
       _enableCompleteSale: {
         type: Boolean,
+        state: true,
+      },
+      _selectedPossibleProductIndex: {
+        type: Number,
         state: true,
       },
       /**
@@ -119,13 +123,14 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
   constructor() {
     super();
     this.completeSaleSuccess = false;
-    this.barcode = '';
     this.posibleProducts = [];
     this.productsToSell = [];
     this.total = 0;
+    this._barcode = '';
     this._changeToGive = 0;
     this._confirmCompleteSaleModalRef = createRef();
     this._enableCompleteSale = false;
+    this._selectedPossibleProductIndex = -1;
     this._showInputForCash = true;
     this._showTicket = false;
     this._successCompleteSaleModalRef = createRef();
@@ -152,9 +157,10 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
    * @param {Event} event - The input event.
    */
   _handleInput({target: {id, value}}) {
+    this._selectedPossibleProductIndex = -1;
     const inputs = {
       barcode: () => {
-        this.barcode = value.toUpperCase() || '';
+        this._barcode = value.toUpperCase() || '';
       },
     };
     inputs[id]?.call();
@@ -168,27 +174,69 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
    * @event sell-element-get-product-to-sell - Dispatched when the user presses Enter with a barcode.
    */
   _manageKeyDowns(event) {
+    if (
+      (event.key === 'ArrowDown' || event.key === 'ArrowUp') &&
+      this.posibleProducts.length
+    ) {
+      event.preventDefault();
+      const direction = event.key === 'ArrowDown' ? 1 : -1;
+      const currentIndex = this._selectedPossibleProductIndex;
+      this._selectedPossibleProductIndex =
+        currentIndex === -1
+          ? direction === 1
+            ? 0
+            : this.posibleProducts.length - 1
+          : Math.max(
+              0,
+              Math.min(
+                this.posibleProducts.length - 1,
+                currentIndex + direction
+              )
+            );
+      this.updateComplete.then(() => {
+        this.shadowRoot
+          .querySelector('.possible-products li.selected')
+          ?.scrollIntoView({block: 'nearest'});
+      });
+      return;
+    }
+
     if (event.key === 'Enter') {
+      if (
+        this._selectedPossibleProductIndex >= 0 &&
+        this._selectedPossibleProductIndex < this.posibleProducts.length
+      ) {
+        event.preventDefault();
+        this._barcode =
+          this.posibleProducts[this._selectedPossibleProductIndex].name;
+        this._selectedPossibleProductIndex = -1;
+        this.posibleProducts = [];
+        dispatchCustomEvent(this, `${SellElement.is}-clean-posible-products`);
+        return;
+      }
       this._sendBarcode();
     }
     if (event.key === 'Escape') {
-      this.barcode = '';
+      this._barcode = '';
+      this._selectedPossibleProductIndex = -1;
       dispatchCustomEvent(this, `${SellElement.is}-clean-posible-products`);
     }
   }
 
   _sendBarcode() {
-    if (this.barcode) {
+    if (this._barcode) {
       dispatchCustomEvent(this, `${SellElement.is}-get-product-to-sell`, {
-        barcode: this.barcode,
+        barcode: this._barcode,
       });
-      this.barcode = '';
+      this._barcode = '';
+      this._selectedPossibleProductIndex = -1;
     }
   }
 
-  _setBarcode({target: {id}}) {
-    this.barcode = id;
+  _setBarcode({target: {name}}) {
+    this._barcode = name;
     this._sendBarcode();
+    this._selectedPossibleProductIndex = -1;
     this.posibleProducts = [];
   }
 
@@ -492,7 +540,7 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
             iconTrailing="add"
             autofocus
             id="barcode"
-            .value="${this.barcode}"
+            .value="${this._barcode}"
             @input=${this._handleInput}
             @keydown=${this._manageKeyDowns}
           ></mwc-textfield>
@@ -500,13 +548,18 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
             ? html`
                 <ul class="possible-products">
                   ${this.posibleProducts.map(
-                    (product) =>
-                      html`<li
-                        id="${product.name}"
-                        @click=${this._setBarcode}
-                      >
-                        ${product.name}
-                      </li>`
+                    (product, index) =>
+                      html`
+                        <li
+                          name="${product.name}"
+                          class=${index === this._selectedPossibleProductIndex
+                            ? 'selected'
+                            : ''}
+                          @click=${this._setBarcode}
+                        >
+                          ${product.name}
+                        </li>
+                      `
                   )}
                 </ul>
               `
