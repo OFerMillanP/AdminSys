@@ -409,7 +409,7 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
                 }
               : product
           )
-        : registeredProduct.stock > 0
+        : (Number(registeredProduct.stock) > 0) || (registeredProduct.stock === '0' && registeredProduct.category === '1')
         ? [...this._productsToSell, {...registeredProduct, quantity: 1}]
         : this._productsToSell;
     }

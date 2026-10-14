@@ -4,7 +4,7 @@ import {ScopedElementsMixin} from '@open-wc/scoped-elements/html-element.js';
 
 import {ModalElement} from '../../organisms/modal/modal.js';
 
-import {dispatchCustomEvent} from '../../../utils/utils.js';
+import {dispatchCustomEvent, t} from '../../../utils/utils.js';
 
 import styles from './register.css.js';
 
@@ -54,6 +54,13 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
        */
       _productBarcode: {
         type: String,
+        state: true,
+      },
+      /**
+       * Contains category.
+       */
+      _productCategory: {
+        type: Number,
         state: true,
       },
       /**
@@ -126,6 +133,7 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
     this._errorMessage = '';
     this._errorRegisterModalRef = createRef();
     this._productBarcode = '';
+    this._productCategory = 0;
     this._productDescription = '';
     this._productName = '';
     this._productPrice = 0;
@@ -174,6 +182,7 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
     this._showErrorMessage = false;
     this._productName = '';
     this._productBarcode = '';
+    this._productCategory = 0;
     this._productDescription = '';
     this._productPrice = 0;
     this._productStock = 0;
@@ -209,6 +218,11 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
       },
     };
     inputs[id]?.call();
+  }
+
+  _setCategory({detail: {index}}) {
+    this._productCategory = Number(index) || 0;
+    this._productStock = 0;
   }
 
   /**
@@ -249,6 +263,7 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
         price: parseFloat(this._productPrice, 10),
         stock: parseInt(this._productStock, 10),
         description: this._productDescription,
+        category: Number(this._productCategory)
       });
     }
   }
@@ -372,6 +387,16 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
               `
             )}
             <div class="input-container">
+              <mwc-select 
+                label="${t('sell-element-selector-label')}"
+                id="category"
+                @selected=${this._setCategory}
+              >
+                <mwc-list-item value="0" selected>${t('sell-element-selector-product')}</mwc-list-item>
+                <mwc-list-item value="1">${t('sell-element-selector-service')}</mwc-list-item>
+              </mwc-select>
+            </div>
+            <div class="input-container">
               <mwc-textfield
                 raised
                 required
@@ -398,18 +423,23 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
                 @input=${this._handleInput}
               ></mwc-textfield>
             </div>
-            <div class="input-container">
-              <mwc-textfield
-                raised
-                label="Stock"
-                autocomplete="off"
-                id="stock"
-                type="number"
-                min="0"
-                .value="${this._productStock.toString()}"
-                @input=${this._handleInput}
-              ></mwc-textfield>
-            </div>
+            ${this._productCategory ?
+              nothing :
+              html`
+                <div class="input-container">
+                  <mwc-textfield
+                    raised
+                    label="Stock"
+                    autocomplete="off"
+                    id="stock"
+                    type="number"
+                    min="0"
+                    .value="${this._productStock.toString()}"
+                    @input=${this._handleInput}
+                  ></mwc-textfield>
+                </div>
+              ` 
+            }
             <div class="input-container textarea">
               <mwc-textarea
                 label="Description"

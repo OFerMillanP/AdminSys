@@ -259,6 +259,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
   _getUserInSessionSuccesResponse({detail}) {
     this._userData.level = detail.level;
     this._userData.name = detail.name;
+    this._userData.lastName = detail.last_name;
     this._isLogged = !!Object.keys(detail).length;
     if (this._isLogged) {
       this._managerRef.value.getProductList();
@@ -567,7 +568,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
       
       document.body.innerHTML = ticketTplToPrint(
         this._tplTicket(sales) + `
-          <div class="ticket-footer">
+          <div class="ticket-footer-direction">
               Cliente
           </div>
         `);
@@ -809,6 +810,8 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         <div class="ticket-footer">
             ¡Gracias por su compra!<br />
             Conserve este ticket como comprobante<br />
+            <br />
+            Operador: ${this._userData.name} ${this._userData.lastName}
         </div>
       </div>
     `;

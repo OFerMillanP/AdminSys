@@ -34,6 +34,7 @@ api.use(bodyParser.json());
  */
 let userLoginTry = 0;
 let lastBarcode = '';
+let userToSend = {};
 
 /**
  * Returns the current date and time in `DD/MM/YYYY - HH:MM:SS` format.
@@ -55,7 +56,7 @@ function getCurrentDate() {
 async function getUserLogged() {
   const res_db = await pool.query(
     `
-      SELECT u.name, u.last_login, l.name AS level FROM users u
+      SELECT u.name, u.last_name, u.id, u.last_login, l.name AS level FROM users u
       INNER JOIN levels l
       ON u.level = l.id
       WHERE is_logged = true
@@ -125,7 +126,7 @@ api.get('/api/v0/login', async function (req, res) {
   try {
     const res_db = await getUserLogged();
     userToSend = Object.assign({}, res_db);
-    if (res_db.last_login.toLocaleString().substring(0, 9) !== getCurrentDate().substring(0, 9)) {
+    if (res_db?.last_login.toLocaleString().substring(0, 9) !== getCurrentDate().substring(0, 9)) {
       await pool.query(utils.logoutUser);
       return res.status(200).json({});
     } else {
@@ -212,9 +213,9 @@ api.post('/api/v0/products/product', async function (req, res) {
     } else if (Object.keys(user_logged).length > 0) {
       await pool.query(
       `
-        INSERT INTO products (name, barcode, price, stock, description)
-        VALUES ($1, $2, $3, $4, $5);
-      `, [req.body.name, req.body.barcode, req.body.price, req.body.stock, req.body.description]);
+        INSERT INTO products (name, barcode, price, stock, description, category)
+        VALUES ($1, $2, $3, $4, $5, $6);
+      `, [req.body.name, req.body.barcode, req.body.price, req.body.stock, req.body.description, req.body.category]);
 
       const getLastProduct = await pool.query(
         `
@@ -519,12 +520,14 @@ api.post('/api/v0/sales', async function (req, res) {
           VALUES ($1, $2, $3)
         `, [getLastSale.rows[0].id, product.id, product.quantity]);
         
-        await pool.query(
-        `
-          UPDATE products
-          SET stock = stock - $2
-          WHERE id = $1;
-        `, [product.id, product.quantity]);
+        if (!Number(product.category)) {
+          await pool.query(
+          `
+            UPDATE products
+            SET stock = stock - $2
+            WHERE id = $1;
+          `, [product.id, product.quantity]);
+        }
       });
 
       const getSale = await pool.query(
@@ -694,9 +697,9 @@ api.post('/api/v0/sales/cash-register', async function (req, res) {
     if (Object.keys(user_logged).length > 0) {
       await pool.query(
         `
-          INSERT INTO cash_register_closed (total_cash, total_card, total)
-          VALUES ($1, $2, $3)
-        `, [req.body.totalCash, req.body.totalCard, req.body.total]);
+          INSERT INTO cash_register_closed (total_cash, total_card, total, user_id)
+          VALUES ($1, $2, $3, $4)
+        `, [req.body.totalCash, req.body.totalCard, req.body.total, user_logged.id]);
       return res.status(200);
     } else {
       return res

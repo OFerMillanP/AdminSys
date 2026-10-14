@@ -1,3 +1,4 @@
+import { locales } from "../locales/locales";
 /**
  * Dispatches a custom event from the provided component.
  *
@@ -21,6 +22,10 @@ export function dispatchCustomEvent(
       detail,
     })
   );
+}
+
+export function t(key){
+  return locales[navigator.language.split('-').find(() => true)][key];
 }
 
 /**
@@ -173,6 +178,11 @@ export function ticketTplToPrint(body) {
             margin-top: 15px;
             padding-top: 10px;
             border-top: 1px dotted #ccc;
+          }
+
+          .ticket-footer-direction {
+            text-align: center;
+            font-size: 10px;
           }
 
           .footer-message {

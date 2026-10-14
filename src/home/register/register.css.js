@@ -168,6 +168,12 @@ export default css`
     --mdc-text-field-idle-line-color: #555;
   }
 
+   mwc-select {
+    --mdc-theme-primary: #000;
+    --mdc-text-field-ink-color: #000;
+    --mdc-text-field-idle-line-color: #555;
+  }
+
   mwc-button {
     --mdc-theme-primary: #3269c7;
     --mdc-theme-on-primary: #fff;

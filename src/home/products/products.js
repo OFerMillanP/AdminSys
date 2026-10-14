@@ -535,7 +535,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                         <div class="data-number">$ ${product.price}</div>
                       </td>
                       <td>
-                        <div class="data-number">${product.stock}</div>
+                        <div class="data-number">${product.category === '0' ? product.stock : 'N/A'}</div>
                       </td>
                       <td>${product.description}</td>
                       <td>

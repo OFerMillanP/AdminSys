@@ -206,18 +206,18 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
     const sections = {
       admin: () => {
         this._resetSections();
-        this._isShowProducts = true;
+        this._isShowSell = true;
         this._activeIndex = 0;
       },
       manager: () => {
         this._resetSections();
-        this._isShowProducts = true;
+        this._isShowSell = true;
         this._activeIndex = 0;
       },
       general: () => {
         this._resetSections();
         this._isShowSell = true;
-        this._activeIndex = 1;
+        this._activeIndex = 0;
       },
     };
     sections[this.userData?.level]?.call();
@@ -252,12 +252,12 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
       products: () => {
         this._resetSections();
         this._isShowProducts = true;
-        this._activeIndex = 0;
+        this._activeIndex = 1;
       },
       register: () => {
         this._resetSections();
         this._isShowRegister = true;
-        this._activeIndex = 1;
+        this._activeIndex = 2;
       },
       sales: () => {
         this._resetSections();
@@ -268,7 +268,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
       sell: () => {
         this._resetSections();
         this._isShowSell = true;
-        this._activeIndex = this.userData?.level === 'general' ? 1 : 2;
+        this._activeIndex = 0;
       },
       tools: () => {
         this._resetSections();
@@ -290,6 +290,11 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
         <nav class="navbar">
           <mwc-tab-bar activeIndex="${this._activeIndex}">
             <mwc-tab
+              label="Sell"
+              id="sell"
+              @click="${this._showSection}"
+            ></mwc-tab>
+            <mwc-tab
               label="Products"
               id="products"
               @click="${this._showSection}"
@@ -303,11 +308,6 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
                   ></mwc-tab>
                 `
               : nothing}
-            <mwc-tab
-              label="Sell"
-              id="sell"
-              @click="${this._showSection}"
-            ></mwc-tab>
             <mwc-tab
               label="Sales"
               id="sales"
