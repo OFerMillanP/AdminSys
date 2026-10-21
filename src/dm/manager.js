@@ -272,58 +272,11 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
   }
 
   async postCloseCashRegister() {
-    let lastClosedCashRegister = this._cashRegisterClosing.length
-      ? this._cashRegisterClosing.at(-1)
-      : [];
-    let sales = [];
-    let formattedDateLastClosedCashRegister = lastClosedCashRegister.date?.substring(0, 10)
-      .split('/');
-    let formattedHourLastClosedCashRegister = lastClosedCashRegister.date?.substring(11)
-      .split(':');
-    const lastCashRegisterDate = Object.keys(lastClosedCashRegister).length
-      ? new Date(
-          formattedDateLastClosedCashRegister[2],
-          formattedDateLastClosedCashRegister[1] - 1,
-          formattedDateLastClosedCashRegister[0],
-          formattedHourLastClosedCashRegister[0],
-          formattedHourLastClosedCashRegister[1],
-          formattedHourLastClosedCashRegister[2]
-        )
-      : new Date(0);
-    sales = this._sales.filter((sale) => {
-      const formattedDate = sale.date.substring(0, 10).split('/');
-      const formattedHour = sale.date.substring(13).split(':');
-      const saleDate = new Date(
-        formattedDate[2],
-        formattedDate[1] - 1,
-        formattedDate[0],
-        formattedHour[0],
-        formattedHour[1],
-        formattedHour[2].substring(0,2)
-      );
-
-      return lastCashRegisterDate < saleDate && saleDate < new Date();
-    });
-    let totalCard = 0;
-    let totalCash = 0;
-    sales.forEach((sale) => {
-      totalCard = totalCard + parseFloat(sale.paymentMethod === 'card' ? parseFloat(sale.total) : 0);
-      totalCash = totalCash + parseFloat(sale.paymentMethod === 'cash' ? parseFloat(sale.total) : 0);
-    });
-    if (sales.length) {
-      await this._getDataManager().fetch(
-        'POST',
-        'api/v0/sales/cash-register',
-        'dm-post-close-cash-register',
-        {
-          total: parseFloat(totalCard + totalCash).toFixed(2),
-          totalCard: parseFloat(totalCard).toFixed(2),
-          totalCash: parseFloat(totalCash).toFixed(2),
-        }
-      );
-    } else {
-      dispatchCustomEvent(this, 'dm-post-close-cash-register-success-response', []);
-    }
+    await this._getDataManager().fetch(
+      'POST',
+      'api/v0/sales/cash-register',
+      'dm-post-close-cash-register'
+    );
   }
 
   /**

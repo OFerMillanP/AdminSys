@@ -686,30 +686,90 @@ api.get('/api/v0/sales/cash-register', async function (req, res) {
 });
 
 /**
- * Registers a new sale and updates stock for sold products.
+ * Closes the cash register using sales since the previous closing.
  * @route POST /api/v0/sales/cash-register
- * @param {Object[]} req.body - Lista de ventas realizadas en un lapso de tiempo.
- * @returns {200} Corte de caja realizado y registrado
+ * @returns {200} Cash register closing totals
  */
 api.post('/api/v0/sales/cash-register', async function (req, res) {
+  let client;
   try {
     const user_logged = await getUserLogged() || {};
     if (Object.keys(user_logged).length > 0) {
-      await pool.query(
+      client = await pool.connect();
+      await client.query('BEGIN');
+      await client.query(
+        `SELECT pg_advisory_xact_lock(hashtext('adminsys'), hashtext('cash_register'))`
+      );
+      const closing = await client.query(
         `
-          INSERT INTO cash_register_closed (total_cash, total_card, total, user_id)
-          VALUES ($1, $2, $3, $4)
-        `, [req.body.totalCash, req.body.totalCard, req.body.total, user_logged.id]);
-      return res.status(200);
+          WITH cash_register_boundary AS (
+            SELECT MAX(date) AS last_closed_at, clock_timestamp() AS closed_at
+            FROM cash_register_closed
+          ),
+          sales_totals AS (
+            SELECT
+              COALESCE(SUM(s.total) FILTER (WHERE s.payment_method = 'cash'), 0) AS total_cash,
+              COALESCE(SUM(s.total) FILTER (WHERE s.payment_method = 'card'), 0) AS total_card,
+              COALESCE(SUM(s.total), 0) AS total,
+              COUNT(*) AS sale_count,
+              boundary.closed_at
+            FROM sales s
+            CROSS JOIN cash_register_boundary boundary
+            WHERE (boundary.last_closed_at IS NULL OR s.date > boundary.last_closed_at)
+              AND s.date <= boundary.closed_at
+            GROUP BY boundary.closed_at
+          )
+          INSERT INTO cash_register_closed (total_cash, total_card, total, user_id, date)
+          SELECT total_cash, total_card, total, $1, closed_at
+          FROM sales_totals
+          WHERE sale_count > 0
+          RETURNING
+            id,
+            total_cash AS "totalCash",
+            total_card AS "totalCard",
+            total,
+            user_id,
+            date
+        `,
+        [user_logged.id]
+      );
+      await client.query('COMMIT');
+      if (!closing.rows.length) {
+        return res.status(200).json({message: 'No sales to close', status: true});
+      }
+      const savedClosing = closing.rows[0];
+      return res.status(200).json({
+        ...savedClosing,
+        date: new Date(savedClosing.date).toLocaleString('es-MX', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        })
+      });
     } else {
       return res
         .status(400)
         .json({message: 'Not Authorized', code: 'EGP001', status: false});
     }
   } catch (err) {
+    if (client) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        console.error('Error al revertir el corte de caja: ', rollbackError.stack);
+      }
+    }
     console.error('Error al conectar a la base de datos: ', err.stack);
     return utils.returnErrorServer(res);
-  } finally {}
+  } finally {
+    if (client) {
+      client.release();
+    }
+  }
 });
 
 /**
