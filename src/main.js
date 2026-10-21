@@ -514,7 +514,6 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._completeSaleSuccess = {};
     this._productsToSell = [];
     this._total = 0;
-    this._completeSaleSuccess = {};
     this._managerRef.value.openCashRegister();
   }
 
@@ -549,7 +548,13 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
    * @param {Object|boolean} event.detail - The selected sale or a boolean value.
    */
   _printTicket({detail}) {
-    let sales = detail === true ? this._completeSaleSuccess : detail;
+    let sales = detail;
+    if( sales.type === 'current-sale') {
+      sales.id = this._completeSaleSuccess.id;
+      sales.date = this._completeSaleSuccess.date;
+      sales.paymentMethod = this._completeSaleSuccess.paymentMethod;
+      sales.changeToGive = this._completeSaleSuccess.changeToGive;
+    }
     this._showTicket = true;
     var contenidoOriginal = document.body.innerHTML;
     setTimeout(() => {
@@ -575,7 +580,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
       window.print();
       // Restore the original page content
       document.body.innerHTML = contenidoOriginal;
-    }, 200);
+    }, 1000);
   }
 
   /**
@@ -726,7 +731,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
    * @param {Object} sales - The sale data to print.
    * @returns {string} The ticket HTML.
    */
-  _tplTicket(sales, isCash = true) {
+  _tplTicket(sales) {
     let ticket =  `
       <div class="ticket-container">
         <!-- Header -->
@@ -736,7 +741,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
             Av. Ing. Jorge Luque Loyola 71, CP. 57500, Nezahualcoyotl
             Edo Mex<br />
             55 7060 9743<br />
-            Lun-Dom 9:00-21:00
+            Lun-Vie 7:00-20:00
           </div>
           <div class="ticket-number">
             Ticket #${sales.id}<br />

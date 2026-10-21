@@ -18,7 +18,7 @@
     "serve": "es-dev-server --node-resolve --watch",
     "api": "cd api/api-n && npm run start && cd ../..",
     "api:install:dependencies": "cd api/api-n && npm i && api:python:install && cd ../..",
-    "api:all": "npm run api:python & npm run api",
+    "api:all": "start /b npm run api:python & start /b npm run api",
     "api:python:install": "python -m pip install -r api/requirements.txt",
     "api:python": "cd api && python api.py && cd ..",
     "start:all:w": "start /b npm run start & start /b npm run api:all",

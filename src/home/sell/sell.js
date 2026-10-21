@@ -328,7 +328,11 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
     * Dispatches the action to print the sale ticket.
    */
   _printTicket() {
-    dispatchCustomEvent(this, `${SellElement.is}-print-ticket`);
+    dispatchCustomEvent(this, `${SellElement.is}-print-ticket`, {
+      products: this.productsToSell,
+      total: this.total,
+      type: 'current-sale',
+    });
   }
 
   /**
