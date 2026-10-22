@@ -507,7 +507,7 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
                             type="number"
                             class="quantity-input"
                             min="1"
-                            max="${product.stock}"
+                            max="${product.category === "0" ? product.stock : 10000}"
                             .product="${product}"
                             .value="${product.quantity}"
                             @input=${this._updateQuantity}

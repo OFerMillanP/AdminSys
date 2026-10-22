@@ -408,7 +408,6 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
             dispatchCustomEvent(this, `${SalesElement.is}-close-cash-register`)}
         ></modal-element>
       `;
-    // @modal-element-cancel-action=${() => {console.log('cancel')}}
     }
 
   static get styles() {

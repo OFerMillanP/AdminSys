@@ -5,7 +5,7 @@ import {ScopedElementsMixin} from '@open-wc/scoped-elements/html-element.js';
 import {ModalElement} from '../../organisms/modal/modal.js';
 import {PaginationElement} from '../../organisms/pagination/pagination.js';
 
-import {dispatchCustomEvent} from '../../../utils/utils.js';
+import {dispatchCustomEvent, t} from '../../../utils/utils.js';
 
 import {repeat} from 'lit/directives/repeat.js';
 import styles from './products.css.js';
@@ -209,6 +209,10 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     inputs[id]?.call();
   }
 
+  _setCategory({detail: {index}}){
+    this.productToEdit.category = index;
+  }
+
   /**
    * Requests the selected product for editing.
    *
@@ -390,6 +394,16 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                 ` : nothing
             )}
 
+            <div class="input-container">
+              <mwc-select 
+                label="${t('sell-element-selector-label')}"
+                id="category"
+                @selected=${this._setCategory}
+              >
+                <mwc-list-item value="0" .selected="${this.productToEdit.category === "0"}">${t('sell-element-selector-product')}</mwc-list-item>
+                <mwc-list-item value="1" .selected="${this.productToEdit.category === "1"}">${t('sell-element-selector-service')}</mwc-list-item>
+              </mwc-select>
+            </div>
             <div class="input-container">
               <mwc-textfield
                 raised

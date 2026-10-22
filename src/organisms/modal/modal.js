@@ -70,11 +70,6 @@ export class ModalElement extends ScopedElementsMixin(LitElement) {
    * Handles the confirm button click and dispatches the corresponding event.
    */
   _confirmActionButton() {
-    // console.log(
-    //   `${ModalElement.is}-confirm-action${
-    //     this.data.code ? `-${this.data.code}` : ''
-    //   }`
-    // );
     this.shadowRoot.querySelector('#dialog').close();
     dispatchCustomEvent(
       this,
@@ -88,7 +83,6 @@ export class ModalElement extends ScopedElementsMixin(LitElement) {
    * Handles the cancel button click and dispatches the cancel action event.
    */
   _cancelActionButton() {
-    // console.log('Cancel: ',`${ModalElement.is}-cancel-action`);
     this.shadowRoot.querySelector('#dialog')?.close();
     dispatchCustomEvent(
       this,
