@@ -303,13 +303,14 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
             barcodeProducts = product.barcodeList.map(
               (barcode) => {
                 return barcode.barcode?.toLowerCase()
+                  .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
                   .includes(this.productToSearch.value.toLowerCase()) ? 1 : 0
                 }
             );
           }
           return product.name
-            .toLowerCase()
-            .includes(this.productToSearch.value.toLowerCase()) ||
+            .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .includes(this.productToSearch.value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')) ||
           product.barcode
             .toLowerCase()
             .includes(this.productToSearch.value.toLowerCase()) ||
@@ -473,8 +474,8 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
             );
           }
           return product.name
-            .toUpperCase()
-            .includes(keyWord.toUpperCase()) ||
+            .toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .includes(keyWord.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')) ||
           product.barcode
             .toUpperCase()
             .includes(keyWord.toUpperCase()) ||
