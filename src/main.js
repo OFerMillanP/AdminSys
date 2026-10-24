@@ -21,7 +21,7 @@ import '@material/mwc-menu/mwc-menu.js';
 
 import styles from './main.css.js';
 
-import {ticketTplToPrint, getCurrentDate} from '../utils/utils.js';
+import {ticketTplToPrint, getCurrentDate, getCurrentLocale, t} from '../utils/utils.js';
 /**
  * Main application root element.
  *
@@ -196,6 +196,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
 
   constructor() {
     super();
+    document.documentElement.lang = getCurrentLocale();
     this._closedCashRegisters = [];
     this._completeSaleSuccess = {};
     this._deleteProductSuccess = false;
@@ -564,7 +565,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
           this._tplTicket(sales) + `
             <div class="ticket-footer">
               <div class="footer-message">
-                Tienda
+                ${t('main-element-ticket-store')}
               </div>
             </div>
           `);
@@ -574,7 +575,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
       document.body.innerHTML = ticketTplToPrint(
         this._tplTicket(sales) + `
           <div class="ticket-footer-direction">
-              Cliente
+              ${t('main-element-ticket-customer')}
           </div>
         `);
       window.print();
@@ -681,11 +682,11 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
   _tplReport({listSales, totalSales, startDate, endDate}) {
     return `
       <div class="report-container">
-        <h1>Report</h1>
-        <p><strong>From:</strong> ${startDate.year}-${startDate.month}-${
+        <h1>${t('main-element-report-title')}</h1>
+        <p><strong>${t('main-element-report-from')}</strong> ${startDate.year}-${startDate.month}-${
       startDate.day
     }</p>
-        <p><strong>To:</strong> ${endDate.year}-${endDate.month}-${
+        <p><strong>${t('main-element-report-to')}</strong> ${endDate.year}-${endDate.month}-${
       endDate.day
     }</p>
         <br>
@@ -694,8 +695,8 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
             .map(
               (sale) => `
                 <li>
-                  <h3>Sale #${sale.id} - ${sale.date}</h3>
-                  <h4>Sale Payment: ${sale.paymentMethod}</h4>
+                  <h3>${t('main-element-report-sale')} #${sale.id} - ${sale.date}</h3>
+                  <h4>${t('main-element-report-sale-payment')} ${sale.paymentMethod === 'cash' ? t('main-element-payment-cash') : t('main-element-payment-card')}</h4>
                   <br>
                   <ul>
                     ${sale.products
@@ -711,7 +712,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
                       )
                       .join('')}
                   </ul>
-                  <h2>Total: $${sale.total}</h2>
+                  <h2>${t('main-element-sales-column-total')}: $${sale.total}</h2>
                   __________________________________________________________
                 </li>
                 <br>
@@ -720,7 +721,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
             .join('')}
         </ul>
         <br>
-        <h2>Total Sales: $${totalSales}</h2>
+        <h2>${t('main-element-report-total-sales')} $${totalSales}</h2>
       </div>
     `;
   }
@@ -741,11 +742,11 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
             Av. Ing. Jorge Luque Loyola 71, CP. 57500, Nezahualcoyotl
             Edo Mex<br />
             55 7060 9743<br />
-            Lun-Vie 7:00-20:00
+            ${t('main-element-ticket-weekdays')} 7:00-20:00
           </div>
           <div class="ticket-number">
-            Ticket #${sales.id}<br />
-            Fecha: ${getCurrentDate()}
+            ${t('main-element-ticket-title')} #${sales.id}<br />
+            ${t('main-element-ticket-date')} ${getCurrentDate()}
           </div>
         </div>
 
@@ -763,7 +764,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
                 </div>
               </div>
               <div class="item-desc">
-                Precio unitario: $${product.price.toFixed(2)} c/u
+                ${t('main-element-ticket-unit-price')} $${product.price.toFixed(2)} c/u
               </div>`
             )
             .join('')}
@@ -772,22 +773,22 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         <!-- Totals -->
         <div class="totals">
           <div class="total-row subtotal">
-            <span>Subtotal:</span>
+            <span>${t('main-element-ticket-subtotal')}</span>
             <span>$${(sales.total * 0.84).toFixed(2)}</span>
           </div>
           <div class="total-row tax">
-            <span>IVA (16%):</span>
+            <span>${t('main-element-ticket-tax')}</span>
             <span>$${(sales.total * 0.16).toFixed(2)}</span>
           </div>
           <div class="total-row total">
-            <span>TOTAL:</span>
+            <span>${t('main-element-ticket-total')}</span>
             <span>$${Number(sales.total).toFixed(2)}</span>
           </div>
           ${
             sales.paymentMethod === 'cash'
               ? `
                 <div class="total-row total">
-                  <span>Pago:</span>
+                  <span>${t('main-element-ticket-payment')}</span>
                   <span>
                     $${(
                       parseFloat(sales.total) + parseFloat(sales.changeToGive)
@@ -795,7 +796,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
                   </span>
                 </div>
                 <div class="total-row total">
-                  <span>Change:</span>
+                  <span>${t('main-element-ticket-change')}</span>
                   <span> $${parseFloat(sales.changeToGive).toFixed(2)} </span>
                 </div>
               `
@@ -806,17 +807,17 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         <!-- Payment Method -->
         <div class="payment-method">
           <b>
-            Método de pago:
-            ${sales.paymentMethod === 'card' ? 'Card' : 'Cash'}<br />
+            ${t('main-element-ticket-payment-method')}
+            ${sales.paymentMethod === 'card' ? t('main-element-payment-card') : t('main-element-payment-cash')}<br />
           </b>
         </div>
 
         <!-- Footer -->
         <div class="ticket-footer">
-            ¡Gracias por su compra!<br />
-            Conserve este ticket como comprobante<br />
+            ${t('main-element-ticket-thanks')}<br />
+            ${t('main-element-ticket-keep')}<br />
             <br />
-            Operador: ${this._userData.name} ${this._userData.lastName}
+            ${t('main-element-ticket-operator')} ${this._userData.name} ${this._userData.lastName}
         </div>
       </div>
     `;

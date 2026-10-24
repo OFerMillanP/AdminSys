@@ -3,11 +3,7 @@ import {repeat} from 'lit/directives/repeat.js';
 import {ref, createRef} from 'lit/directives/ref.js';
 import {ScopedElementsMixin} from '@open-wc/scoped-elements/html-element.js';
 
-import {
-  dispatchCustomEvent,
-  ticketTplToPrint,
-  getCurrentDate,
-} from '../../../utils/utils.js';
+import { dispatchCustomEvent, t } from '../../../utils/utils.js';
 
 import styles from './sell.css.js';
 import {map} from 'lit/directives/map.js';
@@ -346,11 +342,11 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
         id="data-ticket-modal"
         ${ref(this._confirmCompleteSaleModalRef)}
         .data=${{
-          bodyText: 'Would you like to complete the sale?',
+          bodyText: t('sell-element-sell-confirm-body'),
           code: 'confirm-complete-sale',
-          confirmButtonText: 'Yes, complete',
-          cancelButtonText: 'No, cancel',
-          titleText: 'Confirm Sale',
+          confirmButtonText: t('sell-element-button-yes-complete'),
+          cancelButtonText: t('sell-element-button-no-cancel'),
+          titleText: t('sell-element-sell-confirm-title'),
           type: 'info',
           isEnableConfirmButton: this._enableCompleteSale,
         }}
@@ -360,16 +356,16 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
         <section slot="content-data" class="confirm-sale-data">
           <div class="confirm-sale-data-row">
             <b>
-              <span class="confirm-sale-data-label">Total Pay:</span>
+              <span class="confirm-sale-data-label">${t('sell-element-sell-total-pay')}</span>
               <span class="confirm-sale-data-value"
                 >$${this.total.toFixed(2)}</span
               >
             </b>
           </div>
           <section class="confirm-sale-payment-methods">
-            <p class="confirm-sale-data-label"><b>Payment Method:</b></p>
-            <mwc-formfield label="Credit/Debit Card">
-              <mwc-formfield label="Cash">
+            <p class="confirm-sale-data-label"><b>${t('sell-element-payment-method')}</b></p>
+            <mwc-formfield label="${t('sell-element-payment-card-option')}">
+              <mwc-formfield label="${t('sell-element-payment-cash')}">
                 <mwc-radio
                   checked
                   name="payment-method"
@@ -388,7 +384,7 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
                   <div class="confirm-sale-cash-input">
                     <mwc-textfield
                       id="payment-cash-input"
-                      label="Amount Received"
+                      label="${t('sell-element-payment-amount-received')}"
                       type="number"
                       min="${this.total.toFixed(2)}"
                       step="0.50"
@@ -396,7 +392,7 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
                       @input="${this._getChangeForCashPayment}"
                     ></mwc-textfield>
                     <p class="confirm-sale-change">
-                      <b>Cambio: $${this._changeToGive.toFixed(2)}</b>
+                      <b>${t('sell-element-payment-change')} $${this._changeToGive.toFixed(2)}</b>
                     </p>
                   </div>
                 `
@@ -422,10 +418,10 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
       <modal-element
         ${ref(this._successCompleteSaleModalRef)}
         .data=${{
-          bodyText: 'The sale has been completed successfully.',
+          bodyText: t('sell-element-sell-completed'),
           code: 'success-complete-sale',
-          confirmButtonText: 'Accept',
-          titleText: 'Sale Completed!',
+          confirmButtonText: t('sell-element-button-accept'),
+          titleText: t('sell-element-sell-completed-title'),
           type: 'success',
           isEnableConfirmButton: true,
         }}
@@ -433,7 +429,7 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
         <section slot="content-data" class="confirm-sale-data">
           <mwc-button
             id="print-ticket-button"
-            label="Print Ticket"
+            label="${t('sell-element-button-print-ticket')}"
             @click="${this._printTicket}"
           ></mwc-button>
         </section>
@@ -459,19 +455,19 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
                 <div class="header-table"></div>
               </th>
               <th>
-                <div class="header-table">Barcode</div>
+                <div class="header-table">${t('sell-element-product-barcode')}</div>
               </th>
               <th>
-                <div class="header-table">Product Name</div>
+                <div class="header-table">${t('sell-element-product-name')}</div>
               </th>
               <th>
-                <div class="header-table">Price</div>
+                <div class="header-table">${t('sell-element-product-price')}</div>
               </th>
               <th>
-                <div class="header-table">Quantity</div>
+                <div class="header-table">${t('sell-element-sell-column-quantity')}</div>
               </th>
               <th>
-                <div class="header-table">Description</div>
+                <div class="header-table">${t('sell-element-product-description')}</div>
               </th>
             </tr>
           </thead>
@@ -539,7 +535,7 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
         <section class="input-container">
           <mwc-textfield
             raise
-            label="Barcode"
+            label="${t('sell-element-product-barcode')}"
             autocomplete="off"
             iconTrailing="add"
             autofocus
@@ -570,12 +566,12 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
             : nothing}
         </section>
         <section class="sale">
-          <section class="total">Total: $${this.total.toFixed(2)}</section>
+          <section class="total">${t('sell-element-sales-column-total')}: $${this.total.toFixed(2)}</section>
           <section class="button-complete-sale">
             <mwc-button
               id="complete-sale"
               raised
-              label="Complete Sale"
+              label="${t('sell-element-sell-complete')}"
               ?disabled=${!this.productsToSell?.length}
               @click="${() => {
                 this._confirmCompleteSaleModalRef.value.openModal();

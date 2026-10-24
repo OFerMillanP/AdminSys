@@ -1,6 +1,6 @@
 import {LitElement, html} from 'lit';
 
-import {dispatchCustomEvent} from '../../utils/utils.js';
+import {dispatchCustomEvent, t} from '../../utils/utils.js';
 
 import styles from './login.css.js';
 
@@ -75,7 +75,7 @@ export class LoginElement extends LitElement {
    */
   requestLoginAccess({key = ''}) {
     this._errorMessage =
-      !this.user || !this.password ? 'Favor de llenar todos los campos' : '';
+      !this.user || !this.password ? t('login-element-login-required-fields') : '';
     if ((key === '' || key === 'Enter') && this.user && this.password) {
       dispatchCustomEvent(this, 'login-page-request-login', {
         user: this.user.slice(0, 15).replace(/\s/g, ''),
@@ -108,22 +108,22 @@ export class LoginElement extends LitElement {
    */
   _showErrorMessage() {
     const errors = {
-      E001: 'El usuario o contraseña son incorrectos.',
-      E002: 'Multiples intentos de inicio de sesión fallidos',
+      E001: t('login-element-login-invalid-credentials'),
+      E002: t('login-element-login-too-many-attempts'),
     };
-    this._errorMessage = errors[this.loginError];
+    this._errorMessage = errors[this.loginError] ?? '';
   }
 
   get _tplLogin() {
     return html`
       <div class="login">
         <div class="login-container">
-          <h1>Login</h1>
+          <h1>${t('login-element-login-title')}</h1>
           <div>
             <div class="input-container">
               <mwc-textfield
                 outlined
-                label="User"
+                label="${t('login-element-login-user')}"
                 autocomplete="off"
                 id="user"
                 maxlength="15"
@@ -136,7 +136,7 @@ export class LoginElement extends LitElement {
             <div class="input-container">
               <mwc-textfield
                 outlined
-                label="Password"
+                label="${t('login-element-login-password')}"
                 autocomplete="off"
                 id="password"
                 type="password"
@@ -150,7 +150,7 @@ export class LoginElement extends LitElement {
             <div class="button-container">
               <mwc-button
                 raised
-                label="Login"
+                label="${t('login-element-login-button')}"
                 @click=${this.requestLoginAccess}
               ></mwc-button>
               <!-- <button class="login-button" @click=${this

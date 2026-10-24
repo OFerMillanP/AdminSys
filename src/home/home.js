@@ -7,7 +7,7 @@ import {RegisterElement} from './register/register.js';
 import {SalesElement} from './sales/sales.js';
 import {ToolsElement} from './tools/tools.js';
 
-import {dispatchCustomEvent} from '../../utils/utils.js';
+import {dispatchCustomEvent, t} from '../../utils/utils.js';
 
 import styles from './home.css.js';
 import { state } from 'lit/decorators.js';
@@ -290,33 +290,33 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
         <nav class="navbar">
           <mwc-tab-bar activeIndex="${this._activeIndex}">
             <mwc-tab
-              label="Sell"
+              label="${t('home-element-nav-sell')}"
               id="sell"
               @click="${this._showSection}"
             ></mwc-tab>
             <mwc-tab
-              label="Products"
+              label="${t('home-element-nav-products')}"
               id="products"
               @click="${this._showSection}"
             ></mwc-tab>
             ${this.userData?.level === 'admin' || this.userData?.level === 'manager'
               ? html`
                   <mwc-tab
-                    label="Register"
+                    label="${t('home-element-nav-register')}"
                     id="register"
                     @click="${this._showSection}"
                   ></mwc-tab>
                 `
               : nothing}
             <mwc-tab
-              label="Sales"
+              label="${t('home-element-nav-sales')}"
               id="sales"
               @click="${this._showSection}"
             ></mwc-tab>
             ${this.userData?.level === 'admin' ?
               html`
                 <mwc-tab
-                  label="Tools"
+                  label="${t('home-element-nav-tools')}"
                   id="tools"
                   @click="${this._showSection}"
                 ></mwc-tab>
@@ -326,7 +326,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
         <mwc-button
           class="logout"
           raised
-          label="Logout"
+          label="${t('home-element-nav-logout')}"
           @click=${this._logout}
         ></mwc-button>
       </header>

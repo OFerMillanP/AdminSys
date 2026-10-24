@@ -1,16 +1,9 @@
 import {LitElement, html, nothing} from 'lit';
-import {repeat} from 'lit/directives/repeat.js';
-import {ref, createRef} from 'lit/directives/ref.js';
 import {ScopedElementsMixin} from '@open-wc/scoped-elements/html-element.js';
 
-import {
-  dispatchCustomEvent,
-  ticketTplToPrint,
-  getCurrentDate,
-} from '../../../utils/utils.js';
+import { dispatchCustomEvent, t } from '../../../utils/utils.js';
 
 import styles from './tools.css.js';
-import {map} from 'lit/directives/map.js';
 
 /**
  * Sales page element.
@@ -111,14 +104,14 @@ export class ToolsElement extends ScopedElementsMixin(LitElement) {
       <section class="tools-content">
         <mwc-textfield
           id="barcode"
-          label="Barcode"
+          label="${t('tools-element-product-barcode')}"
           type="text"
           value="${this._barcode}"
           @input="${this._setBarcode}"
         ></mwc-textfield>
         <mwc-button
           class="random"
-          label="Random Barcode"
+          label="${t('tools-element-tools-random-barcode')}"
           @click=${this._randomBarcode}
         ></mwc-button>
       </section>
@@ -126,7 +119,7 @@ export class ToolsElement extends ScopedElementsMixin(LitElement) {
         <mwc-button
           raised
           class="generator"
-          label="Generate Barcode"
+          label="${t('tools-element-tools-generate-barcode')}"
           @click=${this._generateBarcode}
         ></mwc-button>
       </section>
@@ -143,12 +136,12 @@ export class ToolsElement extends ScopedElementsMixin(LitElement) {
    */
   get _tplCanvasBarcode() {
     return html`
-      <img src="http://localhost:8100/resources/img/${this.generatedBarcode.barcode?.length ? 'barcode.png' : ''}" alt="Barcode ${this._barcode}">
+      <img src="http://localhost:8100/resources/img/${this.generatedBarcode.barcode?.length ? 'barcode.png' : ''}" alt="${t('tools-element-product-barcode')} ${this._barcode}">
       <section>
         <mwc-button
           raised
           class="generator"
-          label="Save Image"
+          label="${t('tools-element-tools-save-image')}"
           @click=${this._saveImg}
         ></mwc-button>
       </section>

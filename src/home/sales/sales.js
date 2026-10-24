@@ -1,7 +1,7 @@
 import {LitElement, html, nothing} from 'lit';
 import {ScopedElementsMixin} from '@open-wc/scoped-elements/html-element.js';
 
-import {dispatchCustomEvent} from '../../../utils/utils.js';
+import {dispatchCustomEvent, t} from '../../../utils/utils.js';
 import {ref, createRef} from 'lit/directives/ref.js';
 
 import {ModalElement} from '../../organisms/modal/modal.js';
@@ -201,17 +201,17 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
   get _tplSales() {
     return html`
       <section class="sales-list">
-        <h2>Sales List</h2>
+        <h2>${t('sales-element-sales-list-title')}</h2>
 
         ${this.sales[this._currentPage - 1]?.length > 0
           ? html`
               <table>
                 <thead>
                   <tr>
-                    <th>Date</th>
-                    <th>Payment Method</th>
-                    <th>Total</th>
-                    <th class="header-table">Actions</th>
+                    <th>${t('sales-element-sales-column-date')}</th>
+                    <th>${t('sales-element-sales-column-payment')}</th>
+                    <th>${t('sales-element-sales-column-total')}</th>
+                    <th class="header-table">${t('sales-element-sales-column-actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -224,7 +224,7 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
                       >
                         <td>${sale.date}</td>
                         <td class="payment-method">
-                          ${sale.paymentMethod == 'cash' ? 'Cash' : 'Card'}
+                          ${sale.paymentMethod == 'cash' ? t('sales-element-payment-cash') : t('sales-element-payment-card')}
                         </td>
                         <td class="total">$${Number(sale.total).toFixed(2)}</td>
                         <td class="actions">
@@ -266,7 +266,7 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
                 </tbody>
               </table>
             `
-          : html` <p class="empty-message">No hay ventas registradas.</p> `}
+          : html` <p class="empty-message">${t('sales-element-sales-empty')}</p> `}
       </section>
     `;
   }
@@ -275,19 +275,19 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
     return html`
       <mwc-tab-bar activeIndex="${this._activeIndex}">
         <mwc-tab
-          label="Sales"
+          label="${t('sales-element-nav-sales')}"
           id="sales"
           @click="${this._showSection}"
         ></mwc-tab>
         <mwc-tab
-          label="Cash Register"
+          label="${t('sales-element-sales-tab-cash-register')}"
           id="cash-register"
           @click="${this._showSection}"
         ></mwc-tab>
         ${this.level === 'admin' ? 
           html`
             <mwc-tab
-              label="Reports"
+              label="${t('sales-element-sales-tab-reports')}"
               id="reports"
               @click="${this._showSection}"
             ></mwc-tab>
@@ -308,12 +308,12 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
   get _tplReport() {
     return html`
       <section class="report-section">
-        <h2>Sales Report</h2>
+        <h2>${t('sales-element-report-title')}</h2>
         <div class="input-container">
           <div class="calendar-container">
             <mwc-textfield
               raised
-              label="Start Date"
+              label="${t('sales-element-report-start-date')}"
               id="calendar"
               type="date"
               iconTrailing="event"
@@ -326,7 +326,7 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
           <div class="calendar-container">
             <mwc-textfield
               raised
-              label="End Date"
+              label="${t('sales-element-report-end-date')}"
               id="calendar"
               type="date"
               iconTrailing="event"
@@ -339,7 +339,7 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
         </div>
         <mwc-button
           raised
-          label="Generate Report"
+          label="${t('sales-element-report-generate')}"
           @click="${this._generateReport}"
         ></mwc-button>
       </section>
@@ -349,15 +349,15 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
   get _tplCashRegisterClosing () {
     return html`
       <section class="cash-register-section">
-        <h2>Cash Register Closing</h2>
+        <h2>${t('sales-element-cash-register-title')}</h2>
         <section>
           <table>
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Total Cash</th>
-                <th>Total Card</th>
-                <th>Total</th>
+                <th>${t('sales-element-sales-column-date')}</th>
+                <th>${t('sales-element-cash-register-total-cash')}</th>
+                <th>${t('sales-element-cash-register-total-card')}</th>
+                <th>${t('sales-element-sales-column-total')}</th>
               </tr>
             </thead>
             <tbody>
@@ -377,7 +377,7 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
         <br>
         <mwc-button
           raised
-          label="Close Register"
+          label="${t('sales-element-cash-register-close')}"
           @click="${this._closeCashRegister}"
         ></mwc-button>
       </section>
@@ -395,12 +395,11 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
         <modal-element
           ${ref(this._confirmClosedCashRegisterModalRef)}
           .data=${{
-            titleText: 'Do you want to confirm the cash register cut-off?',
-            bodyText:
-            'This action cannot be undone.',
-            cancelButtonText: 'Cancel',
+            titleText: t('sales-element-cash-register-confirm-title'),
+            bodyText: t('sales-element-cash-register-confirm-body'),
+            cancelButtonText: t('sales-element-button-cancel'),
             code: 'confirm-closed-register-cash',
-            confirmButtonText: 'Confirm',
+            confirmButtonText: t('sales-element-button-confirm'),
             type: 'warning',
             isEnableConfirmButton: true,
           }}

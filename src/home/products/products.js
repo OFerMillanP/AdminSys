@@ -131,8 +131,8 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     this._editErrorResponseModalRef = createRef();
     this._editSuccessModalRef = createRef();
     this._messageByCode = {
-      'EDP003': 'El código de barras principal ya está registrado',
-      'EDP004': 'Un código de barras secundario ya está registrado',
+      'EDP003': t('products-element-product-barcode-duplicate'),
+      'EDP004': t('products-element-product-extra-barcode-duplicate'),
     }
     this._productIdToAction = {};
     this._showEditForm = false;
@@ -344,14 +344,14 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     return html`
       <div class="register-container">
         <div id="register-product">
-          <h2 class="register-header">Register product</h2>
+          <h2 class="register-header">${t('products-element-product-register-title')}</h2>
           <div>
             <div class="input-container">
               <mwc-textfield
                 raised
                 required
                 ?disabled="${!(this.levelUser === 'admin')}"
-                label="Barcode"
+                label="${t('products-element-product-barcode')}"
                 autocomplete="off"
                 id="barcode"
                 type="text"
@@ -376,7 +376,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                     <mwc-textfield
                       raised
                       ?disabled="${!(this.levelUser === 'admin')}"
-                      label="Extra Barcode"
+                      label="${t('products-element-product-extra-barcode')}"
                       autocomplete="off"
                       id="${barcode.id}"
                       type="text"
@@ -396,12 +396,12 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
 
             <div class="input-container">
               <mwc-select 
-                label="${t('sell-element-selector-label')}"
+                label="${t('products-element-selector-label')}"
                 id="category"
                 @selected=${this._setCategory}
               >
-                <mwc-list-item value="0" .selected="${this.productToEdit.category === "0"}">${t('sell-element-selector-product')}</mwc-list-item>
-                <mwc-list-item value="1" .selected="${this.productToEdit.category === "1"}">${t('sell-element-selector-service')}</mwc-list-item>
+                <mwc-list-item value="0" .selected="${this.productToEdit.category === "0"}">${t('products-element-selector-product')}</mwc-list-item>
+                <mwc-list-item value="1" .selected="${this.productToEdit.category === "1"}">${t('products-element-selector-service')}</mwc-list-item>
               </mwc-select>
             </div>
             <div class="input-container">
@@ -409,7 +409,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                 raised
                 required
                 ?disabled="${!(this.levelUser === 'admin')}"
-                label="Product name"
+                label="${t('products-element-product-name')}"
                 autocomplete="off"
                 id="product-name"
                 type="text"
@@ -422,7 +422,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                 raised
                 required
                 ?disabled="${!(this.levelUser === 'admin')}"
-                label="Price"
+                label="${t('products-element-product-price')}"
                 autocomplete="off"
                 id="price"
                 type="number"
@@ -436,7 +436,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
             <div class="input-container">
               <mwc-textfield
                 raised
-                label="Stock"
+                label="${t('products-element-product-stock')}"
                 autocomplete="off"
                 id="stock"
                 type="number"
@@ -447,7 +447,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
             </div>
             <div class="input-container textarea">
               <mwc-textarea
-                label="Description"
+                label="${t('products-element-product-description')}"
                 id="description"
                 type="text"
                 rows="4"
@@ -458,20 +458,20 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
               </mwc-textarea>
             </div>
             <div class="info-label">
-              <label>Required Fields (*)</label>
+              <label>${t('products-element-required-fields')}</label>
             </div>
             <div class="button-container">
               <mwc-button
                 class="save"
                 raised
-                label="Save"
+                label="${t('products-element-button-save')}"
                 ?disabled="${this._isFilledForm()}"
                 @click=${this._updateProduct}
               ></mwc-button>
               <mwc-button
                 class="register-button"
                 raised
-                label="Cancel"
+                label="${t('products-element-button-cancel')}"
                 @click=${this._cancelEdit}
               ></mwc-button>
             </div>
@@ -493,7 +493,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
           <div class="input-container">
             <mwc-textfield
               raise
-              label="Search"
+              label="${t('products-element-button-search')}"
               autocomplete="off"
               iconTrailing="search"
               id="search"
@@ -507,27 +507,27 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
               <thead>
                 <tr>
                   <th>
-                    <div class="header-table">Barcode</div>
+                    <div class="header-table">${t('products-element-product-barcode')}</div>
                   </th>
                   <th>
-                    <div class="header-table">Product Name</div>
+                    <div class="header-table">${t('products-element-product-name')}</div>
                   </th>
                   <th>
-                    <div class="header-table">Price</div>
+                    <div class="header-table">${t('products-element-product-price')}</div>
                   </th>
                   <th>
-                    <div class="header-table">Stock</div>
+                    <div class="header-table">${t('products-element-product-stock')}</div>
                   </th>
                   <th>
-                    <div class="header-table">Description</div>
+                    <div class="header-table">${t('products-element-product-description')}</div>
                   </th>
                   <th>
-                    <div class="header-table">Registered date</div>
+                    <div class="header-table">${t('products-element-products-column-date')}</div>
                   </th>
                   ${this.levelUser === 'admin' || this.levelUser === 'manager'
                     ? html`
                         <th>
-                          <div class="header-table">Tools</div>
+                          <div class="header-table">${t('products-element-products-column-tools')}</div>
                         </th>
                       `
                     : nothing}
@@ -549,7 +549,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                         <div class="data-number">$ ${product.price}</div>
                       </td>
                       <td>
-                        <div class="data-number">${product.category === '0' ? product.stock : 'N/A'}</div>
+                        <div class="data-number">${product.category === '0' ? product.stock : t('products-element-not-applicable')}</div>
                       </td>
                       <td>${product.description}</td>
                       <td>
@@ -611,7 +611,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
               </tbody>
             </table>
             `
-          : 'No se han encontrado productos'}
+          : t('products-element-products-not-found')}
       </div>
     `;
   }
@@ -626,12 +626,11 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
       <modal-element
         ${ref(this._deleteModalRef)}
         .data=${{
-          bodyText:
-            '¿Está seguro de eliminar el producto? se borrará permanentemente del inventario.',
-          cancelButtonText: 'Cancelar',
+          bodyText: t('products-element-product-delete-confirm-body'),
+          cancelButtonText: t('products-element-button-cancel'),
           code: 'confirm-delete',
-          confirmButtonText: 'Eliminar',
-          titleText: '¿Desea eliminar este producto?',
+          confirmButtonText: t('products-element-button-delete'),
+          titleText: t('products-element-product-delete-confirm-title'),
           type: 'warning',
           isEnableConfirmButton: true,
         }}
@@ -651,10 +650,10 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
       <modal-element
         ${ref(this._successDeleteModalRef)}
         .data=${{
-          bodyText: 'El producto se ha eliminado correctamente',
+          bodyText: t('products-element-product-deleted'),
           code: 'success-delete',
-          confirmButtonText: 'Aceptar',
-          titleText: '¡Producto Eliminado!',
+          confirmButtonText: t('products-element-button-accept'),
+          titleText: t('products-element-product-deleted-title'),
           type: 'success',
           isEnableConfirmButton: true,
         }}
@@ -672,10 +671,10 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
       <modal-element
         ${ref(this._editSuccessModalRef)}
         .data=${{
-          bodyText: 'El producto se ha actualizado correctamente',
+          bodyText: t('products-element-product-updated'),
           code: 'success-update',
-          confirmButtonText: 'Aceptar',
-          titleText: '¡Producto Actualizado!',
+          confirmButtonText: t('products-element-button-accept'),
+          titleText: t('products-element-product-updated-title'),
           type: 'success',
           isEnableConfirmButton: true,
         }}
@@ -695,10 +694,10 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
       <modal-element
         ${ref(this._editErrorResponseModalRef)}
         .data=${{
-          bodyText: `${this._messageByCode[this.editErrorResponse.code] || 'Error al actualizar el producto.'}`,
+          bodyText: `${this._messageByCode[this.editErrorResponse.code] || t('products-element-product-update-error')}`,
           code: 'error-update',
-          confirmButtonText: 'Aceptar',
-          titleText: `¡Error al Actualizar Producto!`,
+          confirmButtonText: t('products-element-button-accept'),
+          titleText: t('products-element-product-update-error-title'),
           type: 'error',
           isEnableConfirmButton: true,
         }}

@@ -24,8 +24,14 @@ export function dispatchCustomEvent(
   );
 }
 
-export function t(key){
-  return locales[navigator.language.split('-').find(() => true)][key];
+export function getCurrentLocale() {
+  const language = globalThis.navigator?.language?.split('-')[0]?.toLowerCase();
+  return Object.hasOwn(locales, language) ? language : 'en';
+}
+
+export function t(key) {
+  const locale = getCurrentLocale();
+  return locales[locale][key] ?? locales.en[key] ?? key;
 }
 
 /**
@@ -54,11 +60,11 @@ export function getCurrentDate() {
 export function ticketTplToPrint(body) {
   return `
     <!DOCTYPE html>
-    <html lang="es">
+    <html lang="${getCurrentLocale()}">
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Ticket de Compra</title>
+        <title>${t('main-element-ticket-title')}</title>
         <style>
           * {
             margin: 0;

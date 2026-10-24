@@ -238,8 +238,8 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
    */
   _mapErrorMessage() {
     const errors = {
-      ERP001: 'Proucto Duplicado',
-      ERP002: 'Valores negativos',
+      ERP001: t('register-element-product-duplicate'),
+      ERP002: t('register-element-negative-values'),
     };
     this._errorMessage = errors[this.registerError] ?? '';
     if (this._errorMessage.length) {
@@ -272,7 +272,7 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
     if (!!this._productBarcode) {
       this._barcodeList = [...this._barcodeList, 
         {
-          label: `Extra Barcode`,
+          label: t('register-element-product-extra-barcode'),
           id: `${window.crypto.randomUUID()}`,
           value: ''
         }
@@ -299,10 +299,10 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
       <modal-element
         ${ref(this._successRegisterModalRef)}
         .data=${{
-          bodyText: 'El producto se ha registrado correctamente',
+          bodyText: t('register-element-product-registered'),
           code: 'success-register',
-          confirmButtonText: 'Aceptar',
-          titleText: '¡Producto Registrado!',
+          confirmButtonText: t('register-element-button-accept'),
+          titleText: t('register-element-product-registered-title'),
           type: 'success',
           isEnableConfirmButton: true,
         }}
@@ -326,8 +326,8 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
         .data=${{
           bodyText: this._errorMessage,
           code: 'error-register',
-          confirmButtonText: 'Aceptar',
-          titleText: '¡Error!',
+          confirmButtonText: t('register-element-button-accept'),
+          titleText: t('register-element-error-title'),
           type: 'error',
           isEnableConfirmButton: true,
         }}
@@ -345,13 +345,13 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
     return html`
       <div class="register-container">
         <div id="register-product">
-          <h2 class="register-header">Register product</h2>
+          <h2 class="register-header">${t('register-element-product-register-title')}</h2>
           <div>
             <div class="input-container">
               <mwc-textfield
                 raised
                 required
-                label="Barcode"
+                label="${t('register-element-product-barcode')}"
                 autocomplete="off"
                 id="barcode"
                 type="text"
@@ -388,19 +388,19 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
             )}
             <div class="input-container">
               <mwc-select 
-                label="${t('sell-element-selector-label')}"
+                label="${t('register-element-selector-label')}"
                 id="category"
                 @selected=${this._setCategory}
               >
-                <mwc-list-item value="0" selected>${t('sell-element-selector-product')}</mwc-list-item>
-                <mwc-list-item value="1">${t('sell-element-selector-service')}</mwc-list-item>
+                <mwc-list-item value="0" selected>${t('register-element-selector-product')}</mwc-list-item>
+                <mwc-list-item value="1">${t('register-element-selector-service')}</mwc-list-item>
               </mwc-select>
             </div>
             <div class="input-container">
               <mwc-textfield
                 raised
                 required
-                label="Product name"
+                label="${t('register-element-product-name')}"
                 autocomplete="off"
                 id="product-name"
                 type="text"
@@ -412,7 +412,7 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
               <mwc-textfield
                 raised
                 required
-                label="Price"
+                label="${t('register-element-product-price')}"
                 autocomplete="off"
                 id="price"
                 type="number"
@@ -429,7 +429,7 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
                 <div class="input-container">
                   <mwc-textfield
                     raised
-                    label="Stock"
+                    label="${t('register-element-product-stock')}"
                     autocomplete="off"
                     id="stock"
                     type="number"
@@ -442,7 +442,7 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
             }
             <div class="input-container textarea">
               <mwc-textarea
-                label="Description"
+                label="${t('register-element-product-description')}"
                 id="description"
                 type="text"
                 rows="4"
@@ -453,13 +453,13 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
               </mwc-textarea>
             </div>
             <div class="info-label">
-              <label>Required Fields (*)</label>
+              <label>${t('register-element-required-fields')}</label>
             </div>
             <div class="button-container">
               <mwc-button
                 class="save"
                 raised
-                label="Save"
+                label="${t('register-element-button-save')}"
                 @click=${this._registerProduct}
               ></mwc-button>
             </div>
