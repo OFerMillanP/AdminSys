@@ -121,12 +121,6 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
    */
   updated(changedProperties) {
     super.updated(changedProperties);
-    if (
-      changedProperties.has('productToSearch') &&
-      Object.keys(this.productToSearch).length
-    ) {
-      this._filterProducts();
-    }
   }
 
   /**
@@ -290,47 +284,6 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
-   * Filters the cached product list using the current search value.
-   * Dispatches the filtered list as a custom event.
-   */
-  _filterProducts() {
-    let filteredProducts = [];
-    if (this.productToSearch.value !== '') {
-      filteredProducts = this._products.filter(
-        (product) => {
-          let barcodeProducts = [];
-          if (product.barcodeList.length) {
-            barcodeProducts = product.barcodeList.map(
-              (barcode) => {
-                return barcode.barcode?.toLowerCase()
-                  .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-                  .includes(this.productToSearch.value.toLowerCase()) ? 1 : 0
-                }
-            );
-          }
-          return product.name
-            .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-            .includes(this.productToSearch.value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')) ||
-          product.barcode
-            .toLowerCase()
-            .includes(this.productToSearch.value.toLowerCase()) ||
-          product.description
-            .toLowerCase()
-            .includes(this.productToSearch.value.toLowerCase()) || 
-          barcodeProducts.find((barcode) => barcode == 1 )
-          }
-      );
-    } else {
-      filteredProducts = this._products;
-    }
-    dispatchCustomEvent(
-      this,
-      'dm-get-products-success-response',
-      filteredProducts
-    );
-  }
-
-  /**
    * Adds a product to the sale list by barcode and updates quantities.
    *
    * @param {string} barcode - The barcode to search for.
@@ -461,28 +414,31 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     }
   }
 
-  getPosibleProducts(keyWord) {
-    let productsList = this._products.filter(
-        (product) => {
-          let barcodeProducts = [];
-          if (product.barcodeList.length) {
-            barcodeProducts = product.barcodeList.map(
-              (barcode) => {
-                return barcode.barcode?.toUpperCase()
-                  .includes(keyWord.toUpperCase()) ? 1 : 0
-                }
-            );
-          }
-          return product.name
-            .toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-            .includes(keyWord.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')) ||
-          product.barcode
-            .toUpperCase()
-            .includes(keyWord.toUpperCase()) ||
-          barcodeProducts.find((barcode) => barcode == 1 )
-          }
+  getPosibleProducts(keyWord, isProductsPage = false) {
+    const normalize = (value) => value.toUpperCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+    const normalizedKeyword = normalize(keyWord);
+    const keywords = normalizedKeyword.trim().split(/\s+/).filter(Boolean);
+    const productsList = this._products.filter((product) => {
+      const normalizedName = normalize(product.name);
+      const matchesName = keywords.every((keyword) =>
+        normalizedName.includes(keyword)
       );
-    dispatchCustomEvent(this, 'dm-posible-products', keyWord.length ? productsList : [])
+      const matchesBarcode = product.barcode
+        .toUpperCase()
+        .includes(normalizedKeyword) ||
+        product.barcodeList.some((barcode) =>
+          barcode.barcode?.toUpperCase().includes(normalizedKeyword)
+        );
+
+      return matchesName || matchesBarcode;
+    });
+    dispatchCustomEvent(
+      this,
+      isProductsPage ? 'dm-get-products-success-response' : 'dm-posible-products',
+      keywords.length ? productsList : isProductsPage ? this._products : []
+    );
   }
 
   _registerSaleSuccessResponse({detail}) {

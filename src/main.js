@@ -122,13 +122,6 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         state: true,
       },
       /**
-       * Search criteria used to filter the product list.
-       */
-      _productToSearch: {
-        type: Object,
-        state: true,
-      },
-      /**
        * Barcode used to request a product for sale.
        */
       _productToSell: {
@@ -209,7 +202,6 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._managerRef = createRef();
     this._posibleProducts = [];
     this._productToEdit = {};
-    this._productToSearch = {};
     this._productToSell = '';
     this._products = [];
     this._productsToSell = [];
@@ -376,8 +368,8 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
    * @param {CustomEvent} event - The product search event.
    * @param {Object} event.detail - The search payload.
    */
-  _searchProduct({detail}) {
-    this._productToSearch = detail;
+  _searchProduct({detail: {value}}) {
+    this._managerRef.value.getPosibleProducts(value.toUpperCase(), true);
   }
 
   /**
@@ -901,7 +893,6 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     return html`
       <manager-element
         ${ref(this._managerRef)}
-        .productToSearch=${this._productToSearch}
         product-to-sell=${this._productToSell}
         @api-dm-login-handle-error=${this._loginHandleError}
         @api-dm-login-success-response=${this._loginSuccessResponse}

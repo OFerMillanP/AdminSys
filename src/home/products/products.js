@@ -164,6 +164,13 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     }
   }
 
+  _manageKeyDowns({key, target}) {
+    if (key === 'Escape') {
+      target.value = '';
+      this._handleInput({target: {id: target.id, value: ''}});
+    }
+  }
+
   /**
    * Handles input changes for the product edit form and search field.
    *
@@ -499,6 +506,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
               id="search"
               type="text"
               @input=${this._handleInput}
+              @keydown=${this._manageKeyDowns}
             ></mwc-textfield>
           </div>
         </div>
