@@ -425,6 +425,13 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
       const matchesName = keywords.every((keyword) =>
         normalizedName.includes(keyword)
       );
+      let matchesDescription = false;
+      if (isProductsPage) {
+        const normalizedDescription = normalize(product.description);
+        matchesDescription = keywords.every((keyword) =>
+          normalizedDescription.includes(keyword)
+        );
+      }
       const matchesBarcode = product.barcode
         .toUpperCase()
         .includes(normalizedKeyword) ||
@@ -432,7 +439,7 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
           barcode.barcode?.toUpperCase().includes(normalizedKeyword)
         );
 
-      return matchesName || matchesBarcode;
+      return matchesName || matchesBarcode || matchesDescription;
     });
     dispatchCustomEvent(
       this,
