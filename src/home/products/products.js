@@ -217,7 +217,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
   }
 
   _setCategory({detail: {index}}){
-    this.productToEdit.category = index;
+    this.productToEdit = {...this.productToEdit, category: `${index}`};
   }
 
   /**
@@ -407,8 +407,8 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                 id="category"
                 @selected=${this._setCategory}
               >
-                <mwc-list-item value="0" .selected="${this.productToEdit.category === "0"}">${t('products-element-selector-product')}</mwc-list-item>
-                <mwc-list-item value="1" .selected="${this.productToEdit.category === "1"}">${t('products-element-selector-service')}</mwc-list-item>
+                <mwc-list-item value="0" .selected="${this.productToEdit.category === '0'}">${t('products-element-selector-product')}</mwc-list-item>
+                <mwc-list-item value="1" .selected="${this.productToEdit.category === '1'}">${t('products-element-selector-service')}</mwc-list-item>
               </mwc-select>
             </div>
             <div class="input-container">
@@ -440,18 +440,21 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                 @input=${this._handleInput}
               ></mwc-textfield>
             </div>
-            <div class="input-container">
-              <mwc-textfield
-                raised
-                label="${t('products-element-product-stock')}"
-                autocomplete="off"
-                id="stock"
-                type="number"
-                min="0"
-                .value="${this.productToEdit.stock}"
-                @input=${this._handleInput}
-              ></mwc-textfield>
-            </div>
+            ${this.productToEdit.category === '0' ? 
+              html`
+                <div class="input-container">
+                  <mwc-textfield
+                    raised
+                    label="${t('products-element-product-stock')}"
+                    autocomplete="off"
+                    id="stock"
+                    type="number"
+                    min="0"
+                    .value="${this.productToEdit.stock}"
+                    @input=${this._handleInput}
+                  ></mwc-textfield>
+                </div>
+              ` : nothing}
             <div class="input-container textarea">
               <mwc-textarea
                 label="${t('products-element-product-description')}"
