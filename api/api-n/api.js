@@ -667,10 +667,29 @@ api.get('/api/v0/sales/cash-register', async function (req, res) {
   try {
     const user_logged = await getUserLogged() || {};
     if (Object.keys(user_logged).length > 0) {
-      const res_db = await pool.query(
+      let res_db;
+      if (user_logged.level === 'admin') {
+        res_db = await pool.query(
         `
-          SELECT * FROM cash_register_closed
+          SELECT 
+            crc.date,
+            crc.total_cash,
+            crc.total_card,
+            crc.total,
+            crc.user_id,
+            u.id,
+            u.name,
+            u.last_name
+          FROM cash_register_closed crc
+          INNER JOIN users u
+          ON crc.user_id = u.id
         `);
+      } else {
+        res_db = await pool.query(
+        `
+          SELECT * FROM cash_register_closed WHERE user_id = $1
+        `, [user_logged.id]);
+      }
       let mappingData = res_db.rows.map((data) => {
         data = {
           ...data,

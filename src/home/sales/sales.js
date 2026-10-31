@@ -358,6 +358,11 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
                 <th>${t('sales-element-cash-register-total-cash')}</th>
                 <th>${t('sales-element-cash-register-total-card')}</th>
                 <th>${t('sales-element-sales-column-total')}</th>
+                ${this.level === 'admin' ?
+                  html`
+                    <th class="header-table">${t('sales-element-sales-column-user')}</th>
+                  `: nothing
+                }
               </tr>
             </thead>
             <tbody>
@@ -368,6 +373,13 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
                     <td class="total">$${ccr.totalCash}</td>
                     <td class="total">$${ccr.totalCard}</td>
                     <td class="total">$${ccr.total}</td>
+                ${this.level === 'admin' ?
+                  html`
+                    <td class="total">
+                      ${ccr.name} ${ccr.last_name}
+                    </td>
+                  `: nothing
+                }
                   </tr>
                 `
               )}

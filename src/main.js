@@ -274,7 +274,6 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
 
   _getUserInSessionHandleErrorResponse(){
     this._isLogged = false;
-    // window.location.reload();
   }
 
   /**
