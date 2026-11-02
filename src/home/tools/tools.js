@@ -131,7 +131,7 @@ export class ToolsElement extends ScopedElementsMixin(LitElement) {
   }
 
   _requestChangePassword() {
-    if (this._pwdData.current > 0 && this._pwdData.new > 0 && this._pwdData.confirm > 0 ) {
+    if (this._pwdData.current.length > 0 && this._pwdData.new.length > 0 && this._pwdData.confirm.length > 0 ) {
       dispatchCustomEvent(this, `${ToolsElement.is}-request-change-password`, 
         {
           current: btoa(this._pwdData.current),
