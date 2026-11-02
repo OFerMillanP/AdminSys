@@ -169,6 +169,15 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     );
   }
 
+  async requestChangePassowrd(body) {
+    await this._getDataManager().fetch(
+      'POST',
+      'api/v0/users/user/password',
+      'dm-update-password',
+      body
+    );
+  }
+
   /**
    * Loads a product by its identifier.
    * If the product list is already cached, it dispatches a success event locally.
@@ -281,6 +290,10 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
   _getProductSuccessResponse({detail}) {
     dispatchCustomEvent(this, 'dm-get-product-success-response', detail);
     this._productToEdit = detail;
+  }
+
+  _changePasswordSuccesResponse() {
+    this.logout();
   }
 
   /**
@@ -571,6 +584,7 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
         @api-dm-register-sale-success-response=${this
           ._registerSaleSuccessResponse}
         @api-dm-logout-success-response=${() => {window.location.reload();}}
+        @api-dm-update-password-success-response=${this._changePasswordSuccesResponse}
       ></api-manager-element>
     `;
   }

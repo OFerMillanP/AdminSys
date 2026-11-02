@@ -34,10 +34,30 @@ export default css`
     width: 40%;
   }
 
-  .generator{
+  .generator {
     align-items: center;
     text-align: center;
     padding: 1rem;
+  }
+
+  .change-password {
+    text-align: center;
+    padding: 1rem;
+  }
+
+  .change-password mwc-button {
+    --mdc-theme-primary: crimson;
+    --mdc-theme-on-primary: #fff;
+  }
+
+  .confirm-sale-cash-input mwc-textfield {
+    margin: 0.5rem;
+    width: 75%;
+  }
+
+  .pwd-message-error {
+    color: crimson;
+    font-size: 10; 
   }
 
   mwc-textfield {

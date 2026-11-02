@@ -1,4 +1,5 @@
 import {LitElement, html, nothing} from 'lit';
+import {ref, createRef} from 'lit/directives/ref.js';
 import {ScopedElementsMixin} from '@open-wc/scoped-elements/html-element.js';
 
 import { dispatchCustomEvent, t } from '../../../utils/utils.js';
@@ -21,12 +22,30 @@ export class ToolsElement extends ScopedElementsMixin(LitElement) {
 
   static get properties() {
     return {
+      changePasswordMessageError: {
+        type: String,
+      },
+      generatedBarcode: {
+        type: Object,
+      },
+      userData: {
+        type: Object,
+      },
       _barcode: {
         type: String,
         state: true,
       },
-      generatedBarcode: {
+      _changePasswordModalRef: {
         type: Object,
+        state: true
+      },
+      _isEnableChangePassword: {
+        type: Boolean,
+        state: true,
+      },
+      _pwdData: {
+        type: Object,
+        state: true
       }
     }
   }
@@ -36,8 +55,17 @@ export class ToolsElement extends ScopedElementsMixin(LitElement) {
    */
   constructor() {
     super();
-    this.generatedBarcode = {};
     this._barcode = '';
+    this._changePasswordModalRef = createRef();
+    this._isEnableChangePassword = false;
+    this._pwdData = {
+      current: '',
+      new: '',
+      confirm: '',
+    }
+    this.changePasswordMessageError = '';
+    this.generatedBarcode = {};
+    this.userData = {};
   }
 
   updated(changedProperties) {
@@ -65,13 +93,56 @@ export class ToolsElement extends ScopedElementsMixin(LitElement) {
     this._barcode = randomBarcode;
   }
 
+  _removeBarcode() {
+    this._barcode = '';
+  }
+
   _generateBarcode(){
     if (this._barcode.length) {
       dispatchCustomEvent(this, `${ToolsElement.is}-request-generate-barcode`, this._barcode);
     }
   }
 
- async _saveImg(){
+  _handleInput({target: {id, value}}) {
+    const pwdField = {
+      'current-pwd': () => {
+        this._pwdData.current = value;
+      },
+      'new-pwd': () => {
+        this._pwdData.new = value;
+        this.changePasswordMessageError = 
+          this._pwdData.new === this._pwdData.current ?
+          'La nueva contraseña no puede ser igual que la anterior' : '';
+      },
+      'confirm-pwd': () => {
+        this._pwdData.confirm = value;
+        this.changePasswordMessageError = 
+          this._pwdData.new !== this._pwdData.confirm ?
+          'Las contraseñas no coinciden' : '';
+      },
+    }
+    pwdField[id].call();
+    this._isEnableChangePassword = 
+      this._pwdData.current.length && 
+      this._pwdData.new.length &&
+      this._pwdData.confirm.length &&
+      (this._pwdData.current !== this._pwdData.new) &&
+      (this._pwdData.new === this._pwdData.confirm);
+  }
+
+  _requestChangePassword() {
+    if (this._pwdData.current > 0 && this._pwdData.new > 0 && this._pwdData.confirm > 0 ) {
+      dispatchCustomEvent(this, `${ToolsElement.is}-request-change-password`, 
+        {
+          current: btoa(this._pwdData.current),
+          new: btoa(this._pwdData.new),
+          confirm: btoa(this._pwdData.confirm)
+        }
+      );
+    }
+  }
+
+  async _saveImg(){
     const imageUrl = `http://localhost:8100/resources/img/${this.generatedBarcode.barcode?.length ? 'barcode.png' : ''}`;
     try {
       const response = await fetch(imageUrl);
@@ -96,12 +167,91 @@ export class ToolsElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
+   * Returns the confirmation modal template for completing a sale.
+   *
+   * @returns {import('lit').TemplateResult}
+   */
+  get _tplChangePasswordModal() {
+    return html`
+      <modal-element
+        id="data-ticket-modal"
+        ${ref(this._changePasswordModalRef)}
+        .data=${{
+          bodyText: t('Una vez cambiada la contraseña no se volverá a mostrar el botón hasta que contacte al administrador'),
+          code: 'change-password-sale',
+          confirmButtonText: t('Cambiar'),
+          cancelButtonText: t('Cancelar'),
+          titleText: t('¿Desea cambiar la contraseña?'),
+          type: 'warning',
+          isEnableConfirmButton: this._isEnableChangePassword,
+        }}
+        @modal-element-confirm-action-change-password-sale="${this
+          ._requestChangePassword}"
+      >
+        <section slot="content-data" class="confirm-sale-data">
+          <div class="confirm-sale-cash-input">
+            <mwc-textfield
+              id="current-pwd"
+              label="${t('Contraseña Actual')}"
+              type="password"
+              value=""
+              @input="${this._handleInput}"
+            ></mwc-textfield>
+            <mwc-textfield
+              id="new-pwd"
+              label="${t('Nueva contraseña')}"
+              type="password"
+              value=""
+              @input="${this._handleInput}"
+            ></mwc-textfield>
+            <mwc-textfield
+              id="confirm-pwd"
+              label="${t('Confirmar Contraseña')}"
+              type="password"
+              value=""
+              @input="${this._handleInput}"
+            ></mwc-textfield>
+          </div>
+          
+          ${this.changePasswordMessageError.length > 0 ? 
+            html`    
+              <section class="pwd-message-error">
+                ${this.changePasswordMessageError}
+              </section>
+            ` : nothing}
+        </section>
+      </modal-element>
+    `;
+  }
+
+  /**
    * Returns the register section template.
    * @returns {import('lit').TemplateResult}
    */
   get _tplTools() {
     return html`
+      ${this.userData.changePassword ? 
+        html`
+          <section class="change-password">
+            <mwc-button
+              raised
+              label="${t('tools-element-change-password')}"
+              id="tools"
+              @click="${() => {this._changePasswordModalRef.value.openModal()}}"
+            ></mwc-button>
+          </section>
+        ` : nothing
+      }
       <section class="tools-content">
+        ${this._barcode.length ? 
+          html`
+            <mwc-button
+              class="remove"
+              label="${t('X')}"
+              @click=${this._removeBarcode}
+            ></mwc-button>
+           ` : nothing
+        }
         <mwc-textfield
           id="barcode"
           label="${t('tools-element-product-barcode')}"
@@ -156,6 +306,7 @@ export class ToolsElement extends ScopedElementsMixin(LitElement) {
   render() {
     return html`
       ${this._tplTools}
+      ${this._tplChangePasswordModal}
     `;
   }
 }

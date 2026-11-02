@@ -56,7 +56,7 @@ function getCurrentDate() {
 async function getUserLogged() {
   const res_db = await pool.query(
     `
-      SELECT u.name, u.last_name, u.id, u.last_login, l.name AS level FROM users u
+      SELECT u.name, u.last_name, u.id, u.last_login, u.change_password, l.name AS level FROM users u
       INNER JOIN levels l
       ON u.level = l.id
       WHERE is_logged = true
@@ -178,6 +178,47 @@ api.post('/api/v0/login', async function (req, res) {
   } finally {
     // pool.end(); - para terminar
   }
+});
+
+/**
+ * Validates credentials and sets the user in memory.
+ * @route POST /api/v0/users/user/password
+ * @param {{user:string,password:string}} req.body - Credenciales de acceso
+ * @returns {201} Usuario autenticado (sin password) | {400} Error con código y mensaje
+ */
+api.post('/api/v0/users/user/password', async function (req, res) {
+  try {
+    const user_logged = await getUserLogged();
+    if (Object.keys(user_logged).length > 0) {
+      const getPassword = await pool.query(
+        `
+          SELECT password FROM users WHERE id = $1
+        `,[user_logged.id]);
+      if (req.body.current === getPassword.rows[0].password) {
+        await pool.query(
+        `
+          UPDATE users 
+          SET change_password = $3 ,
+              is_logged = $4 ,
+              password = $5
+          WHERE id = $1 AND password = $2
+        `, [user_logged.id, getPassword.rows[0].password, false, false, req.body.new]);
+        
+        return res.status(200).json('Success');
+      } else {
+        return res
+        .status(400)
+        .json({message: 'Current Password Not Correct', code: 'ECP001', status: false});
+      }
+    } else {
+      return res
+        .status(400)
+        .json({message: 'Not Authorized', code: 'ECP001', status: false});
+    }
+  } catch (err) {
+    console.error('Error al conectar a la base de datos: ', err.stack);
+    return utils.returnErrorServer(res);
+  } finally {}
 });
 
 /**

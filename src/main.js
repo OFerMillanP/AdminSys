@@ -213,6 +213,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._userData = {
       name: '',
       level: '',
+      changePassword: false
     };
   }
 
@@ -253,6 +254,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._userData.level = detail.level;
     this._userData.name = detail.name;
     this._userData.lastName = detail.last_name;
+    this._userData.changePassword = detail.change_password;
     this._isLogged = !!Object.keys(detail).length;
     if (this._isLogged) {
       this._managerRef.value.getProductList();
@@ -517,6 +519,10 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     if (this._generatedBarcode.barcode !== detail) {
       this._managerRef.value.postGenerateBarcode(detail);
     }
+  }
+
+  _requestChangePassword({detail}){
+    this._managerRef.value.requestChangePassowrd(detail);
   }
 
   _generateBarcodeSuccessResponse({detail}) {
@@ -880,6 +886,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         @sell-element-update-product-to-sell="${this._updateProductToSell}"
         @sell-element-clean-posible-products="${() => { this._posibleProducts = []}}"
         @tools-element-request-generate-barcode="${this._requestGenerateBarcode}"
+        @tools-element-request-change-password="${this._requestChangePassword}"
       ></home-element>
     `;
   }

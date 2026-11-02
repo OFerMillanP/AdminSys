@@ -398,6 +398,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
   get _tplTools() {
     return html`
       <tools-element
+        .userData="${this.userData}"
         .generatedBarcode="${this.generatedBarcode}"
       ></tools-element>
     `;
