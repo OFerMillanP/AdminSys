@@ -461,7 +461,7 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     dispatchCustomEvent(
       this,
       isProductsPage ? 'dm-get-products-success-response' : 'dm-posible-products',
-      keywords.length ? productsList : isProductsPage ? this._products : []
+      keywords.length ? this._sliceProducts(productsList) : isProductsPage ? this._products : []
     );
   }
 
