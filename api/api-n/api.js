@@ -4,6 +4,9 @@ const utils = require('./utils/utils.js');
 
 let cors = require('cors');
 let express = require('express');
+let fs = require('fs');
+let multer  = require('multer');
+let path = require('path');
 let api = express();
 
 api.use(cors());
@@ -383,7 +386,9 @@ api.get('/api/v0/products/product/:id', async function (req, res) {
         .status(400)
         .json({message: 'Not Found Product', code: 'EDP001', status: false});
     }
-    if (Object.keys(userLogged).length > 0 && (userLogged.level === 'admin' || userLogged.level === 'manager')) {
+    if (Object.keys(userLogged).length > 0 && (userLogged.level === 'admin' 
+      || userLogged.level === 'manager'
+    )) {
       let getProductsFromSale = await pool.query(
         `
           SELECT b.product_id, b.barcode, b.primary_barcode, b.id
@@ -425,7 +430,7 @@ api.patch('/api/v0/products/product/:id', async function (req, res) {
     const productToUpdateId =  req.params.id;
     const userLogged = await getUserLogged();
     let productGotById = await getProductById(req.params.id, res);
-    if (!(Object.keys(userLogged).length > 0)) {
+    if (!(Object.keys(userLogged).length > 0 || userLogged.level !== 'admin')) {
       return res
         .status(403)
         .json({message: 'Not Authorized', code: 'EDP001', status: false}); 
@@ -632,6 +637,56 @@ api.post('/api/v0/sales', async function (req, res) {
         .status(400)
         .json({message: 'Not Authorized', code: 'EGS001', status: false});
     }
+  } catch (err) {
+    console.error('Error al conectar a la base de datos: ', err.stack);
+    return utils.returnErrorServer(res);
+  } finally {}
+});
+
+/**
+ * Updates a product by `id` by replacing its content.
+ * @route POST /api/v0/products/product/:id/image
+ * @param {Object} req.params.id - Id del producto a actualizar
+ * @param {Object} req.body - Nuevo objeto producto
+ * @returns {200} Producto actualizado | {400} Error si no existe
+ */
+api.post('/api/v0/products/product/:id/image', async function (req, res) {
+  try {
+    const userLogged = await getUserLogged();
+    console.log('userLogged', userLogged);
+    if (!userLogged || (userLogged.level !== 'admin' && userLogged.level !== 'manager')) {
+      return res
+        .status(403)
+        .json({message: 'Not Authorized', code: 'EDP001', status: false});
+    }
+
+    const productId = Number(req.params.id);
+    if (!Number.isSafeInteger(productId) || productId < 1) {
+      return res.status(400).json({message: 'Invalid product ID', status: false});
+    }
+    const product = await getProductById(productId);
+    if (!product) {
+      return res.status(404).json({message: 'Product not found', status: false});
+    }
+
+    utils.productImageUpload.single('img')(req, res, (error) => {
+      if (error instanceof multer.MulterError) {
+        return res.status(400).json({message: error.message, status: false});
+      }
+      if (error) {
+        console.error('Error al guardar la imagen del producto: ', error.stack);
+        return utils.returnErrorServer(res);
+      }
+      if (!req.file) {
+        return res.status(400).json({message: 'A valid image is required', status: false});
+      }
+
+      return res.status(200).json({
+        id: productId,
+        image: `/resources/img/products/${req.file.filename}`,
+      });
+    });
+
   } catch (err) {
     console.error('Error al conectar a la base de datos: ', err.stack);
     return utils.returnErrorServer(res);
@@ -876,7 +931,7 @@ api.post('/api/v0/barcode/generate', async function (req, res) {
   } finally {}
 });
 
-api.use('/resources/img', express.static('resources/img')); 
+api.use('/resources/img', express.static(path.join(__dirname, 'resources', 'img')));
 
 /**
  * Init server --------------------------------------------------------

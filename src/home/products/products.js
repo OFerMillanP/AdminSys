@@ -107,6 +107,10 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
         type: Object,
         state: true,
       },
+      _selectedImage: {
+        type: Object,
+        state: true,
+      },
       /**
        * Whether the edit form is currently displayed.
        */
@@ -135,6 +139,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
       'EDP004': t('products-element-product-extra-barcode-duplicate'),
     }
     this._productIdToAction = {};
+    this._selectedImage = {};
     this._showEditForm = false;
     this._successDeleteModalRef = createRef();
   }
@@ -258,6 +263,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
    */
   _closeEditModal() {
     this._showEditForm = false;
+    this._selectedImage = {};
     dispatchCustomEvent(this, `${ProductsElement.is}-close-edit-modal`);
   }
 
@@ -266,6 +272,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
    */
   _cancelEdit() {
     this._showEditForm = false;
+    this._selectedImage = {};
     dispatchCustomEvent(this, `${ProductsElement.is}-close-success-edit-modal`);
   }
 
@@ -273,10 +280,18 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
    * Sends the edited product to the parent and opens the success modal.
    */
   _updateProduct() {
+    const productToEdit = {...this.productToEdit};
+    if (this._selectedImage?.name) {
+      const formData = new FormData();
+      formData.append('img', this._selectedImage);
+      productToEdit.img = formData;
+    } else {
+      delete productToEdit.img;
+    }
     dispatchCustomEvent(
       this,
       `${ProductsElement.is}-edit-product`,
-      this.productToEdit
+      productToEdit
     );
   }
 
@@ -346,6 +361,10 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     dispatchCustomEvent(this, `${ProductsElement.is}-sort-products`, {
       sortBy: id,
     });
+  }
+
+  _onFileSelected({target: {files}}){
+    this._selectedImage = files[0];
   }
 
   /**
@@ -473,6 +492,24 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
               >
               </mwc-textarea>
             </div>
+            <div class="input-container textarea">
+              <mwc-button
+                raised
+                @click="${() => this.shadowRoot.querySelector('#file-input').click()}"
+              >
+                <mwc-icon 
+                  slot="icon"
+                >upload_file</mwc-icon>Choose file
+              </mwc-button>
+              <span class="file-name">${this._selectedImage?.name || t('products-element-product-no-file-chosen')}</span>
+              <input 
+                id="file-input" 
+                type="file" 
+                accept="image/*" 
+                @change="${this._onFileSelected}" 
+                hidden 
+              />
+            </div>
             <div class="info-label">
               <label>${t('products-element-required-fields')}</label>
             </div>
@@ -562,22 +599,22 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                   <th>
                     <div class="header-table">${t('products-element-product-description')}</div>
                   </th>
-                  <th>
-                    <div
-                      class="header-table selectable"
-                      id="date"
-                      @click="${this._sortBy}"
-                    >
-                      ${t('products-element-products-column-date')}
-                    </div>
-                  </th>
-                  ${this.levelUser === 'admin' || this.levelUser === 'manager'
+                  ${this.levelUser === 'admin'
                     ? html`
-                        <th>
-                          <div class="header-table">${t('products-element-products-column-tools')}</div>
-                        </th>
+                      <th>
+                        <div
+                          class="header-table selectable"
+                          id="date"
+                          @click="${this._sortBy}"
+                        >
+                          ${t('products-element-products-column-date')}
+                        </div>
+                      </th>
                       `
                     : nothing}
+                    <th>
+                      <div class="header-table">${t('products-element-products-column-tools')}</div>
+                    </th>
                 </tr>
               </thead>
               <tbody>
@@ -599,10 +636,14 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                         <div class="data-number">${product.category === '0' ? product.stock : t('products-element-not-applicable')}</div>
                       </td>
                       <td>${product.description}</td>
-                      <td>
-                        ${new Date(product.date).toLocaleDateString()} - ${new Date(product.date).toLocaleTimeString()}
-                      </td>
-                      ${this.levelUser === 'admin' || this.levelUser === 'manager'
+                      ${this.levelUser === 'admin'
+                        ? html`
+                          <td>
+                            ${new Date(product.date).toLocaleDateString()} - ${new Date(product.date).toLocaleTimeString()}
+                          </td>
+                          `
+                        : nothing}
+                      ${this.levelUser
                         ? html`
                             <td>
                               <div class="product-tools">

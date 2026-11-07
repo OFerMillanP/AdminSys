@@ -91,27 +91,25 @@ export default css`
   }
 
   .edit-product {
-    border: none;
+    border-style: none;
     border-radius: 0.5rem;
-    font-size: x-large;
-    margin: 0.25rem 0.5rem;
-    color: #cc9600;
-    text-shadow: 2px 2px 4px #00000099;
-  }
-
-  .delete-product {
-    border: none;
-    border-radius: 0.5rem;
-    font-size: x-large;
-    margin: 0.25rem 0.5rem;
-    color: #af1313;
-    text-shadow: 2px 2px 4px #00000055;
+    font-size: 20px;
+    color: rgb(204, 150, 0);
+    text-shadow: rgba(0, 0, 0, 0.6) 2px 2px 4px;
   }
 
   .edit-product:hover {
     text-shadow: 2px 2px 4px #000000dd;
     transform: translateY(-4px);
     cursor: pointer;
+  }
+
+  .delete-product {
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 20px;
+    color: #af1313;
+    text-shadow: 2px 2px 4px #00000055;
   }
 
   .delete-product:hover {
@@ -274,6 +272,10 @@ export default css`
   .info-label {
     padding: 0.5rem 1rem;
     color: #8e9600;
+  }
+
+  .file-name {
+    margin: 0.75rem;
   }
 
   /* Animación básica */

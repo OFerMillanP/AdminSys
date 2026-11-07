@@ -449,8 +449,11 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
    * @param {CustomEvent} event - The edit product event.
    * @param {Object} event.detail - The edited product data.
    */
-  _editProduct({detail}) {
-    this._managerRef.value.editProduct(detail);
+  async _editProduct({detail: {img, ...product}}) {
+    await this._managerRef.value.editProduct(product);
+    if (img) {
+      await this._managerRef.value.saveProductImage({id: product.id, img});
+    }
   }
 
   /**

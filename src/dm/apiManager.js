@@ -35,11 +35,12 @@ export class ApiManagerElement extends LitElement {
     dispatchCustomEvent(this, 'show-spinner');
     const url = uri + service;
     let responseData = {};
+    const isFormData = body instanceof FormData;
     try {
       let request = {
         method,
         headers: {
-          'Content-Type': 'application/json',
+          ...(isFormData ? {} : {'Content-Type': 'application/json'}),
           'Access-Control-Allow-Credentials': 'true',
           'Access-Control-Allow-Origin': url,
           'Access-Control-Allow-Methods': 'POST, GET, DELETE, PATCH',
@@ -47,7 +48,7 @@ export class ApiManagerElement extends LitElement {
         },
       };
       method === 'POST' || method === 'PATCH'
-        ? (request.body = JSON.stringify(body))
+        ? (request.body = isFormData ? body : JSON.stringify(body))
         : request;
       const response = await fetch(url, request);
       responseData = await response.json();

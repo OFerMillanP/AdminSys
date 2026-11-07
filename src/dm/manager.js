@@ -265,6 +265,15 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
       product
     );
   }
+  
+  async saveProductImage({id, img}) {
+    await this._getDataManager().fetch(
+      'POST',
+      `api/v0/products/product/${id}/image`,
+      'dm-save-product-image',
+      img
+    );
+  }
 
   async getSales() {
     await this._getDataManager().fetch('GET', 'api/v0/sales', 'dm-get-sales');
