@@ -78,6 +78,11 @@ export default css`
     text-align: center;
   }
 
+  .header-table.selectable:hover {
+    cursor: pointer;
+    color: #ba46b1;
+  }
+
   .product-tools {
     text-align: center;
     align-items: center;

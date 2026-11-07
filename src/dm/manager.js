@@ -94,6 +94,10 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     this.productToSearch = {};
     this.user = '';
     this._cashRegisterClosing = [];
+    this._configProductsSorted = {
+      order: 'none',
+      by: 'none'
+    }
     this._productToEdit = {};
     this._products = [];
     this._productsToSell = [];
@@ -488,7 +492,15 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
    */
   _getProductsSuccessResponse({detail}) {
     this._products = detail;
-    dispatchCustomEvent(this, 'dm-get-products-success-response', detail);
+    dispatchCustomEvent(this, 'dm-get-products-success-response', this._sliceProducts(detail));
+  }
+
+  _sliceProducts(list) {
+    let products = [];
+    for (let i = 0; i < list.length; i += 20) {
+      products.push(list.slice(i, i + 20));
+    }
+    return products
   }
 
   /**
@@ -529,6 +541,37 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
   _postCloseCashRegisterSuccessResponse(){
     this.getCloseCashRegister();
     dispatchCustomEvent(this,'dm-post-close-cash-register-success-response')
+  }
+
+  sortProductsBy({sortBy}){
+    let productsSorted = [];
+    this._configProductsSorted.order = 
+      this._configProductsSorted.by !== sortBy ? 
+      'none' : 
+      this._configProductsSorted.order;
+    this._configProductsSorted.by = sortBy;
+    const orders = {
+      asc: () => {
+        this._configProductsSorted.order = 'desc';
+        productsSorted = 
+          sortBy === 'price' || sortBy === 'stock' ?
+          this._products.toSorted((a, b) => b[sortBy] - a[sortBy]) :
+          this._products.toSorted((a, b) => b[sortBy].localeCompare(a[sortBy]));
+      },
+      desc: () => {
+        this._configProductsSorted.order = 'none';
+        productsSorted = this._products;
+      },
+      none: () => {
+        this._configProductsSorted.order = 'asc';
+        productsSorted = 
+          sortBy === 'price' || sortBy === 'stock' ?
+          this._products.toSorted((a, b) => a[sortBy] - b[sortBy]) :
+          this._products.toSorted((a, b) => a[sortBy].localeCompare(b[sortBy]));
+      }
+    };
+    orders[this._configProductsSorted.order].call();
+    dispatchCustomEvent(this,'dm-sort-products', this._sliceProducts(productsSorted));
   }
 
   /**

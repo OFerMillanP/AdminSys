@@ -357,11 +357,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
    * @param {Array} event.detail - The product list.
    */
   _getProductsSuccessResponse({detail}) {
-    let products = [];
-    for (let i = 0; i < detail.length; i += 20) {
-      products.push(detail.slice(i, i + 20));
-    }
-    this._products = products;
+    this._products = detail;
   }
 
   /**
@@ -499,6 +495,10 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
 
   _setPosibleProducts({detail}) {
     this._posibleProducts = detail;
+  }
+
+  _setSortedProducts({detail}) {
+    this._products = detail;
   }
 
   /**
@@ -645,6 +645,10 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         ),
       ];
     });
+  }
+
+  _sortProductsBy({detail}) {
+    this._managerRef.value.sortProductsBy(detail);
   }
 
   _generateReportDocument({detail}) {
@@ -872,6 +876,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         @products-element-search-product="${this._searchProduct}"
         @products-element-select-product-to-edit="${this._selectProductToEdit}"
         @products-element-toggle-barcodes="${this._toggleBarcodes}"
+        @products-element-sort-products="${this._sortProductsBy}"
         @register-page-close-error-modal="${this._closeErrorModal}"
         @register-page-register-product="${this._registerProduct}"
         @sales-element-close-cash-register="${this._closeCashRegister}"
@@ -928,6 +933,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
           ._postCloseCashRegisterSuccessResponse}
         @dm-register-sale-success-response=${this._registerSaleSuccessResponse}
         @dm-posible-products=${this._setPosibleProducts}
+        @dm-sort-products=${this._setSortedProducts}
       ></manager-element>
     `;
   }

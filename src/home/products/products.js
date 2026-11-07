@@ -342,6 +342,12 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     !this.productToEdit.price
   }
 
+  _sortBy({target: {id}}){
+    dispatchCustomEvent(this, `${ProductsElement.is}-sort-products`, {
+      sortBy: id,
+    });
+  }
+
   /**
    * Returns the edit form template for the selected product.
    *
@@ -518,22 +524,52 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
               <thead>
                 <tr>
                   <th>
-                    <div class="header-table">${t('products-element-product-barcode')}</div>
+                    <div 
+                      class="header-table selectable"
+                      id="barcode"
+                      @click="${this._sortBy}"
+                    >
+                        ${t('products-element-product-barcode')}
+                    </div>
                   </th>
                   <th>
-                    <div class="header-table">${t('products-element-product-name')}</div>
+                    <div
+                      class="header-table selectable"
+                      id="name"
+                      @click="${this._sortBy}"
+                    >
+                      ${t('products-element-product-name')}
+                    </div>
                   </th>
                   <th>
-                    <div class="header-table">${t('products-element-product-price')}</div>
+                    <div
+                      class="header-table selectable"
+                      id="price"
+                      @click="${this._sortBy}"
+                    >
+                      ${t('products-element-product-price')}
+                    </div>
                   </th>
                   <th>
-                    <div class="header-table">${t('products-element-product-stock')}</div>
+                    <div
+                      class="header-table selectable"
+                      id="stock"
+                      @click="${this._sortBy}"
+                    >
+                      ${t('products-element-product-stock')}
+                    </div>
                   </th>
                   <th>
                     <div class="header-table">${t('products-element-product-description')}</div>
                   </th>
                   <th>
-                    <div class="header-table">${t('products-element-products-column-date')}</div>
+                    <div
+                      class="header-table selectable"
+                      id="date"
+                      @click="${this._sortBy}"
+                    >
+                      ${t('products-element-products-column-date')}
+                    </div>
                   </th>
                   ${this.levelUser === 'admin' || this.levelUser === 'manager'
                     ? html`
