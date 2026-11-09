@@ -449,11 +449,8 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
    * @param {CustomEvent} event - The edit product event.
    * @param {Object} event.detail - The edited product data.
    */
-  async _editProduct({detail: {img, ...product}}) {
+  async _editProduct({detail: product}) {
     await this._managerRef.value.editProduct(product);
-    if (img) {
-      await this._managerRef.value.saveProductImage({id: product.id, img});
-    }
   }
 
   /**
@@ -644,6 +641,25 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         ...product.map((product) =>
           product.id.toString() === id
             ? {...product, showBarcodes: product.barcodeList.length ? !product.showBarcodes : product.showBarcodes}
+            : product
+        ),
+      ];
+    });
+  }
+
+  /**
+   * Toggles the visibility of barcodes for a specific sale.
+   *
+   * @param {CustomEvent} event - The event containing the sale identifier.
+   * @param {Object} event.detail - The event details.
+   * @param {string} event.detail.id - The sale id.
+   */
+  _toggleImage({detail: {id}}) {
+    this._products = this._products.map((product) => {
+      return [
+        ...product.map((product) =>
+          product.id.toString() === id
+            ? {...product, showImage: product.image ? !product.showImage : product.showImage}
             : product
         ),
       ];
@@ -869,32 +885,32 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         .userData=${this._userData}
         @home-element-get-sales="${this._getSales}"
         @home-page-logout="${this._logout}"
-        @modal-element-confirm-action-success-complete-sale="${this
-          ._closeCompleteSaleSuccessModal}"
-        @products-element-close-edit-modal="${this
-          ._closeEditModal}"
+        @modal-element-confirm-action-success-complete-sale="${this._closeCompleteSaleSuccessModal}"
         @modal-element-confirm-action-success-register="${this._closeRegisterSuccessModal}"
+        @products-element-close-edit-modal="${this._closeEditModal}"
+        @products-element-close-success-edit-modal="${this._closeEditModal}"
         @products-element-delete-product="${this._deleteProduct}"
         @products-element-edit-product="${this._editProduct}"
         @products-element-search-product="${this._searchProduct}"
         @products-element-select-product-to-edit="${this._selectProductToEdit}"
-        @products-element-toggle-barcodes="${this._toggleBarcodes}"
         @products-element-sort-products="${this._sortProductsBy}"
+        @products-element-toggle-barcodes="${this._toggleBarcodes}"
+        @products-element-toggle-image="${this._toggleImage}"
         @register-page-close-error-modal="${this._closeErrorModal}"
         @register-page-register-product="${this._registerProduct}"
         @sales-element-close-cash-register="${this._closeCashRegister}"
         @sales-element-generate-report="${this._generateReport}"
         @sales-element-print-ticket="${this._printTicket}"
         @sales-element-toggle-products="${this._toggleProducts}"
+        @sell-element-clean-posible-products="${() => { this._posibleProducts = []}}"
         @sell-element-complete-sale="${this._completeSale}"
         @sell-element-delete-product-to-sell="${this._deleteProductToSell}"
         @sell-element-get-posible-product="${this._getPosibleProductsList}"
         @sell-element-get-product-to-sell="${this._searchProductToSell}"
         @sell-element-print-ticket="${this._printTicket}"
         @sell-element-update-product-to-sell="${this._updateProductToSell}"
-        @sell-element-clean-posible-products="${() => { this._posibleProducts = []}}"
-        @tools-element-request-generate-barcode="${this._requestGenerateBarcode}"
         @tools-element-request-change-password="${this._requestChangePassword}"
+        @tools-element-request-generate-barcode="${this._requestGenerateBarcode}"
       ></home-element>
     `;
   }

@@ -76,11 +76,18 @@ export default css`
 
   .header-table {
     text-align: center;
+    transition: color 0.75s ease;
   }
 
   .header-table.selectable:hover {
     cursor: pointer;
     color: #ba46b1;
+    transition: color 0.75s ease;
+  }
+
+  .product-image img{
+    display: flex;
+    width: 10rem;
   }
 
   .product-tools {
@@ -94,13 +101,33 @@ export default css`
     border-style: none;
     border-radius: 0.5rem;
     font-size: 20px;
-    color: rgb(204, 150, 0);
+    color: #cc9600;
     text-shadow: rgba(0, 0, 0, 0.6) 2px 2px 4px;
+    transform: translateY(0px);
+    transition: transform 0.75s ease;
   }
 
   .edit-product:hover {
     text-shadow: 2px 2px 4px #000000dd;
     transform: translateY(-4px);
+    transition: transform 0.75s ease;
+    cursor: pointer;
+  }
+
+  .show-product-image {
+    border-style: none;
+    border-radius: 0.5rem;
+    font-size: 20px;
+    color: #14593E;
+    text-shadow: rgba(0, 0, 0, 0.6) 2px 2px 4px;
+    transform: translateY(0px);
+    transition: transform 0.75s ease;
+  }
+
+  .show-product-image:hover {
+    text-shadow: 2px 2px 4px #000000dd;
+    transform: translateY(-4px);
+    transition: transform 0.75s ease;
     cursor: pointer;
   }
 
@@ -110,16 +137,24 @@ export default css`
     font-size: 20px;
     color: #af1313;
     text-shadow: 2px 2px 4px #00000055;
+    transform: translateY(0px);
+    transition: transform 0.75s ease;
   }
 
   .delete-product:hover {
     text-shadow: 2px 2px 4px #000000aa;
     transform: translateY(-4px);
+    transition: transform 0.75s ease;
     cursor: pointer;
   }
 
   .list-products-navigation {
     margin: 1rem 0rem;
+  }
+
+  .product-image{
+    width: 10rem;
+    display: flex;
   }
 
   /* Ícono de éxito */
@@ -133,6 +168,11 @@ export default css`
 
   .extra-barcodes {
     background-color: #501f6f67;
+    transition: background-color 1s ease;
+  }
+
+  .extra-barcodes td.barcode-actionable {
+    cursor: pointer;
   }
 
   .register-icon.enabled{
@@ -180,12 +220,12 @@ export default css`
   }
 
   tr {
-    transition: 0.5s;
+    transition: background-color 0.5s ease;
     background-color: #ffffff00;
   }
 
   tr:hover {
-    transition: 0.3s;
+    transition: background-color 0.5s ease;
     background-color: #f5f5f5;
   }
 

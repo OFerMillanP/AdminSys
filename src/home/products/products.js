@@ -139,7 +139,10 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
       'EDP004': t('products-element-product-extra-barcode-duplicate'),
     }
     this._productIdToAction = {};
-    this._selectedImage = {};
+    this._selectedImage = {
+      file: {},
+      src: ''
+    };
     this._showEditForm = false;
     this._successDeleteModalRef = createRef();
   }
@@ -281,10 +284,8 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
    */
   _updateProduct() {
     const productToEdit = {...this.productToEdit};
-    if (this._selectedImage?.name) {
-      const formData = new FormData();
-      formData.append('img', this._selectedImage);
-      productToEdit.img = formData;
+    if (this._selectedImage?.file?.name) {
+      productToEdit.img = this._selectedImage.file;
     } else {
       delete productToEdit.img;
     }
@@ -312,6 +313,17 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
    */
   _toggleBarcodes({currentTarget: {id}}) {
     dispatchCustomEvent(this, `${ProductsElement.is}-toggle-barcodes`, {id});
+  }
+
+  /**
+   * Toggles the display of barcodes for a selected sale row.
+   *
+   * @param {Event} event - The click event from the sale row.
+   * @param {HTMLElement} event.currentTarget - The row target element.
+   * @param {string} event.currentTarget.id - The sale identifier.
+   */
+  _toggleImage({currentTarget: {id}}) {
+    dispatchCustomEvent(this, `${ProductsElement.is}-toggle-image`, {id});
   }
 
   _removeBarcode({target: {id}}){
@@ -363,8 +375,20 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     });
   }
 
-  _onFileSelected({target: {files}}){
-    this._selectedImage = files[0];
+  _onFileSelected({target: {files}}) {
+    const file = files?.[0];
+    if (!file) return;
+
+    this._selectedImage = {file, src: ''};
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        this._selectedImage = {...this._selectedImage, src: reader.result};
+      }
+    };
+
+    reader.readAsDataURL(file);
   }
 
   /**
@@ -499,9 +523,9 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
               >
                 <mwc-icon 
                   slot="icon"
-                >upload_file</mwc-icon>Choose file
+                >upload_file</mwc-icon>${t('products-element-product-image-chosen-label')}
               </mwc-button>
-              <span class="file-name">${this._selectedImage?.name || t('products-element-product-no-file-chosen')}</span>
+              <span class="file-name">${this._selectedImage.file?.name || this.productToEdit.image || t('products-element-product-no-image-chosen')}</span>
               <input 
                 id="file-input" 
                 type="file" 
@@ -509,6 +533,18 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                 @change="${this._onFileSelected}" 
                 hidden 
               />
+            </div>
+            <div class="product-image">
+              ${this._selectedImage.src ?
+                html`
+                  <img src="${this._selectedImage.src}" alt="${this._selectedImage.file?.name || ''}"/>
+                ` : nothing
+              }
+              ${!this._selectedImage.src && this.productToEdit?.image ?
+                html`
+                  <img src="http://localhost:8100/resources/img/products/${this.productToEdit.image}" alt="${this.productToEdit.image}"/>
+                ` : nothing
+              }
             </div>
             <div class="info-label">
               <label>${t('products-element-required-fields')}</label>
@@ -622,13 +658,17 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                   this.registeredProducts[this._currentPage - 1] || {},
                   (product) =>
                     html`
-                      <tr 
-                        id="${product.id}"
+                      <tr
                         class="${product.barcodeList.length ? 'extra-barcodes' : ''}"
-                        @click=${this._toggleBarcodes}
                       >
-                      <td>${product.barcode}</td>
-                      <td>${product.name}</td>
+                      <td
+                        id="${product.id}"
+                        class="barcode-actionable"
+                        @click=${this._toggleBarcodes}>${product.barcode}</td>
+                      <td
+                        id="${product.id}"
+                        class="barcode-actionable"
+                        @click=${this._toggleBarcodes}>${product.name}</td>
                       <td>
                         <div class="data-number">$ ${product.price}</div>
                       </td>
@@ -647,6 +687,16 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                         ? html`
                             <td>
                               <div class="product-tools">
+                                ${product.image ?
+                                  html`
+                                    <button
+                                      class="show-product-image"
+                                      id="${product.id}"
+                                      @click=${this._toggleImage}
+                                    >
+                                      &#128065;
+                                    </button>
+                                  `: nothing}
                                 <button
                                   class="edit-product"
                                   id="${product.id}"
@@ -694,7 +744,17 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                           </tr>
                           <br />
                         `
+                      : nothing}
+                    ${product.showImage
+                      ? html`
+                          <tr></tr>
+                          <tr>
+                             <img class="product-image" src="http://localhost:8100/resources/img/products/${product.image}" alt="${product.image}"/>
+                          </tr>
+                          <br />
+                        `
                       : nothing}`
+                    
                 )}
               </tbody>
             </table>

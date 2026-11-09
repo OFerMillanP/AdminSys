@@ -94,7 +94,11 @@ const productImageUpload = multer({
     },
   }),
   fileFilter: (req, file, callback) => {
-    callback(null, allowedProductImageTypes.has(file.mimetype));
+    if (!allowedProductImageTypes.has(file.mimetype)) {
+      callback(new multer.MulterError('LIMIT_UNEXPECTED_FILE', file.fieldname));
+      return;
+    }
+    callback(null, true);
   },
   limits: {fileSize: 5 * 1024 * 1024},
 });
