@@ -472,11 +472,19 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
 
       return matchesName || matchesBarcode || matchesDescription;
     });
-    dispatchCustomEvent(
-      this,
-      isProductsPage ? 'dm-get-products-success-response' : 'dm-posible-products',
-      keywords.length ? this._sliceProducts(productsList) : isProductsPage ? this._sliceProducts(this._products) : []
-    );
+    if (isProductsPage) {
+      dispatchCustomEvent(
+        this,
+        'dm-get-products-success-response',
+        keywords.length ? this._sliceProducts(productsList) : this._sliceProducts(this._products)
+      );
+    } else {
+      dispatchCustomEvent(
+        this,
+        'dm-posible-products',
+        keywords.length ? productsList : []
+      );
+    }
   }
 
   _registerSaleSuccessResponse({detail}) {
