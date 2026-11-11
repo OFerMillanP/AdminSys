@@ -7,6 +7,7 @@ const { createCanvas } = require('canvas');
 const JsBarcode = require('jsbarcode');
 const fs = require('fs');
 const path = require('path');
+const multer = require('multer');
 
 ///////////////////////////////// DB Querys /////////////////////////////////
 
@@ -29,7 +30,6 @@ function returnErrorServer(res) {
       .status(500)
       .json({message: 'Server ERROR', code: 'D00B1', status: false});
 };
-
 
 ///////////////////////////////// BARCODE /////////////////////////////////
 
@@ -71,4 +71,37 @@ function guardarCodigoBarras(texto) {
     });
 }
 
-module.exports = { returnErrorServer, getUserAndLevel, logoutUser, guardarCodigoBarras };
+//////////////////////////////  Product Image Upload /////////////////////////////////
+
+const productImagesPath = path.join(__dirname, '..', 'resources', 'img', 'products');
+const allowedProductImageTypes = new Map([
+  ['image/jpeg', 'jpg'],
+  ['image/png', 'png'],
+  ['image/webp', 'webp'],
+  ['image/gif', 'gif'],
+]);
+const productImageUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, callback) => {
+      fs.mkdir(productImagesPath, {recursive: true}, (error) => {
+        callback(error, productImagesPath);
+      });
+    },
+    filename: (req, file, callback) => {
+      const productId = Number(req.params.id);
+      const extension = allowedProductImageTypes.get(file.mimetype);
+      callback(null, `${productId}.${extension}`);
+    },
+  }),
+  fileFilter: (req, file, callback) => {
+    if (!allowedProductImageTypes.has(file.mimetype)) {
+      callback(new multer.MulterError('LIMIT_UNEXPECTED_FILE', file.fieldname));
+      return;
+    }
+    callback(null, true);
+  },
+  limits: {fileSize: 5 * 1024 * 1024},
+});
+
+
+module.exports = { returnErrorServer, getUserAndLevel, logoutUser, guardarCodigoBarras, productImageUpload };

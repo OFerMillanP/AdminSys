@@ -4,6 +4,9 @@ const utils = require('./utils/utils.js');
 
 let cors = require('cors');
 let express = require('express');
+let fs = require('fs');
+let multer  = require('multer');
+let path = require('path');
 let api = express();
 
 api.use(cors());
@@ -351,7 +354,8 @@ api.get('/api/v0/products', async function (req, res) {
           product = {
             ...product,
             barcodeList: getProductsFromSale.rows,
-            showBarcodes: false
+            showBarcodes: false,
+            showImage: false
           };
           return product;
         })
@@ -383,7 +387,9 @@ api.get('/api/v0/products/product/:id', async function (req, res) {
         .status(400)
         .json({message: 'Not Found Product', code: 'EDP001', status: false});
     }
-    if (Object.keys(userLogged).length > 0 && (userLogged.level === 'admin' || userLogged.level === 'manager')) {
+    if (Object.keys(userLogged).length > 0 && (userLogged.level === 'admin' 
+      || userLogged.level === 'manager'
+    )) {
       let getProductsFromSale = await pool.query(
         `
           SELECT b.product_id, b.barcode, b.primary_barcode, b.id
@@ -396,7 +402,8 @@ api.get('/api/v0/products/product/:id', async function (req, res) {
       productGotById = {
         ...productGotById,
         barcodeList: getProductsFromSale.rows,
-        showBarcodes: false
+        showBarcodes: false,
+        showImage: false
       };
       return res
         .status(200)
@@ -416,29 +423,53 @@ api.get('/api/v0/products/product/:id', async function (req, res) {
  * Updates a product by `id` by replacing its content.
  * @route PATCH /api/v0/products/product/:id
  * @param {Object} req.params.id - Id del producto a actualizar
- * @param {Object} req.body - Nuevo objeto producto
+ * @param {Object} req.body - Nuevo objeto producto; acepta una imagen opcional en el campo `img`
  * @returns {200} Producto actualizado | {400} Error si no existe
  */
 api.patch('/api/v0/products/product/:id', async function (req, res) {
   try {
-    const productToUpdate = req.body;
-    const productToUpdateId =  req.params.id;
     const userLogged = await getUserLogged();
-    let productGotById = await getProductById(req.params.id, res);
-    if (!(Object.keys(userLogged).length > 0)) {
+    if (!userLogged || !['admin', 'manager'].includes(userLogged.level)) {
       return res
         .status(403)
         .json({message: 'Not Authorized', code: 'EDP001', status: false}); 
     }
-    if (Object.keys(productGotById).length === 0) {
+    const productToUpdateId = Number(req.params.id);
+    if (!Number.isSafeInteger(productToUpdateId) || productToUpdateId < 1) {
+      return res.status(400).json({message: 'Invalid product ID', status: false});
+    }
+    let productGotById = await getProductById(productToUpdateId);
+    if (!productGotById) {
       return res
         .status(400)
         .json({message: 'Not Found Product', code: 'EDP002', status: false});
     }
 
+    await new Promise((resolve, reject) => {
+      utils.productImageUpload.single('img')(req, res, (error) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve();
+      });
+    });
+
+    const productToUpdate = req.body;
+    if (typeof productToUpdate.barcodeList === 'string') {
+      try {
+        productToUpdate.barcodeList = JSON.parse(productToUpdate.barcodeList);
+      } catch {
+        return res.status(400).json({message: 'Invalid barcode list', status: false});
+      }
+    }
+    if (!Array.isArray(productToUpdate.barcodeList)) {
+      productToUpdate.barcodeList = [];
+    }
+
     productGotById = {
       ...productGotById,
-      barcodeList: (await getBarcodes('product_id', productToUpdateId))
+      barcodeList: await getBarcodes('product_id', productToUpdateId)
     }
 
     if (productGotById.barcode !== productToUpdate.barcode) {
@@ -454,42 +485,7 @@ api.patch('/api/v0/products/product/:id', async function (req, res) {
           .status(400) 
           .json({message: 'Barcode already exists', code: 'EDP003', status: false});
       }
-
-      await pool.query(
-        ` 
-          UPDATE products
-          SET name = $1, barcode = $2, price = $3, stock = $4, description = $5, category = $6
-          WHERE id = $7
-        `, [
-              productToUpdate.name,
-              productToUpdate.barcode,
-              productToUpdate.price,
-              productToUpdate.stock,
-              productToUpdate.description,
-              productToUpdate.category,
-              productToUpdateId
-            ]);
-    } else if( productGotById.name !== productToUpdate.name ||
-      productGotById.price !== productToUpdate.price ||
-      productGotById.stock !== productToUpdate.stock ||
-      productGotById.description !== productToUpdate.description ||
-      productGotById.category !== productToUpdate.category) {
-
-        await pool.query(
-          ` 
-            UPDATE products
-            SET name = $1, barcode = $2, price = $3, stock = $4, description = $5, category = $6
-            WHERE id = $7
-          `, [
-              productToUpdate.name,
-              productToUpdate.barcode,
-              productToUpdate.price,
-              productToUpdate.stock,
-              productToUpdate.description,
-              productToUpdate.category,
-              productToUpdateId
-            ]);
-      }
+    }
 
     if (productToUpdate.barcodeList.length) {
       let errorOcurs = await Promise.all(productToUpdate.barcodeList.map(async (barcode) => {
@@ -508,7 +504,29 @@ api.patch('/api/v0/products/product/:id', async function (req, res) {
           .status(400) 
           .json({message: 'Barcode already exists', code: 'EDP004', status: false});
       }
+    }
 
+    const imagePath = req.file
+      ? `${req.file.filename}`
+      : productGotById.image;
+    await pool.query(
+      ` 
+        UPDATE products
+        SET name = $1, barcode = $2, price = $3, stock = $4, description = $5,
+            category = $6, image = $7
+        WHERE id = $8
+      `, [
+            productToUpdate.name,
+            productToUpdate.barcode,
+            productToUpdate.price,
+            productToUpdate.stock,
+            productToUpdate.description,
+            productToUpdate.category,
+            imagePath,
+            productToUpdateId
+          ]);
+
+    if (productToUpdate.barcodeList.length) {
       await Promise.all(productToUpdate.barcodeList.map(async (barcode) => {
         if (barcode.action === 'add') {
           await pool.query(
@@ -537,9 +555,12 @@ api.patch('/api/v0/products/product/:id', async function (req, res) {
         }
       }))
     }
-    return res.status(200).json(productToUpdate);
+    return res.status(200).json({...productToUpdate, image: imagePath});
 
   } catch (err) {
+    if (err instanceof multer.MulterError) {
+      return res.status(400).json({message: err.message, status: false});
+    }
     console.error('Error al conectar a la base de datos: ', err.stack);
     return utils.returnErrorServer(res);
   } finally {}
@@ -876,7 +897,7 @@ api.post('/api/v0/barcode/generate', async function (req, res) {
   } finally {}
 });
 
-api.use('/resources/img', express.static('resources/img')); 
+api.use('/resources/img', express.static(path.join(__dirname, 'resources', 'img')));
 
 /**
  * Init server --------------------------------------------------------

@@ -350,6 +350,13 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
     return html`
       <section class="cash-register-section">
         <h2>${t('sales-element-cash-register-title')}</h2>
+        <mwc-button
+          raised
+          label="${t('sales-element-cash-register-close')}"
+          @click="${this._closeCashRegister}"
+        ></mwc-button>
+        <br>
+        <br>
         <section>
           <table>
             <thead>
@@ -386,12 +393,6 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
             </tbody>
           </table>
         </section>
-        <br>
-        <mwc-button
-          raised
-          label="${t('sales-element-cash-register-close')}"
-          @click="${this._closeCashRegister}"
-        ></mwc-button>
       </section>
     `;
   }

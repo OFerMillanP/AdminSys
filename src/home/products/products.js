@@ -107,6 +107,10 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
         type: Object,
         state: true,
       },
+      _selectedImage: {
+        type: Object,
+        state: true,
+      },
       /**
        * Whether the edit form is currently displayed.
        */
@@ -135,6 +139,10 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
       'EDP004': t('products-element-product-extra-barcode-duplicate'),
     }
     this._productIdToAction = {};
+    this._selectedImage = {
+      file: {},
+      src: ''
+    };
     this._showEditForm = false;
     this._successDeleteModalRef = createRef();
   }
@@ -258,6 +266,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
    */
   _closeEditModal() {
     this._showEditForm = false;
+    this._selectedImage = {};
     dispatchCustomEvent(this, `${ProductsElement.is}-close-edit-modal`);
   }
 
@@ -266,6 +275,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
    */
   _cancelEdit() {
     this._showEditForm = false;
+    this._selectedImage = {};
     dispatchCustomEvent(this, `${ProductsElement.is}-close-success-edit-modal`);
   }
 
@@ -273,10 +283,16 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
    * Sends the edited product to the parent and opens the success modal.
    */
   _updateProduct() {
+    const productToEdit = {...this.productToEdit};
+    if (this._selectedImage?.file?.name) {
+      productToEdit.img = this._selectedImage.file;
+    } else {
+      delete productToEdit.img;
+    }
     dispatchCustomEvent(
       this,
       `${ProductsElement.is}-edit-product`,
-      this.productToEdit
+      productToEdit
     );
   }
 
@@ -297,6 +313,17 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
    */
   _toggleBarcodes({currentTarget: {id}}) {
     dispatchCustomEvent(this, `${ProductsElement.is}-toggle-barcodes`, {id});
+  }
+
+  /**
+   * Toggles the display of barcodes for a selected sale row.
+   *
+   * @param {Event} event - The click event from the sale row.
+   * @param {HTMLElement} event.currentTarget - The row target element.
+   * @param {string} event.currentTarget.id - The sale identifier.
+   */
+  _toggleImage({currentTarget: {id}}) {
+    dispatchCustomEvent(this, `${ProductsElement.is}-toggle-image`, {id});
   }
 
   _removeBarcode({target: {id}}){
@@ -346,6 +373,22 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     dispatchCustomEvent(this, `${ProductsElement.is}-sort-products`, {
       sortBy: id,
     });
+  }
+
+  _onFileSelected({target: {files}}) {
+    const file = files?.[0];
+    if (!file) return;
+
+    this._selectedImage = {file, src: ''};
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        this._selectedImage = {...this._selectedImage, src: reader.result};
+      }
+    };
+
+    reader.readAsDataURL(file);
   }
 
   /**
@@ -473,6 +516,36 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
               >
               </mwc-textarea>
             </div>
+            <div class="input-container textarea">
+              <mwc-button
+                raised
+                @click="${() => this.shadowRoot.querySelector('#file-input').click()}"
+              >
+                <mwc-icon 
+                  slot="icon"
+                >upload_file</mwc-icon>${t('products-element-product-image-chosen-label')}
+              </mwc-button>
+              <span class="file-name">${this._selectedImage.file?.name || this.productToEdit.image || t('products-element-product-no-image-chosen')}</span>
+              <input 
+                id="file-input" 
+                type="file" 
+                accept="image/*" 
+                @change="${this._onFileSelected}" 
+                hidden 
+              />
+            </div>
+            <div class="product-image">
+              ${this._selectedImage.src ?
+                html`
+                  <img src="${this._selectedImage.src}" alt="${this._selectedImage.file?.name || ''}"/>
+                ` : nothing
+              }
+              ${!this._selectedImage.src && this.productToEdit?.image ?
+                html`
+                  <img src="http://localhost:8100/resources/img/products/${this.productToEdit.image}" alt="${this.productToEdit.image}"/>
+                ` : nothing
+              }
+            </div>
             <div class="info-label">
               <label>${t('products-element-required-fields')}</label>
             </div>
@@ -562,22 +635,22 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                   <th>
                     <div class="header-table">${t('products-element-product-description')}</div>
                   </th>
-                  <th>
-                    <div
-                      class="header-table selectable"
-                      id="date"
-                      @click="${this._sortBy}"
-                    >
-                      ${t('products-element-products-column-date')}
-                    </div>
-                  </th>
-                  ${this.levelUser === 'admin' || this.levelUser === 'manager'
+                  ${this.levelUser === 'admin'
                     ? html`
-                        <th>
-                          <div class="header-table">${t('products-element-products-column-tools')}</div>
-                        </th>
+                      <th>
+                        <div
+                          class="header-table selectable"
+                          id="date"
+                          @click="${this._sortBy}"
+                        >
+                          ${t('products-element-products-column-date')}
+                        </div>
+                      </th>
                       `
                     : nothing}
+                    <th>
+                      <div class="header-table">${t('products-element-products-column-tools')}</div>
+                    </th>
                 </tr>
               </thead>
               <tbody>
@@ -585,13 +658,17 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                   this.registeredProducts[this._currentPage - 1] || {},
                   (product) =>
                     html`
-                      <tr 
-                        id="${product.id}"
+                      <tr
                         class="${product.barcodeList.length ? 'extra-barcodes' : ''}"
-                        @click=${this._toggleBarcodes}
                       >
-                      <td>${product.barcode}</td>
-                      <td>${product.name}</td>
+                      <td
+                        id="${product.id}"
+                        class="barcode-actionable"
+                        @click=${this._toggleBarcodes}>${product.barcode}</td>
+                      <td
+                        id="${product.id}"
+                        class="barcode-actionable"
+                        @click=${this._toggleBarcodes}>${product.name}</td>
                       <td>
                         <div class="data-number">$ ${product.price}</div>
                       </td>
@@ -599,13 +676,27 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                         <div class="data-number">${product.category === '0' ? product.stock : t('products-element-not-applicable')}</div>
                       </td>
                       <td>${product.description}</td>
-                      <td>
-                        ${new Date(product.date).toLocaleDateString()} - ${new Date(product.date).toLocaleTimeString()}
-                      </td>
-                      ${this.levelUser === 'admin' || this.levelUser === 'manager'
+                      ${this.levelUser === 'admin'
+                        ? html`
+                          <td>
+                            ${new Date(product.date).toLocaleDateString()} - ${new Date(product.date).toLocaleTimeString()}
+                          </td>
+                          `
+                        : nothing}
+                      ${this.levelUser
                         ? html`
                             <td>
                               <div class="product-tools">
+                                ${product.image ?
+                                  html`
+                                    <button
+                                      class="show-product-image"
+                                      id="${product.id}"
+                                      @click=${this._toggleImage}
+                                    >
+                                      &#128065;
+                                    </button>
+                                  `: nothing}
                                 <button
                                   class="edit-product"
                                   id="${product.id}"
@@ -653,7 +744,17 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
                           </tr>
                           <br />
                         `
+                      : nothing}
+                    ${product.showImage
+                      ? html`
+                          <tr></tr>
+                          <tr>
+                             <img class="product-image" src="http://localhost:8100/resources/img/products/${product.image}" alt="${product.image}"/>
+                          </tr>
+                          <br />
+                        `
                       : nothing}`
+                    
                 )}
               </tbody>
             </table>

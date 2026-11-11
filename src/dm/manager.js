@@ -258,11 +258,25 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
    * @return {Promise<void>}
    */
   async editProduct(product) {
+    const {img, ...productData} = product;
+    let body = productData;
+    if (img) {
+      body = new FormData();
+      Object.entries(productData).forEach(([key, value]) => {
+        body.append(
+          key,
+          value !== null && typeof value === 'object'
+            ? JSON.stringify(value)
+            : String(value)
+        );
+      });
+      body.append('img', img);
+    }
     await this._getDataManager().fetch(
       'PATCH',
       `api/v0/products/product/${product.id}`,
       'dm-edit-product',
-      product
+      body
     );
   }
 
@@ -471,7 +485,6 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
         keywords.length ? productsList : []
       );
     }
-    
   }
 
   _registerSaleSuccessResponse({detail}) {
