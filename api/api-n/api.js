@@ -660,6 +660,117 @@ api.post('/api/v0/sales', async function (req, res) {
 });
 
 /**
+ * Returns a sales report for an inclusive date range.
+ * @route POST /api/v0/sales/report
+ * @param {{startDate:{year:number|string,month:number|string,day:number|string},endDate:{year:number|string,month:number|string,day:number|string}}} req.body - Report date range
+ * @returns {Object} Sales report with its sales and total
+ */
+api.post('/api/v0/sales/report', async function (req, res) {
+  try {
+    if (!Object.keys(userToSend).length) {
+      return res
+        .status(400)
+        .json({message: 'Not Authorized', code: 'EGR001', status: false});
+    }
+
+    const parseDate = (date) => {
+      if (!date || typeof date !== 'object') {
+        return null;
+      }
+
+      const {year, month, day} = date;
+      const yearNumber = Number(year);
+      const monthNumber = Number(month);
+      const dayNumber = Number(day);
+      const parsedDate = new Date(Date.UTC(yearNumber, monthNumber - 1, dayNumber));
+
+      if (
+        !Number.isInteger(yearNumber) ||
+        !Number.isInteger(monthNumber) ||
+        !Number.isInteger(dayNumber) ||
+        parsedDate.getUTCFullYear() !== yearNumber ||
+        parsedDate.getUTCMonth() !== monthNumber - 1 ||
+        parsedDate.getUTCDate() !== dayNumber
+      ) {
+        return null;
+      }
+
+      return {
+        sqlDate: `${String(yearNumber).padStart(4, '0')}-${String(monthNumber).padStart(2, '0')}-${String(dayNumber).padStart(2, '0')}`,
+        parts: {year: String(yearNumber), month: String(monthNumber).padStart(2, '0'), day: String(dayNumber).padStart(2, '0')},
+      };
+    };
+
+    const startDate = parseDate(req.body.startDate);
+    const endDate = parseDate(req.body.endDate);
+    if (!startDate || !endDate || startDate.sqlDate > endDate.sqlDate) {
+      return res
+        .status(400)
+        .json({message: 'Invalid date range', code: 'EGR002', status: false});
+    }
+
+    const getSales = await pool.query(
+      `
+        SELECT * FROM sales
+        WHERE date::date >= $1::date AND date::date <= $2::date
+      `,
+      [startDate.sqlDate, endDate.sqlDate]
+    );
+
+    const listSales = await Promise.all(
+      getSales.rows.map(async (sale) => {
+        const getProductsFromSale = await pool.query(
+          `
+            SELECT p.id, p.name, p.barcode, p.price, p.description,
+            sp.quantity
+            FROM products p
+            INNER JOIN sales_products sp
+            ON sp.product = p.id
+            INNER JOIN sales s
+            ON sp.sale = s.id
+            WHERE s.id = $1
+          `,
+          [sale.id]
+        );
+
+        const saleWithProducts = {
+          ...sale,
+          paymentMethod: sale.payment_method,
+          changeToGive: sale.change_to_give,
+          showProducts: false,
+          products: getProductsFromSale.rows,
+          date: new Date(sale.date).toLocaleString('es-MX', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+          })
+        };
+        delete saleWithProducts.payment_method;
+        delete saleWithProducts.change_to_give;
+        return saleWithProducts;
+      })
+    );
+
+    return res.status(200).json({
+      listSales,
+      startDate: startDate.parts,
+      endDate: endDate.parts,
+      totalSales: listSales.reduce(
+        (total, sale) => total + Number(sale.total),
+        0
+      ),
+    });
+  } catch (err) {
+    console.error('Error al generar el reporte: ', err.stack);
+    return utils.returnErrorServer(res);
+  }
+});
+
+/**
  * Returns the list of registered sales.
  * @route GET /api/v0/sales
  * @returns {Object[]} List of sales

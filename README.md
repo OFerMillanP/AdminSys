@@ -23,77 +23,53 @@ npm install
 
 ## Comandos principales
 
-- Instalar dependencias:
+### Desarrollo y API
 
-```bash
-npm install
-```
+| Comando | Descripción |
+| --- | --- |
+| `npm install` | Instala las dependencias del proyecto. |
+| `npm run start` | Inicia el servidor de desarrollo y abre la aplicación. |
+| `npm run start-server` | Inicia el servidor de desarrollo sin el ejecutor paralelo de `start`. |
+| `npm run serve` | Inicia el servidor de desarrollo sin abrir automáticamente el navegador. |
+| `npm run api` | Inicia la API Node.js con Nodemon. |
+| `npm run api:python` | Inicia la API Python ubicada en `api/api.py`. |
+| `npm run api:all` | Inicia en segundo plano las APIs Python y Node.js. |
+| `npm run start:all` | Inicia la aplicación y las APIs. |
+| `npm run start:all:w` | Inicia la aplicación y las APIs en segundo plano en Windows. |
+| `npm run api:install:dependencies` | Instala las dependencias de la API Node.js y las de Python. |
+| `npm run api:python:install` | Instala las dependencias declaradas en `api/requirements.txt`. |
 
-- Iniciar el servidor de desarrollo:
+### Calidad y pruebas
 
-```bash
-npm run start
-```
+| Comando | Descripción |
+| --- | --- |
+| `npm run lint` | Ejecuta el analizador de Lit y ESLint. |
+| `npm test` | Ejecuta los tests con Karma. |
+| `npm run test:watch` | Ejecuta los tests y vuelve a correrlos al detectar cambios. |
+| `npm run test:update-snapshots` | Actualiza los snapshots de los tests. |
+| `npm run test:prune-snapshots` | Elimina los snapshots que ya no se usan. |
+| `npm run analyze` | Analiza los componentes y genera `custom-elements.json`. |
+| `npm run build` | No realiza una compilación: el script informa que el proyecto no usa TypeScript. |
 
-- Iniciar el servidor de desarrollo alternativo:
+### Documentación
 
-```bash
-npm run serve
-```
+| Comando | Descripción |
+| --- | --- |
+| `npm run docs` | Limpia y vuelve a generar la documentación estática. |
+| `npm run docs:clean` | Elimina la documentación generada en `docs/`. |
+| `npm run docs:gen` | Genera las páginas con Eleventy. |
+| `npm run docs:gen:watch` | Observa los archivos de documentación y regenera las páginas al cambiar. |
+| `npm run docs:build` | Genera el bundle de ejemplo en `docs/my-element.bundled.js`. |
+| `npm run docs:assets` | Copia el tema CSS de Prism a `docs/`. |
+| `npm run docs:serve` | Sirve la documentación generada en modo de desarrollo. |
 
-- Iniciar solo la API local:
+### Utilidades
 
-```bash
-npm run api
-```
-
-- Iniciar servidor de desarrollo y API juntos en Windows:
-
-```bash
-npm run start:all:w
-```
-
-- Iniciar servidor de desarrollo y API juntos en macOS/Linux:
-
-```bash
-npm run start:all
-```
-
-- Ejecutar tests:
-
-```bash
-npm test
-```
-
-- Ejecutar lint:
-
-```bash
-npm run lint
-```
-
-- Generar documentación estática:
-
-```bash
-npm run docs
-```
-
-- Servir la documentación generada:
-
-```bash
-npm run docs:serve
-```
-
-- Observar cambios en la documentación fuente:
-
-```bash
-npm run docs:gen:watch
-```
-
-- Analizar componentes y generar `custom-elements.json`:
-
-```bash
-npm run analyze
-```
+| Comando | Descripción |
+| --- | --- |
+| `npm run format` | Formatea `main.js` y los archivos de `test/` con Prettier. |
+| `npm run watch-scss` | Observa `scss/styles.scss` y compila cambios a `css/styles.css`. |
+| `npm run checksize` | Construye el bundle y calcula su tamaño comprimido con gzip. |
 
 ## Estructura del proyecto
 
@@ -112,12 +88,18 @@ npm run analyze
 - `GET /api/v0/login` — obtiene el usuario en sesión
 - `POST /api/v0/login` — inicia sesión con usuario y contraseña
 - `GET /api/v0/logout` — cierra la sesión
+- `POST /api/v0/users/user/password` — cambia la contraseña del usuario en sesión
 - `GET /api/v0/products` — lista productos
 - `GET /api/v0/products/product/:id` — obtiene un producto
 - `POST /api/v0/products/product` — registra un producto nuevo
 - `PATCH /api/v0/products/product/:id` — actualiza un producto
 - `DELETE /api/v0/products/product/:id` — elimina un producto (requiere nivel `admin`)
 - `POST /api/v0/sales` — registra una venta y actualiza stock
+- `GET /api/v0/sales` — lista las ventas registradas
+- `POST /api/v0/sales/report` — genera un reporte de ventas para un rango inclusivo de fechas (`startDate` y `endDate` con `year`, `month` y `day`)
+- `GET /api/v0/sales/cash-register` — consulta los cortes de caja
+- `POST /api/v0/sales/cash-register` — cierra la caja y registra los totales desde el último corte
+- `POST /api/v0/barcode/generate` — genera el código de barras indicado
 
 ## Uso rápido
 
@@ -144,4 +126,3 @@ Para colaborar en este proyecto:
 ---
 
 Este README ha sido actualizado para reflejar la estructura y comandos actuales del proyecto AdminSys.
-

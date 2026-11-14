@@ -683,7 +683,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
   }
 
   _generateReport({detail}) {
-    this._managerRef.value.generateReport(detail, this._sales.flat());
+    this._managerRef.value.generateReport(detail);
   }
 
   _closeCashRegister() {
