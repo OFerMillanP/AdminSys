@@ -317,14 +317,18 @@ export class ToolsElement extends ScopedElementsMixin(LitElement) {
           </section>
         ` : nothing
       }
-      ${this.userData.level? html`
+      ${this.userData.level === 'admin' ? html`
         <section class="backup">
           <mwc-button
             raised
             label="${t('tools-element-backup-db')}"
             id="tools"
             @click=${this._requestDatabaseBackup}
-          ></mwc-button>
+          >
+            <mwc-icon 
+              slot="icon"
+            >sync</mwc-icon>
+          </mwc-button>
         </section>
       ` : nothing}
       <section class="tools-content">
