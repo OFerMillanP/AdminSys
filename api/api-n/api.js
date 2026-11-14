@@ -14,6 +14,8 @@ let multer  = require('multer');
 let path = require('path');
 /** Starts the fixed Windows backup script requested by an authorized user. */
 let {spawn} = require('child_process');
+/** Resolves the current Windows user's Documents directory. */
+let os = require('os');
 /** Express application that defines the API routes and static resources. */
 let api = express();
 
@@ -52,6 +54,165 @@ let lastBarcode = '';
 let userToSend = {};
 /** Prevents concurrent database backup processes. */
 let backupInProgress = false;
+
+/** Returns the directory where the batch script stores SQL backups. */
+function getBackupDirectory() {
+  return path.join(os.homedir(), 'Documents', 'Respaldos DB');
+}
+
+/**
+ * Returns the start of the current Friday 8 PM backup cycle.
+ * @param {Date} date - Date used to determine the current cycle.
+ * @returns {Date} Most recent Friday at 8 PM.
+ */
+function getBackupCycleStart(date) {
+  const cycleStart = new Date(date);
+  const daysSinceFriday = (date.getDay() - 5 + 7) % 7;
+  cycleStart.setDate(date.getDate() - daysSinceFriday);
+  cycleStart.setHours(20, 0, 0, 0);
+  if (cycleStart > date) {
+    cycleStart.setDate(cycleStart.getDate() - 7);
+  }
+  return cycleStart;
+}
+
+/**
+ * Checks whether a non-empty SQL backup exists in the current weekly cycle.
+ * @param {Date} date - Date used to determine the current cycle.
+ * @returns {boolean} Whether a backup exists since the cycle's Friday at 8 PM.
+ */
+function hasBackupInCurrentCycle(date) {
+  const backupDirectory = getBackupDirectory();
+  if (!fs.existsSync(backupDirectory)) {
+    return false;
+  }
+
+  const cycleStart = getBackupCycleStart(date);
+  const nextCycleStart = new Date(cycleStart);
+  nextCycleStart.setDate(nextCycleStart.getDate() + 7);
+  return fs.readdirSync(backupDirectory).some((fileName) => {
+    const match = fileName.match(
+      /^AdminSys_(\d{2})-(\d{2})-(\d{4})_(\d{2})-(\d{2})-(\d{2})\.sql$/
+    );
+    if (!match) {
+      return false;
+    }
+
+    const [, day, month, year, hour, minute, second] = match;
+    const backupDate = new Date(
+      Number(year),
+      Number(month) - 1,
+      Number(day),
+      Number(hour),
+      Number(minute),
+      Number(second)
+    );
+    if (
+      backupDate.getFullYear() !== Number(year) ||
+      backupDate.getMonth() !== Number(month) - 1 ||
+      backupDate.getDate() !== Number(day) ||
+      backupDate.getHours() !== Number(hour) ||
+      backupDate.getMinutes() !== Number(minute) ||
+      backupDate.getSeconds() !== Number(second) ||
+      backupDate < cycleStart ||
+      backupDate > date ||
+      backupDate >= nextCycleStart
+    ) {
+      return false;
+    }
+
+    return fs.statSync(path.join(backupDirectory, fileName)).size > 0;
+  });
+}
+
+/**
+ * Starts the project's Windows batch script and waits for it to complete.
+ * @returns {Promise<void>}
+ */
+async function createDatabaseBackup() {
+  if (backupInProgress) {
+    const error = new Error('A database backup is already running');
+    error.code = 'BACKUP_IN_PROGRESS';
+    throw error;
+  }
+  if (process.platform !== 'win32') {
+    const error = new Error('Database backup requires Windows');
+    error.code = 'BACKUP_UNSUPPORTED';
+    throw error;
+  }
+
+  const projectRoot = path.resolve(__dirname, '..', '..');
+  const backupScript = path.join(projectRoot, 'run-backup-db.bat');
+  if (!fs.existsSync(backupScript)) {
+    throw new Error('Database backup script was not found');
+  }
+
+  backupInProgress = true;
+  try {
+    const command = `call "${backupScript}"`;
+    const result = await new Promise((resolve, reject) => {
+      const backupProcess = spawn(
+        process.env.ComSpec || 'cmd.exe',
+        ['/d', '/c', command],
+        {
+          cwd: projectRoot,
+          windowsHide: true,
+          windowsVerbatimArguments: true
+        }
+      );
+      let output = '';
+      let errors = '';
+      backupProcess.stdout.on('data', (data) => {
+        output += data.toString();
+      });
+      backupProcess.stderr.on('data', (data) => {
+        errors += data.toString();
+      });
+      backupProcess.once('error', reject);
+      backupProcess.once('close', (code, signal) => resolve({code, signal, output, errors}));
+    });
+
+    if (result.code !== 0) {
+      throw new Error(result.errors || result.output || result.signal || 'Backup process failed');
+    }
+  } finally {
+    backupInProgress = false;
+  }
+}
+
+/**
+ * Creates an automatic backup if the current cycle does not already have one.
+ * @param {string} trigger - Description of the event that triggered the check.
+ * @returns {Promise<void>}
+ */
+async function runAutomaticBackup(trigger) {
+  if (backupInProgress) {
+    return;
+  }
+
+  try {
+    if (hasBackupInCurrentCycle(new Date())) {
+      return;
+    }
+
+    console.log(`Iniciando respaldo automatico (${trigger}).`);
+    await createDatabaseBackup();
+    console.log('Respaldo automatico creado correctamente.');
+  } catch (err) {
+    console.error('Error al crear el respaldo automatico: ', err.stack);
+  }
+}
+
+/**
+ * Determines whether the API startup should trigger a backup.
+ * @param {Date} date - Date used to determine the startup window.
+ * @returns {boolean} Whether startup falls on Friday after 8 PM, Saturday, or Monday.
+ */
+function shouldRunBackupOnStartup(date) {
+  const day = date.getDay();
+  const isFridayAfterEight = day === 5 && date.getHours() >= 20;
+  return isFridayAfterEight || day === 6 || day === 1;
+}
 
 /**
  * Returns the current date and time in `DD/MM/YYYY - HH:MM:SS` format.
@@ -1104,7 +1265,6 @@ api.post('/api/v0/barcode/generate', async function (req, res) {
  * @returns {500} `{message, code, status}` when the script fails.
  */
 api.post('/api/v0/database/backup', async function (req, res) {
-  let ownsBackupLock = false;
   try {
     const user_logged = await getUserLogged() || {};
     if (!user_logged.id || user_logged.level !== 'admin') {
@@ -1113,66 +1273,23 @@ api.post('/api/v0/database/backup', async function (req, res) {
         .json({message: 'Not Authorized', code: 'EBA001', status: false});
     }
 
-    if (backupInProgress) {
+    await createDatabaseBackup();
+    return res.status(200).json({success: true});
+  } catch (err) {
+    if (err.code === 'BACKUP_IN_PROGRESS') {
       return res
         .status(409)
         .json({message: 'Backup already in progress', code: 'EBA002', status: false});
     }
-
-    if (process.platform !== 'win32') {
+    if (err.code === 'BACKUP_UNSUPPORTED') {
       return res
         .status(501)
         .json({message: 'Backup script requires Windows', code: 'EBA003', status: false});
     }
-
-    const projectRoot = path.resolve(__dirname, '..', '..');
-    const backupScript = path.join(projectRoot, 'run-backup-db.bat');
-    if (!fs.existsSync(backupScript)) {
-      throw new Error('Database backup script was not found');
-    }
-
-    backupInProgress = true;
-    ownsBackupLock = true;
-    const command = `call "${backupScript}"`;
-    const result = await new Promise((resolve, reject) => {
-      const backupProcess = spawn(
-        process.env.ComSpec || 'cmd.exe',
-        ['/d', '/c', command],
-        {
-          cwd: projectRoot,
-          windowsHide: true,
-          windowsVerbatimArguments: true
-        }
-      );
-      let output = '';
-      let errors = '';
-      backupProcess.stdout.on('data', (data) => {
-        output += data.toString();
-      });
-      backupProcess.stderr.on('data', (data) => {
-        errors += data.toString();
-      });
-      backupProcess.once('error', reject);
-      backupProcess.once('close', (code, signal) => resolve({code, signal, output, errors}));
-    });
-
-    if (result.code !== 0) {
-      console.error('Error al crear el respaldo: ', result.errors || result.output || result.signal);
-      return res
-        .status(500)
-        .json({message: 'Backup failed', code: 'EBA004', status: false});
-    }
-
-    return res.status(200).json({success: true});
-  } catch (err) {
     console.error('Error al crear el respaldo: ', err.stack);
     return res
       .status(500)
       .json({message: 'Backup failed', code: 'EBA004', status: false});
-  } finally {
-    if (ownsBackupLock) {
-      backupInProgress = false;
-    }
   }
 });
 
@@ -1182,5 +1299,17 @@ api.use('/resources/img', express.static(path.join(__dirname, 'resources', 'img'
 /**
  * Init server --------------------------------------------------------
  */
-api.listen(port);
-console.log('Listen to port ' + port);
+api.listen(port, () => {
+  console.log('Listen to port ' + port);
+  const now = new Date();
+  if (shouldRunBackupOnStartup(now)) {
+    runAutomaticBackup('inicio del sistema');
+  }
+
+  setInterval(() => {
+    const currentTime = new Date();
+    if (currentTime.getDay() === 5 && currentTime.getHours() >= 20) {
+      runAutomaticBackup('viernes despues de las 20:00');
+    }
+  }, 60 * 1000);
+});
