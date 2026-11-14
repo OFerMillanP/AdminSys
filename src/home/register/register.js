@@ -12,20 +12,32 @@ import styles from './register.css.js';
  * Product registration page element.
  *
  * Manages form state, validation, and registration events for new products.
+ *
+ * @fires register-page-close-error-modal - Notifies the parent after the registration error modal is acknowledged; `event.detail` is `true`.
+ * @fires register-page-search-product - Requests matching products with `{value: string}` in `event.detail`.
+ * @fires register-page-register-product - Requests registration with `{name, barcode, barcodeList, price, stock, description, category}` in `event.detail`.
+ * @listens modal-element-cancel-action - Resets the form after the success modal is canceled; `event.detail` is `true`.
+ * @listens modal-element-confirm-action-success-register - Resets the form after success is confirmed; `event.detail` is `true`.
+ * @listens modal-element-confirm-action-error-register - Closes the error modal and notifies the parent; `event.detail` is `true`.
  */
 export class RegisterElement extends ScopedElementsMixin(LitElement) {
+  /** @returns {string} The custom-element tag name. */
   static get is() {
     return 'register-element';
   }
 
+  /** @returns {Object} Child custom-element constructors registered in this scope. */
   static get scopedElements() {
     return {'modal-element': ModalElement};
   }
 
+  /** @returns {Object} Reactive property definitions for registration inputs and state. */
   static get properties() {
     return {
       /**
        * Indicates whether the product was registered successfully.
+       * @type {boolean}
+       * @attribute register-success
        */
       registerSuccess: {
         type: Boolean,
@@ -33,17 +45,26 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Error code returned after a failed product registration.
+       * @type {string}
+       * @attribute register-error
        */
       registerError: {
         type: String,
         attribute: 'register-error',
       },
+      /**
+       * Additional barcode entries being entered for the product.
+       * @type {Array}
+       * @state
+       */
       _barcodeList:{
         type: Array,
         state: true,
       },
       /**
        * Name of the product being registered.
+       * @type {string}
+       * @state
        */
       _productName: {
         type: String,
@@ -51,13 +72,17 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Primary barcode of the product.
+       * @type {string}
+       * @state
        */
       _productBarcode: {
         type: String,
         state: true,
       },
       /**
-       * Contains category.
+       * Product category selected in the form (0 for product, 1 for service).
+       * @type {number}
+       * @state
        */
       _productCategory: {
         type: Number,
@@ -65,6 +90,8 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Description of the product.
+       * @type {string}
+       * @state
        */
       _productDescription: {
         type: String,
@@ -72,6 +99,8 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Price of the product.
+       * @type {number}
+       * @state
        */
       _productPrice: {
         type: Number,
@@ -79,6 +108,8 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Available stock quantity for the product.
+       * @type {number}
+       * @state
        */
       _productStock: {
         type: Number,
@@ -86,6 +117,8 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Mapped error message text for the current registration error.
+       * @type {string}
+       * @state
        */
       _errorMessage: {
         type: String,
@@ -93,6 +126,8 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Reference to the error modal component.
+       * @type {Object}
+       * @state
        */
       _errorRegisterModalRef: {
         type: Object,
@@ -100,6 +135,8 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Whether the form should display a validation error message.
+       * @type {boolean}
+       * @state
        */
       _showErrorMessage: {
         type: Boolean,
@@ -107,6 +144,8 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Whether the product list should be shown in the UI.
+       * @type {boolean}
+       * @state
        */
       _showProductList: {
         type: Boolean,
@@ -114,6 +153,8 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Reference to the success modal component.
+       * @type {Object}
+       * @state
        */
       _successRegisterModalRef: {
         type: Object,
@@ -169,6 +210,7 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
 
   /**
    * Closes the error modal and notifies the parent component.
+   * @fires register-page-close-error-modal - Fired with `event.detail === true`.
    */
   _closeErrorModal() {
     this.shadowRoot.querySelector('#barcode').focus();
@@ -193,6 +235,7 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
    * Handles input updates for all form fields.
    *
    * @param {InputEvent} event - The input event.
+   * @fires register-page-search-product - Fired for the search field with `{value: string}` in `event.detail`.
    */
   _handleInput({target: {id, value}}) {
     const inputs = {
@@ -220,6 +263,10 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
     inputs[id]?.call();
   }
 
+  /**
+   * Updates the selected product category and clears the stock value.
+   * @param {CustomEvent} event - Category selection event with a numeric `detail.index`.
+   */
   _setCategory({detail: {index}}) {
     this._productCategory = Number(index) || 0;
     this._productStock = 0;
@@ -227,6 +274,7 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
 
   /**
    * Toggles visibility of the product list section.
+   * @returns {void}
    */
   _showList() {
     this._showProductList = !this._showProductList;
@@ -235,6 +283,7 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
   /**
    * Maps the current registration error code to a user-facing message.
    * Opens the error modal if a known error message exists.
+   * @returns {void}
    */
   _mapErrorMessage() {
     const errors = {
@@ -249,6 +298,7 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
 
   /**
    * Registers the product with the provided details.
+   * @fires register-page-register-product - Fired with the product data `{name, barcode, barcodeList, price, stock, description, category}` in `event.detail` when required fields are filled.
    */
   _registerProduct() {
     this._showErrorMessage =
@@ -268,6 +318,7 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
     }
   }
 
+  /** Adds an empty extra-barcode form row when a primary barcode is present. */
   _addBarcode(){
     if (!!this._productBarcode) {
       this._barcodeList = [...this._barcodeList, 
@@ -280,10 +331,19 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
     }
   }
 
+  /**
+   * Removes an extra-barcode row from the registration form.
+   * @param {Event} event - Click event on the row's remove control.
+   * @param {string} event.target.id - Identifier of the row to remove.
+   */
   _removeBarcode({target: {id}}){
     this._barcodeList = this._barcodeList.filter(barcode => barcode.id !== id)
   }
 
+  /**
+   * Updates an extra barcode value from its input field.
+   * @param {InputEvent} event - Input event with the row identifier and value.
+   */
   _barcodeListHandleInput({target: {id, value}}){
     let updateExtraBarcode = this._barcodeList.findIndex(barcode => barcode.id === id);
     this._barcodeList[updateExtraBarcode].value = value;
@@ -470,6 +530,8 @@ export class RegisterElement extends ScopedElementsMixin(LitElement) {
     `;
   }
 
+  /** @returns {import('lit').CSSResult[]} Styles applied to the registration page. */
+  /** @returns {import('lit').CSSResult[]} Styles applied to the registration page. */
   static get styles() {
     return [styles];
   }

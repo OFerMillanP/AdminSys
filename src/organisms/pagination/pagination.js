@@ -4,29 +4,40 @@ import { dispatchCustomEvent } from '../../../utils/utils.js';
 
 import styles from './pagination.css.js';
 
+/**
+ * Pagination control that renders a window of page buttons and ellipses.
+ *
+ * @fires pagination-element-page-changed - Fired when a valid different page is selected, with `{page: number}` in `event.detail`.
+ */
 export class PaginationElement extends LitElement {
+  /** @returns {string} The custom-element tag name. */
   static get is() {
     return 'pagination-element';
   }
 
+  /** Reactive page-number properties. */
   static properties = {
     /**
      * Current active page number.
-     * @type {Number}
+     * @type {number}
+     * @attribute current-page
      */
     currentPage: { type: Number },
     /**
      * Total number of available pages.
-     * @type {Number}
+     * @type {number}
+     * @attribute total-pages
      */
     totalPages: { type: Number },
     /**
      * Maximum number of visible page buttons.
-     * @type {Number}
+     * @type {number}
+     * @attribute max-visible-pages
      */
     maxVisiblePages: { type: Number },
   };
 
+  /** Initializes the control to page one with a five-button window. */
   constructor() {
     super();
     this.currentPage = 1;
@@ -35,9 +46,11 @@ export class PaginationElement extends LitElement {
   }
 
   /**
-   * Changes the active page and emits a page-changed event.
+   * Changes the active page and emits a page-changed event for a valid selection.
    *
-   * @param {number} page - The requested page number.
+   * @param {Event} event - Click event whose target has a numeric `data-page` attribute.
+   * @param {string} event.target.dataset.page - Requested page number.
+   * @fires pagination-element-page-changed - Fired with `{page: number}` in `event.detail`.
    * @returns {void}
    */
   changePage({target: {dataset: {page}}}) {
@@ -81,6 +94,7 @@ export class PaginationElement extends LitElement {
   }
 
   
+  /** @returns {import('lit').CSSResult[]} Styles applied to the control. */
   static get styles() {
     return [styles];
   }

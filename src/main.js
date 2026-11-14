@@ -27,12 +27,64 @@ import {ticketTplToPrint, getCurrentDate, getCurrentLocale, t} from '../utils/ut
  *
  * Manages authentication state, routes between the login and home views,
  * and coordinates data exchange with the manager layer.
+ *
+ * @listens login-page-request-login
+ * @listens home-page-logout
+ * @listens home-element-get-sales
+ * @listens modal-element-confirm-action-success-complete-sale
+ * @listens modal-element-confirm-action-success-register
+ * @listens products-element-close-edit-modal
+ * @listens products-element-close-success-edit-modal
+ * @listens products-element-delete-product
+ * @listens products-element-edit-product
+ * @listens products-element-search-product
+ * @listens products-element-select-product-to-edit
+ * @listens products-element-sort-products
+ * @listens products-element-toggle-barcodes
+ * @listens products-element-toggle-image
+ * @listens register-page-close-error-modal
+ * @listens register-page-register-product
+ * @listens sales-element-close-cash-register
+ * @listens sales-element-generate-report
+ * @listens sales-element-print-ticket
+ * @listens sales-element-toggle-products
+ * @listens sell-element-clean-posible-products
+ * @listens sell-element-complete-sale
+ * @listens sell-element-delete-product-to-sell
+ * @listens sell-element-get-posible-product
+ * @listens sell-element-get-product-to-sell
+ * @listens sell-element-print-ticket
+ * @listens sell-element-update-product-to-sell
+ * @listens tools-element-request-change-password
+ * @listens tools-element-request-generate-barcode
+ * @listens api-dm-login-success-response
+ * @listens api-dm-login-handle-error
+ * @listens api-dm-session-active-success-response
+ * @listens api-dm-session-active-handle-error
+ * @listens api-dm-register-product-success-response
+ * @listens api-dm-register-product-handle-error
+ * @listens api-dm-edit-product-handle-error
+ * @listens api-dm-generate-barcode-success-response
+ * @listens dm-delete-product-success-response
+ * @listens dm-edit-product-success-response
+ * @listens dm-generate-report
+ * @listens dm-get-close-cash-register-success-response
+ * @listens dm-get-product-success-response
+ * @listens dm-get-product-to-sell
+ * @listens dm-get-products-success-response
+ * @listens dm-get-sales-success-response
+ * @listens dm-post-close-cash-register-success-response
+ * @listens dm-register-sale-success-response
+ * @listens dm-posible-products
+ * @listens dm-sort-products
  */
 export class MainElement extends ScopedElementsMixin(LitElement) {
+  /** @returns {string} Registered tag name for the application root. */
   static get is() {
     return 'main-element';
   }
 
+  /** @returns {Object} Custom elements scoped to the application root. */
   static get scopedElements() {
     return {
       'login-element': LoginElement,
@@ -41,14 +93,22 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     };
   }
 
+  /** @returns {Object} Internal reactive application state. */
   static get properties() {
     return {
+      /**
+       * Cash register closing records available to the sales view.
+       * @type {Array<Object>}
+       * @state
+       */
       _closedCashRegisters: {
         type: Array,
         state: true,
       },
       /**
-       * Whether the user is logged in.
+       * Sale response retained while its success dialog and ticket are shown.
+       * @type {Object}
+       * @state
        */
       _completeSaleSuccess: {
         type: Object,
@@ -62,25 +122,36 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         state: true,
       },
       /**
-       * Whether the last product edit operation succeeded.
+       * Error payload returned by the last unsuccessful product edit.
+       * @type {Object}
+       * @state
        */
       _editProductErrorResponse: {
         type: Object,
         state: true,
       },
       /**
-       * Whether the last product edit operation succeeded.
+       * Whether the last product edit succeeded.
+       * @type {boolean}
+       * @state
        */
       _editProductSuccess: {
         type: Boolean,
         state: true,
       },
+      /**
+       * Most recently generated barcode response.
+       * @type {Object}
+       * @state
+       */
       _generatedBarcode: {
         type: Object,
         state: true
       },
       /**
-       * Wheter the report is empty
+       * Whether the most recent cash register closing contained no sales.
+       * @type {boolean}
+       * @state
        */
       _isEmptyReport: {
         type: Boolean,
@@ -88,6 +159,8 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Whether the user is logged in.
+       * @type {boolean}
+       * @state
        */
       _isLogged: {
         type: Boolean,
@@ -95,6 +168,8 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Error code returned from a failed login attempt.
+       * @type {string}
+       * @state
        */
       _loginErrorCode: {
         type: String,
@@ -102,13 +177,17 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Reference to the manager element for API communication.
+       * @type {import('lit/directives/ref.js').Ref}
+       * @state
        */
       _managerRef: {
         type: Object,
         state: true,
       },
       /**
-       * Contains List of posible products to sell
+       * Product suggestions matching the current search.
+       * @type {Array<Object>}
+       * @state
        */
       _posibleProducts: {
         type: Array,
@@ -116,6 +195,8 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * The product currently selected for editing.
+       * @type {Object}
+       * @state
        */
       _productToEdit: {
         type: Object,
@@ -123,6 +204,8 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Barcode used to request a product for sale.
+       * @type {string}
+       * @state
        */
       _productToSell: {
         type: String,
@@ -130,6 +213,8 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Cached list of products available in the inventory.
+       * @type {Array<Array<Object>>}
+       * @state
        */
       _products: {
         type: Array,
@@ -137,6 +222,8 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * List of products currently added to the sale transaction.
+       * @type {Array<Object>}
+       * @state
        */
       _productsToSell: {
         type: Array,
@@ -144,6 +231,8 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Error details from a failed product registration.
+       * @type {Object}
+       * @state
        */
       _registerError: {
         type: Object,
@@ -151,6 +240,8 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Whether the last product registration succeeded.
+       * @type {boolean}
+       * @state
        */
       _registerProductSuccess: {
         type: Boolean,
@@ -158,6 +249,8 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Whether to show the sale completion ticket.
+       * @type {boolean}
+       * @state
        */
       _showTicket: {
         type: Boolean,
@@ -165,6 +258,8 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * List of completed sales transactions.
+       * @type {Array<Array<Object>>}
+       * @state
        */
       _sales: {
         type: Array,
@@ -172,6 +267,8 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Total amount calculated for the current sale.
+       * @type {number}
+       * @state
        */
       _total: {
         type: Number,
@@ -179,6 +276,12 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Current authenticated user data and permissions.
+       * @type {Object}
+       * @property {string} _userData.name - User's first name.
+       * @property {string} _userData.lastName - User's last name.
+       * @property {string} _userData.level - User access level.
+       * @property {boolean} _userData.changePassword - Whether password change is required.
+       * @state
        */
       _userData: {
         type: Object,
@@ -187,6 +290,9 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     };
   }
 
+  /**
+   * Initializes application state and sets the document language.
+   */
   constructor() {
     super();
     document.documentElement.lang = getCurrentLocale();
@@ -249,6 +355,10 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
    *
    * @param {CustomEvent} event - The session response event.
    * @param {Object} event.detail - The current user data.
+   * @param {string} event.detail.level - User access level.
+   * @param {string} event.detail.name - User's first name.
+   * @param {string} event.detail.last_name - User's last name.
+   * @param {boolean} event.detail.change_password - Whether a password update is required.
    */
   _getUserInSessionSuccesResponse({detail}) {
     this._userData.level = detail.level;
@@ -266,6 +376,11 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     }
   }
 
+  /**
+   * Clears the authenticated state when the session check fails.
+   *
+   * @param {CustomEvent} event - Session check error event.
+   */
   _getUserInSessionHandleErrorResponse(){
     this._isLogged = false;
   }
@@ -339,22 +454,28 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
    * Updates the edit success flag when a product is updated.
    *
    * @param {CustomEvent} event - The edit success event.
-   * @param {boolean} event.detail - The edit result.
+   * @param {Object} event.detail - Updated product returned by the API.
    */
   _editProductSuccessResponse({detail}) {
     this._managerRef.value.getProductList();
     this._editProductSuccess = !!detail;
   }
 
+  /**
+   * Stores the error returned by a failed product edit request.
+   *
+   * @param {CustomEvent} event - Product edit error event.
+   * @param {Object} event.detail - Error response data.
+   */
   _editProductHandleErrorResponse({detail}) {
     this._editProductErrorResponse = detail;
   }
 
-  /**t
+  /**
    * Stores the loaded product list in component state.
    *
    * @param {CustomEvent} event - The products success event.
-   * @param {Array} event.detail - The product list.
+   * @param {Array<Array<Object>>} event.detail - Product pages returned by the manager.
    */
   _getProductsSuccessResponse({detail}) {
     this._products = detail;
@@ -483,8 +604,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
-   * Handles the successful sale completion response.
-   * Clears the current sale list and resets the total amount.
+   * Stores the sale returned after a successful checkout.
    *
    * @param {CustomEvent} event - The sale success event.
    * @param {Object} event.detail - The sale response payload.
@@ -493,10 +613,22 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._completeSaleSuccess = detail;
   }
 
+  /**
+   * Stores product suggestions received from the manager.
+   *
+   * @param {CustomEvent} event - Product search result event.
+   * @param {Array<Object>} event.detail - Matching products.
+   */
   _setPosibleProducts({detail}) {
     this._posibleProducts = detail;
   }
 
+  /**
+   * Stores the sorted pages returned by the manager.
+   *
+   * @param {CustomEvent} event - Product sorting result event.
+   * @param {Array<Array<Object>>} event.detail - Sorted product pages.
+   */
   _setSortedProducts({detail}) {
     this._products = detail;
   }
@@ -511,30 +643,60 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     this._managerRef.value.openCashRegister();
   }
 
+  /**
+   * Clears the product registration success state.
+   */
   _closeRegisterSuccessModal(){
     this._registerProductSuccess = false;
   }
 
+  /**
+   * Forwards a barcode generation request unless the value is already current.
+   *
+   * @param {CustomEvent} event - Barcode generation request event.
+   * @param {string} event.detail - Barcode value.
+   */
   _requestGenerateBarcode({detail}) {
     if (this._generatedBarcode.barcode !== detail) {
       this._managerRef.value.postGenerateBarcode(detail);
     }
   }
 
+  /**
+   * Forwards the password change request to the manager.
+   *
+   * @param {CustomEvent} event - Password change request event.
+   * @param {Object} event.detail - Current and replacement password values.
+   */
   _requestChangePassword({detail}){
     this._managerRef.value.requestChangePassowrd(detail);
   }
 
+  /**
+   * Updates local state with a newly generated barcode.
+   *
+   * @param {CustomEvent} event - Barcode API success event.
+   * @param {string} event.detail - Generated barcode value.
+   */
   _generateBarcodeSuccessResponse({detail}) {
     if (this._generatedBarcode.barcode !== detail) {
       this._generatedBarcode = {...this._generatedBarcode, barcode: detail};
     }
   }
 
+  /**
+   * Opens the connected cash drawer through the manager service.
+   */
   _openCahsRegister() {
     this._managerRef.value.openCashRegister();
   }
 
+  /**
+   * Requests product suggestions for the supplied search text.
+   *
+   * @param {CustomEvent} event - Product suggestion request event.
+   * @param {string} event.detail - Search text.
+   */
   _getPosibleProductsList({detail}) {
     this._managerRef.value.getPosibleProducts(detail)
   }
@@ -543,7 +705,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
    * Generates the sale ticket and opens the print dialog.
    *
    * @param {CustomEvent} event - The event containing the sale.
-   * @param {Object|boolean} event.detail - The selected sale or a boolean value.
+   * @param {Object} event.detail - Sale data to print.
    */
   _printTicket({detail}) {
     let sales = detail;
@@ -629,11 +791,11 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
 
   
   /**
-   * Toggles the visibility of barcodes for a specific sale.
+   * Toggles the visibility of extra barcodes for a product.
    *
    * @param {CustomEvent} event - The event containing the sale identifier.
    * @param {Object} event.detail - The event details.
-   * @param {string} event.detail.id - The sale id.
+   * @param {string} event.detail.id - Product identifier.
    */
   _toggleBarcodes({detail: {id}}) {
     this._products = this._products.map((product) => {
@@ -648,11 +810,11 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
-   * Toggles the visibility of barcodes for a specific sale.
+   * Toggles the visibility of a product image.
    *
    * @param {CustomEvent} event - The event containing the sale identifier.
    * @param {Object} event.detail - The event details.
-   * @param {string} event.detail.id - The sale id.
+   * @param {string} event.detail.id - Product identifier.
    */
   _toggleImage({detail: {id}}) {
     this._products = this._products.map((product) => {
@@ -666,10 +828,22 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     });
   }
 
+  /**
+   * Asks the manager to sort the product list.
+   *
+   * @param {CustomEvent} event - Product sorting request event.
+   * @param {Object} event.detail - Sort configuration, including `sortBy`.
+   */
   _sortProductsBy({detail}) {
     this._managerRef.value.sortProductsBy(detail);
   }
 
+  /**
+   * Prints the report returned by the data manager.
+   *
+   * @param {CustomEvent} event - Generated report event.
+   * @param {Object} event.detail - Date range, sales list and total.
+   */
   _generateReportDocument({detail}) {
     var contenidoOriginal = document.body.innerHTML;
     setTimeout(() => {
@@ -682,23 +856,54 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     }, 200);
   }
 
+  /**
+   * Forwards the selected report date range to the manager.
+   *
+   * @param {CustomEvent} event - Report generation request.
+   * @param {Object} event.detail - Start and end date parts.
+   */
   _generateReport({detail}) {
     this._managerRef.value.generateReport(detail);
   }
 
+  /**
+   * Requests a cash register closing and resets the empty closing indicator.
+   */
   _closeCashRegister() {
     this._managerRef.value.postCloseCashRegister();
     this._isEmptyReport = false;
   }
 
+  /**
+   * Updates local state with cash register closing records.
+   *
+   * @param {CustomEvent} event - Cash register list response.
+   * @param {Array<Object>} event.detail - Closing records.
+   */
   _getCloseCashRegisterSuccessResponse({detail}) {
     this._closedCashRegisters = detail;
   }
 
+  /**
+   * Sets the empty-closing indicator from the refreshed closing list.
+   *
+   * @param {CustomEvent} event - Cash register closing response.
+   * @param {Array<Object>} event.detail - Closing records.
+   */
   _postCloseCashRegisterSuccessResponse({detail}) {
     this._isEmptyReport = !detail.length;
   }
 
+  /**
+   * Builds report markup for printing.
+   *
+   * @param {Object} report - Sales report data.
+   * @param {Array<Object>} report.listSales - Sales in the selected date range.
+   * @param {number} report.totalSales - Sum of the sales in the range.
+   * @param {{year: string, month: string, day: string}} report.startDate - Start date.
+   * @param {{year: string, month: string, day: string}} report.endDate - End date.
+   * @returns {string} HTML for the printable report.
+   */
   _tplReport({listSales, totalSales, startDate, endDate}) {
     return `
       <div class="report-container">
@@ -957,6 +1162,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     `;
   }
 
+  /** @returns {import('lit').CSSResult[]} Component styles. */
   static get styles() {
     return [styles];
   }

@@ -10,21 +10,28 @@ import styles from './modal.css.js';
  *
  * Renders modal content based on data passed by the parent and
  * dispatches confirm/cancel actions.
+ *
+ * @fires modal-element-confirm-action[-{code}] - Fired when the confirm button is clicked; the optional suffix is `data.code`. `event.detail` is `true`.
+ * @fires modal-element-cancel-action - Fired when the cancel button is clicked; `event.detail` is `true`.
  */
 export class ModalElement extends ScopedElementsMixin(LitElement) {
+  /** @returns {string} The custom-element tag name. */
   static get is() {
     return 'modal-element';
   }
 
+  /** @returns {Object} Child custom-element constructors registered in this scope. */
   static get scopedElements() {
     return {};
   }
 
+  /** @returns {Object} Reactive property definitions for modal data and visibility. */
   static get properties() {
     return {
       /**
        * Data to show in the modal
        * @type {Object}
+       * @attribute data
        * @default {}
        */
       data: {
@@ -32,9 +39,9 @@ export class ModalElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Toggle to show modal
-       * @type {Boolean}
+       * @type {boolean}
        * @attribute show-modal
-       * @default ''
+       * @default false
        */
       showModal: {
         type: Boolean,
@@ -43,6 +50,7 @@ export class ModalElement extends ScopedElementsMixin(LitElement) {
     };
   }
 
+  /** Initializes the modal data and hides the dialog. */
   constructor() {
     super();
     this.data = {
@@ -67,7 +75,9 @@ export class ModalElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
-   * Handles the confirm button click and dispatches the corresponding event.
+   * Closes the dialog and dispatches the code-specific confirm action event.
+   * @fires modal-element-confirm-action[-{code}] - Fired with `event.detail === true`.
+   * @returns {void}
    */
   _confirmActionButton() {
     this.shadowRoot.querySelector('#dialog').close();
@@ -80,7 +90,9 @@ export class ModalElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
-   * Handles the cancel button click and dispatches the cancel action event.
+   * Closes the dialog and dispatches the cancel action event.
+   * @fires modal-element-cancel-action - Fired with `event.detail === true`.
+   * @returns {void}
    */
   _cancelActionButton() {
     this.shadowRoot.querySelector('#dialog')?.close();
@@ -179,6 +191,7 @@ export class ModalElement extends ScopedElementsMixin(LitElement) {
     `;
   }
 
+  /** @returns {import('lit').CSSResult[]} Styles applied to the modal. */
   static get styles() {
     return [styles];
   }

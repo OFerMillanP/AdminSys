@@ -7,42 +7,84 @@ import { dispatchCustomEvent, t } from '../../../utils/utils.js';
 import styles from './tools.css.js';
 
 /**
- * Sales page element.
+ * Tools page element.
  *
- * Handles barcode entry, product quantity updates, and sale completion events.
+ * Generates and downloads barcodes and supports changing the current user's password.
+ *
+ * @fires tools-element-request-generate-barcode - Requests barcode generation with the barcode string in `event.detail`.
+ * @fires tools-element-request-change-password - Requests a password change with `{current, new, confirm}` Base64-encoded strings in `event.detail`.
+ * @listens modal-element-confirm-action-change-password-sale - Requests the password change; `event.detail` is `true`.
  */
 export class ToolsElement extends ScopedElementsMixin(LitElement) {
+  /** @returns {string} The custom-element tag name. */
   static get is() {
     return 'tools-element';
   }
 
+  /** @returns {Object} Child custom-element constructors registered in this scope. */
   static get scopedElements() {
     return {};
   }
 
+  /** @returns {Object} Reactive property definitions for tools inputs and state. */
   static get properties() {
     return {
+      /**
+       * Password-change error message supplied by the parent.
+       * @type {string}
+       * @attribute change-password-message-error
+       */
       changePasswordMessageError: {
         type: String,
       },
+      /**
+       * Result of the most recent barcode-generation request.
+       * @type {Object}
+       * @attribute generated-barcode
+       */
       generatedBarcode: {
         type: Object,
       },
+      /**
+       * Current authenticated user's data and permissions.
+       * @type {Object}
+       * @attribute user-data
+       */
       userData: {
         type: Object,
       },
+      /**
+       * Barcode currently entered in the generator.
+       * @type {string}
+       * @state
+       */
       _barcode: {
         type: String,
         state: true,
       },
+      /**
+       * Reference to the change-password confirmation modal.
+       * @type {Object}
+       * @state
+       */
       _changePasswordModalRef: {
         type: Object,
         state: true
       },
+      /**
+       * Whether the change-password confirmation action is enabled.
+       * @type {boolean}
+       * @state
+       */
       _isEnableChangePassword: {
         type: Boolean,
         state: true,
       },
+      /**
+       * Current, new, and confirmation password field values.
+       * @type {Object}
+       * @state
+       */
       _pwdData: {
         type: Object,
         state: true
@@ -51,7 +93,7 @@ export class ToolsElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
-   * Initialize component state.
+   * Initializes the barcode generator and password-change form state.
    */
   constructor() {
     super();
@@ -68,6 +110,10 @@ export class ToolsElement extends ScopedElementsMixin(LitElement) {
     this.userData = {};
   }
 
+  /**
+   * Refreshes the displayed barcode image when a new barcode is generated.
+   * @param {Map} changedProperties - Reactive properties that changed.
+   */
   updated(changedProperties) {
     super.updated(changedProperties);
     if (changedProperties.has('generatedBarcode') && this.generatedBarcode.barcode?.length) {
@@ -75,6 +121,7 @@ export class ToolsElement extends ScopedElementsMixin(LitElement) {
     }
   }
 
+  /** Updates the barcode image URL to bypass a cached previous image. */
   _updateImg() {
     let img = this.shadowRoot.querySelector('img') || {src: ''};
     let rutaBase = img.src.split('?')[0];
@@ -82,10 +129,15 @@ export class ToolsElement extends ScopedElementsMixin(LitElement) {
     img.src = rutaBase + "?t=" + timestamp;
   }
 
+  /**
+   * Copies the barcode input value into component state.
+   * @param {InputEvent} event - Input event from the barcode field.
+   */
   _setBarcode({target: {value}}) {
     this._barcode = value;
   }
   
+  /** Generates a random 13-character barcode candidate. */
   _randomBarcode() {
     let max = Math.floor(9999999999);
     let randomCode = (Math.floor(Math.random() * (max - 0 + 1)) + 0).toString();
@@ -93,16 +145,25 @@ export class ToolsElement extends ScopedElementsMixin(LitElement) {
     this._barcode = randomBarcode;
   }
 
+  /** Clears the barcode generator input. */
   _removeBarcode() {
     this._barcode = '';
   }
 
+  /**
+   * Requests generation of the entered barcode when it is non-empty.
+   * @fires tools-element-request-generate-barcode - Fired with the barcode string as `event.detail`.
+   */
   _generateBarcode(){
     if (this._barcode.length) {
       dispatchCustomEvent(this, `${ToolsElement.is}-request-generate-barcode`, this._barcode);
     }
   }
 
+  /**
+   * Updates password fields and validates whether a password change can be confirmed.
+   * @param {InputEvent} event - Input event from one of the password fields.
+   */
   _handleInput({target: {id, value}}) {
     const pwdField = {
       'current-pwd': () => {
@@ -130,6 +191,10 @@ export class ToolsElement extends ScopedElementsMixin(LitElement) {
       (this._pwdData.new === this._pwdData.confirm);
   }
 
+  /**
+   * Requests a password change when all three password fields are populated.
+   * @fires tools-element-request-change-password - Fired with Base64-encoded `current`, `new`, and `confirm` values in `event.detail`.
+   */
   _requestChangePassword() {
     if (this._pwdData.current.length > 0 && this._pwdData.new.length > 0 && this._pwdData.confirm.length > 0 ) {
       dispatchCustomEvent(this, `${ToolsElement.is}-request-change-password`, 
@@ -142,6 +207,10 @@ export class ToolsElement extends ScopedElementsMixin(LitElement) {
     }
   }
 
+  /**
+   * Downloads the generated barcode image.
+   * @returns {Promise<void>}
+   */
   async _saveImg(){
     const imageUrl = `http://localhost:8100/resources/img/${this.generatedBarcode.barcode?.length ? 'barcode.png' : ''}`;
     try {
@@ -167,7 +236,7 @@ export class ToolsElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
-   * Returns the confirmation modal template for completing a sale.
+   * Returns the password-change confirmation modal template.
    *
    * @returns {import('lit').TemplateResult}
    */
@@ -225,7 +294,7 @@ export class ToolsElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
-   * Returns the register section template.
+   * Returns the tools page template.
    * @returns {import('lit').TemplateResult}
    */
   get _tplTools() {
@@ -281,7 +350,7 @@ export class ToolsElement extends ScopedElementsMixin(LitElement) {
 
   
   /**
-   * Returns the register section template.
+   * Returns the generated barcode image and its download control.
    * @returns {import('lit').TemplateResult}
    */
   get _tplCanvasBarcode() {

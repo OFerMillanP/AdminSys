@@ -10,45 +10,70 @@ import {map} from 'lit/directives/map.js';
 import {state} from 'lit/decorators.js';
 
 /**
- * Sales page element.
+ * Sale-entry element.
  *
- * Handles barcode entry, product quantity updates, and sale completion events.
+ * Handles product lookup, sale-line editing, payment selection, and sale completion.
+ *
+ * @fires sell-element-get-posible-product - Requests suggestions with the entered barcode string in `event.detail`.
+ * @fires sell-element-clean-posible-products - Clears suggestions; `event.detail` is `true`.
+ * @fires sell-element-get-product-to-sell - Requests a product with `{barcode: string}` in `event.detail`.
+ * @fires sell-element-update-product-to-sell - Updates a line with `{barcode: string, change: number}` in `event.detail`.
+ * @fires sell-element-delete-product-to-sell - Removes a line with `{barcode: string}` in `event.detail`.
+ * @fires sell-element-complete-sale - Completes a sale with `{changeToGive: number, paymentMethod: 'cash'|'card'}` in `event.detail`.
+ * @fires sell-element-print-ticket - Requests a ticket with `{products: Array, total: number, type: 'current-sale'}` in `event.detail`.
+ * @listens modal-element-confirm-action-confirm-complete-sale - Confirms the sale; `event.detail` is `true`.
  */
 export class SellElement extends ScopedElementsMixin(LitElement) {
+  /** @returns {string} The custom-element tag name. */
   static get is() {
     return 'sell-element';
   }
 
+  /** @returns {Object} Child custom-element constructors registered in this scope. */
   static get scopedElements() {
     return {};
   }
 
+  /** @returns {Object} Reactive property definitions for sale input and state. */
   static get properties() {
     return {
+      /**
+       * Whether the most recent sale completed successfully.
+       * @type {boolean}
+       * @attribute complete-sale-success
+       */
       completeSaleSuccess: {
         type: Boolean,
         attribute: 'complete-sale-success',
       },
       /**
-       * Products to set in a sell
+       * Product suggestions returned for the current barcode query.
+       * @type {Array}
+       * @attribute posible-products
        */
       posibleProducts: {
         type: Array,
       },
       /**
        * Products currently added to the sale list.
+       * @type {Array}
+       * @attribute products-to-sell
        */
       productsToSell: {
         type: Array,
       },
       /**
        * Total cost for the products currently in the sale.
+       * @type {number}
+       * @attribute total
        */
       total: {
         type: Number,
       },
       /**
        * Barcode entered by the user to add a product to the sale.
+       * @type {string}
+       * @attribute barcode
        */
       _barcode: {
         type: String,
@@ -56,15 +81,17 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Change to give to the customer after completing the sale.
+       * @type {number}
+       * @state
        */
       _changeToGive: {
         type: Number,
         state: true,
       },
       /**
-       * Reference to the success modal for confirm to completing a sale
+       * Reference to the sale confirmation modal.
        * @type {Object}
-       * @default createRef()
+       * @state
        */
       _confirmCompleteSaleModalRef: {
         type: Object,
@@ -72,21 +99,26 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Flag to enable the confirm button in the complete sale confirmation modal.
-       * @type {Boolean}
-       * @default false
+       * @type {boolean}
+       * @state
        */
       _enableCompleteSale: {
         type: Boolean,
         state: true,
       },
+      /**
+       * Index of the currently highlighted product suggestion, or -1 if none.
+       * @type {number}
+       * @state
+       */
       _selectedPossibleProductIndex: {
         type: Number,
         state: true,
       },
       /**
        * Flag to show the cash input field when the user selects cash as the payment method.
-       * @type {Boolean}
-       * @default false
+       * @type {boolean}
+       * @state
        */
       _showInputForCash: {
         type: Boolean,
@@ -94,8 +126,8 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Flag to show the ticket after completing the sale.
-       * @type {Boolean}
-       * @default false
+       * @type {boolean}
+       * @state
        */
       _showTicket: {
         type: Boolean,
@@ -104,7 +136,7 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
       /**
        * Reference to the success modal for completing a sale.
        * @type {Object}
-       * @default createRef()
+       * @state
        */
       _successCompleteSaleModalRef: {
         type: Object,
@@ -114,7 +146,7 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
-   * Initialize component state.
+   * Initializes sale data, payment state, and modal references.
    */
   constructor() {
     super();
@@ -133,10 +165,10 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
-   * Lifecycle callback invoked when reactive properties change.
-   * Updates error and success modal state.
+   * Opens the success modal when the sale-completion property becomes true.
    *
    * @param {Map} changedProperties - The properties that changed.
+   * @returns {void}
    */
   updated(changedProperties) {
     if (
@@ -148,9 +180,10 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
-   * Handles input changes for form fields.
+   * Handles barcode input and requests matching product suggestions.
    *
-   * @param {Event} event - The input event.
+   * @param {InputEvent} event - The input event from the barcode field.
+   * @fires sell-element-get-posible-product - Fired with the uppercased barcode string in `event.detail`.
    */
   _handleInput({target: {id, value}}) {
     this._selectedPossibleProductIndex = -1;
@@ -164,10 +197,11 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
-   * Sends the barcode search event when the user presses Enter.
+   * Navigates barcode suggestions and submits the selected or typed barcode.
    *
    * @param {KeyboardEvent} event - The keydown event.
-   * @event sell-element-get-product-to-sell - Dispatched when the user presses Enter with a barcode.
+   * @fires sell-element-clean-posible-products - Fired with `event.detail === true` when suggestions are cleared.
+   * @fires sell-element-get-product-to-sell - Fired with `{barcode: string}` when the typed barcode is submitted.
    */
   _manageKeyDowns(event) {
     if (
@@ -219,6 +253,10 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
     }
   }
 
+  /**
+   * Requests the product matching the currently entered barcode.
+   * @fires sell-element-get-product-to-sell - Fired with `{barcode: string}` in `event.detail`.
+   */
   _sendBarcode() {
     if (this._barcode) {
       dispatchCustomEvent(this, `${SellElement.is}-get-product-to-sell`, {
@@ -229,6 +267,11 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
     }
   }
 
+  /**
+   * Uses a selected suggestion's identifier as the barcode and submits it.
+   * @param {Event} event - Click event on a product suggestion.
+   * @param {string} event.target.id - Selected suggestion value.
+   */
   _setBarcode({target: {id}}) {
     this._barcode = id;
     this._sendBarcode();
@@ -243,7 +286,7 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
    * @param {HTMLElement} event.target - The input target element.
    * @param {string|number} event.target.value - The new quantity value.
    * @param {Object} event.target.product - The product object tied to the input.
-   * @event sell-element-update-product-to-sell - Dispatched when a product quantity is updated, with details of the change.
+   * @fires sell-element-update-product-to-sell - Fired with `{barcode: string, change: number}` in `event.detail`.
    */
   _updateQuantity({target: {value, product}}) {
     const newQuantity = parseInt(value) || 1;
@@ -257,7 +300,7 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
    * Dispatches an event to remove a product from the current sale.
    *
    * @param {Object} product - The product to remove.
-   * @event sell-element-delete-product-to-sell - Dispatched when the user removes a product from the sale.
+   * @fires sell-element-delete-product-to-sell - Fired with `{barcode: string}` in `event.detail`.
    */
   _deleteProductToSell(product) {
     dispatchCustomEvent(this, `${SellElement.is}-delete-product-to-sell`, {
@@ -269,6 +312,7 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
     * Confirms the sale and dispatches the sale completion event.
    *
    * @returns {void}
+   * @fires sell-element-complete-sale - Fired with `{changeToGive: number, paymentMethod: 'cash'|'card'}` in `event.detail`.
    */
   _confirmCompleteSale() {
     if (this._showInputForCash) {
@@ -321,7 +365,8 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
-    * Dispatches the action to print the sale ticket.
+    * Dispatches the action to print the current sale ticket.
+   * @fires sell-element-print-ticket - Fired with `{products, total, type: 'current-sale'}` in `event.detail`.
    */
   _printTicket() {
     dispatchCustomEvent(this, `${SellElement.is}-print-ticket`, {
@@ -600,6 +645,7 @@ export class SellElement extends ScopedElementsMixin(LitElement) {
    *
    * @returns {import('lit').CSSResult[]}
    */
+  /** @returns {import('lit').CSSResult[]} Styles applied to the sale-entry page. */
   static get styles() {
     return [styles];
   }

@@ -2,16 +2,23 @@
 const pool = require('../database/db.js');
 const utils = require('./utils/utils.js');
 
+/** CORS middleware used by the API server. */
 let cors = require('cors');
+/** Express factory used to create the API application. */
 let express = require('express');
+/** Filesystem access used by the static image route. */
 let fs = require('fs');
+/** Multer error type used when handling product image uploads. */
 let multer  = require('multer');
+/** Path helpers used to configure static image serving. */
 let path = require('path');
+/** Express application that defines the API routes and static resources. */
 let api = express();
 
 api.use(cors());
 api.use(express.json());
 
+/** Middleware for parsing URL-encoded and JSON request bodies. */
 var bodyParser = require('body-parser');
 
 /**
@@ -35,8 +42,11 @@ api.use(bodyParser.json());
  * Counter for failed login attempts in the session.
  * @type {number}
  */
+/** Number of failed login attempts tracked for the current process. */
 let userLoginTry = 0;
+/** Most recently generated barcode; repeat requests return it without regenerating the image. */
 let lastBarcode = '';
+/** User object retained for login-related API responses and authorization checks. */
 let userToSend = {};
 
 /**
@@ -56,6 +66,10 @@ function getCurrentDate() {
   return `${fecha}, ${hora}`;
 }
 
+/**
+ * Fetches the active logged-in user and their access level.
+ * @returns {Promise<Object|undefined>} User row, or `undefined` when no user is logged in.
+ */
 async function getUserLogged() {
   const res_db = await pool.query(
     `
@@ -67,6 +81,11 @@ async function getUserLogged() {
   return res_db.rows[0];
 }
 
+/**
+ * Fetches one product by its database ID.
+ * @param {number|string} value - Product ID.
+ * @returns {Promise<Object|undefined>} Product row, or `undefined` if it does not exist.
+ */
 async function getProductById(value) {
   const productById = await pool.query(
     `
@@ -75,6 +94,12 @@ async function getProductById(value) {
   return productById.rows[0];
 }
 
+/**
+ * Fetches barcode rows matching a column value.
+ * @param {string} param - Barcode-table column used in the filter.
+ * @param {*} value - Value to match.
+ * @returns {Promise<Object[]>} Matching barcode rows.
+ */
 async function getBarcodes(param, value) {
   const barcodes = await pool.query(
     `
@@ -83,6 +108,11 @@ async function getBarcodes(param, value) {
   return barcodes.rows;
 }
 
+/**
+ * Fetches barcode rows where the value is either a primary or secondary barcode.
+ * @param {string} value - Barcode value to match.
+ * @returns {Promise<Object[]>} Matching barcode rows.
+ */
 async function getBarcodesAndPrimaryBarcode(value) {
   const barcodes = await pool.query(
     `
@@ -91,6 +121,12 @@ async function getBarcodesAndPrimaryBarcode(value) {
   return barcodes.rows;
 }
 
+/**
+ * Fetches product rows matching a column value.
+ * @param {string} param - Product-table column used in the filter.
+ * @param {*} value - Value to match.
+ * @returns {Promise<Object[]>} Matching product rows.
+ */
 async function getProducts(param, value) {
   const barcodes = await pool.query(
     `
@@ -104,11 +140,11 @@ async function getProducts(param, value) {
  */
 
 /**
- * Logs out the user from memory.
+ * Logs out all users by clearing their database login flags.
  * @route GET /api/v0/logout
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- * @returns {200} Vacío (estado reseteado)
+ * @authorization No authentication required.
+ * @returns {200} An empty JSON object (`{}`) after clearing login state.
+ * @returns {500} `{message, code, status}` if the database operation fails.
  */
 api.get('/api/v0/logout', async function (req, res) {
   try {
@@ -121,9 +157,11 @@ api.get('/api/v0/logout', async function (req, res) {
 });
 
 /**
- * Returns the currently logged-in user (without password).
+ * Returns the active user when their last-login date is today; otherwise clears login state.
  * @route GET /api/v0/login
- * @returns {Object} Usuario logueado o objeto vacío
+ * @authorization No authentication required.
+ * @returns {200} User object without credentials for a current-day session, or `{}` after an expired session is cleared.
+ * @returns {500} `{message, code, status}` if there is no usable user row or the database operation fails.
  */
 api.get('/api/v0/login', async function (req, res) {
   try {
@@ -142,10 +180,13 @@ api.get('/api/v0/login', async function (req, res) {
 });
 
 /**
- * Validates credentials and sets the user in memory.
+ * Validates credentials, marks a matching account as logged in, and returns its user record.
  * @route POST /api/v0/login
- * @param {{user:string,password:string}} req.body - Credenciales de acceso
- * @returns {201} Usuario autenticado (sin password) | {400} Error con código y mensaje
+ * @param {{user:string,password:string}} req.body - Login name and password.
+ * @authorization No authentication required; credentials are supplied in the request body.
+ * @returns {201} Authenticated user object.
+ * @returns {400} `{message, code, status}` when credentials do not match.
+ * @returns {500} `{message, code, status}` if the database operation fails.
  */
 api.post('/api/v0/login', async function (req, res) {
   userLoginTry += 1;
@@ -184,10 +225,13 @@ api.post('/api/v0/login', async function (req, res) {
 });
 
 /**
- * Validates credentials and sets the user in memory.
+ * Changes the active user's password and ends their session.
  * @route POST /api/v0/users/user/password
- * @param {{user:string,password:string}} req.body - Credenciales de acceso
- * @returns {201} Usuario autenticado (sin password) | {400} Error con código y mensaje
+ * @param {{current:string,new:string}} req.body - Current password and replacement password.
+ * @authorization Requires an active logged-in user.
+ * @returns {200} JSON string `"Success"`.
+ * @returns {400} `{message, code, status}` when the logged-in user is unauthorized or the current password is incorrect.
+ * @returns {500} `{message, code, status}` if the database operation fails.
  */
 api.post('/api/v0/users/user/password', async function (req, res) {
   try {
@@ -225,10 +269,13 @@ api.post('/api/v0/users/user/password', async function (req, res) {
 });
 
 /**
- * Creates a new product if it does not already exist and the values are valid.
+ * Creates a product and its additional barcode records after checking uniqueness and values.
  * @route POST /api/v0/products/product
- * @param {{barcode:string,price:number,stock:number}} req.body - Datos del producto
- * @returns {200} Producto creado | {400} Error con código y mensaje
+ * @param {{name:string,barcode:string,price:number,stock:number,description:string,category:string|number,barcodeList:Array<{value:string}>}} req.body - Product fields and optional additional barcodes.
+ * @authorization Requires an active logged-in user.
+ * @returns {200} The submitted product JSON object.
+ * @returns {400} `{message, code, status}` for duplicate/invalid values or missing login.
+ * @returns {500} `{message, code, status}` if the database operation fails.
  */
 api.post('/api/v0/products/product', async function (req, res) {
   try {
@@ -292,10 +339,15 @@ api.post('/api/v0/products/product', async function (req, res) {
 });
 
 /**
- * Deletes a product by `id`. Requires `admin` level.
+ * Deletes a product and its associated barcodes.
  * @route DELETE /api/v0/products/product/:id
- * @param {Object} req.params.id - Id del producto a eliminar
- * @returns {200} true | {400|403} Error con código y mensaje
+ * @param {string} req.params.id - Product ID to delete.
+ * @authorization Requires an active logged-in user with `admin` level.
+ * @returns {200} JSON boolean `true` when the product is deleted.
+ * @returns {400} `{message, code, status}` if the product does not exist.
+ * @returns {403} `{message, code, status}` when the login lookup returns an empty user object.
+ * @returns {500} `{message, code, status}` for database errors or an absent login row.
+ * @returns {500} `{message, code, status}` if the database operation fails.
  */
 api.delete('/api/v0/products/product/:id', async function (req, res) {
   try {
@@ -328,9 +380,12 @@ api.delete('/api/v0/products/product/:id', async function (req, res) {
 });
 
 /**
- * Returns the product list (reversed order).
+ * Returns all products with their associated barcode rows.
  * @route GET /api/v0/products
- * @returns {Object[]} Lista de productos
+ * @authorization Requires an active logged-in user.
+ * @returns {200} Product array; each row includes `barcodeList`, `showBarcodes`, and `showImage`.
+ * @returns {400} `{message, code, status}` when not logged in.
+ * @returns {500} `{message, code, status}` if the database operation fails.
  */
 api.get('/api/v0/products', async function (req, res) {
   try {
@@ -373,10 +428,13 @@ api.get('/api/v0/products', async function (req, res) {
 });
 
 /**
- * Retrieves a product by `id`.
+ * Retrieves a product and its associated barcode rows by ID.
  * @route GET /api/v0/products/product/:id
- * @param {Object} req.params.id - Id del producto a buscar
- * @returns {200} Producto | {400} Error si no existe
+ * @param {string} req.params.id - Product ID to retrieve.
+ * @authorization Requires an active `admin` or `manager` user.
+ * @returns {200} Product object with `barcodeList`, `showBarcodes`, and `showImage`.
+ * @returns {400} `{message, code, status}` if not found or not authorized.
+ * @returns {500} `{message, code, status}` if the database operation fails.
  */
 api.get('/api/v0/products/product/:id', async function (req, res) {
   try {
@@ -420,11 +478,16 @@ api.get('/api/v0/products/product/:id', async function (req, res) {
 });
 
 /**
- * Updates a product by `id` by replacing its content.
+ * Updates product fields and applies requested barcode changes; optionally stores a product image.
  * @route PATCH /api/v0/products/product/:id
- * @param {Object} req.params.id - Id del producto a actualizar
- * @param {Object} req.body - Nuevo objeto producto; acepta una imagen opcional en el campo `img`
- * @returns {200} Producto actualizado | {400} Error si no existe
+ * @param {string} req.params.id - Product ID to update.
+ * @param {Object} req.body - Product fields; `barcodeList` may be a JSON string or array with barcode/action data.
+ * @param {File} req.file - Optional multipart image in field `img` (JPEG, PNG, WebP, or GIF; up to 5 MiB).
+ * @authorization Requires an active `admin` or `manager` user.
+ * @returns {200} Updated product object, including its `image` filename.
+ * @returns {400} `{message, code?, status}` for invalid ID, missing product, invalid/duplicate barcodes, or upload errors.
+ * @returns {403} `{message, code, status}` when not authorized.
+ * @returns {500} `{message, code, status}` if the database operation fails.
  */
 api.patch('/api/v0/products/product/:id', async function (req, res) {
   try {
@@ -567,10 +630,13 @@ api.patch('/api/v0/products/product/:id', async function (req, res) {
 });
 
 /**
- * Registers a new sale and updates stock for sold products.
+ * Registers a sale, associates its products, and decrements stock for non-service items.
  * @route POST /api/v0/sales
- * @param {Object[]} req.body - Lista de productos vendidos con cantidad.
- * @returns {200} Venta registrada
+ * @param {{total:number,changeToGive:number,paymentMethod:string,products:Array<{id:number,quantity:number,category:string|number}>}} req.body - Sale totals, payment method, and sold product lines.
+ * @authorization Requires an active logged-in user.
+ * @returns {200} Saved sale object with `paymentMethod`, `changeToGive`, formatted `date`, and `products`.
+ * @returns {400} `{message, code, status}` when not logged in.
+ * @returns {500} `{message, code, status}` if the database operation fails.
  */
 api.post('/api/v0/sales', async function (req, res) {
    try {
@@ -660,10 +726,13 @@ api.post('/api/v0/sales', async function (req, res) {
 });
 
 /**
- * Returns a sales report for an inclusive date range.
+ * Returns a sales report for an inclusive, validated date range.
  * @route POST /api/v0/sales/report
  * @param {{startDate:{year:number|string,month:number|string,day:number|string},endDate:{year:number|string,month:number|string,day:number|string}}} req.body - Report date range
- * @returns {Object} Sales report with its sales and total
+ * @authorization Requires a user object in the server's current login state.
+ * @returns {200} `{listSales, startDate, endDate, totalSales}`; each sale includes its product rows and formatted date.
+ * @returns {400} `{message, code, status}` when unauthorized or the date range is invalid.
+ * @returns {500} `{message, code, status}` if report generation fails.
  */
 api.post('/api/v0/sales/report', async function (req, res) {
   try {
@@ -771,9 +840,12 @@ api.post('/api/v0/sales/report', async function (req, res) {
 });
 
 /**
- * Returns the list of registered sales.
+ * Returns all registered sales with their product rows.
  * @route GET /api/v0/sales
- * @returns {Object[]} List of sales
+ * @authorization Requires a user object in the server's current login state.
+ * @returns {200} Sales array; each sale includes `paymentMethod`, `changeToGive`, `showProducts`, `products`, and formatted `date`.
+ * @returns {400} `{message, code, status}` when unauthorized.
+ * @returns {500} `{message, code, status}` if the database operation fails.
  */
 api.get('/api/v0/sales', async function (req, res) {
    try {
@@ -832,9 +904,12 @@ api.get('/api/v0/sales', async function (req, res) {
 });
 
 /**
- * Returns the list of closed sales.
+ * Returns cash-register closing records; administrators see all records, other users see their own.
  * @route GET /api/v0/sales/cash-register
- * @returns {Object[]} List of closed sales
+ * @authorization Requires an active logged-in user.
+ * @returns {200} Closing-record array with camel-case `totalCash`/`totalCard` and formatted `date`.
+ * @returns {400} `{message, code, status}` when not logged in.
+ * @returns {500} `{message, code, status}` if the database operation fails.
  */
 api.get('/api/v0/sales/cash-register', async function (req, res) {
   try {
@@ -895,9 +970,12 @@ api.get('/api/v0/sales/cash-register', async function (req, res) {
 });
 
 /**
- * Closes the cash register using sales since the previous closing.
+ * Records a cash-register closing for sales since the previous closing.
  * @route POST /api/v0/sales/cash-register
- * @returns {200} Cash register closing totals
+ * @authorization Requires an active logged-in user.
+ * @returns {200} Closing object with cash/card totals and formatted date, or `{message: "No sales to close", status: true}`.
+ * @returns {400} `{message, code, status}` when not logged in.
+ * @returns {500} `{message, code, status}` if closing fails.
  */
 api.post('/api/v0/sales/cash-register', async function (req, res) {
   let client;
@@ -982,10 +1060,13 @@ api.post('/api/v0/sales/cash-register', async function (req, res) {
 });
 
 /**
- * Registers a new sale and updates stock for sold products.
- * @route POST api/v0/barcode/generate
- * @param {Object[]} req.body - Lista de ventas realizadas en un lapso de tiempo.
- * @returns {200} Corte de caja realizado y registrado
+ * Generates the barcode image for a new barcode value; repeated last-value requests return that value unchanged.
+ * @route POST /api/v0/barcode/generate
+ * @param {{barcode:string}} req.body - Barcode text to generate.
+ * @authorization Requires an active logged-in user for a new value; the most recently generated value may be repeated without login.
+ * @returns {200} The requested barcode string.
+ * @returns {400} `{message, code, status}` when a new value is requested without login.
+ * @returns {500} `{message, code, status}` if barcode generation fails.
  */
 api.post('/api/v0/barcode/generate', async function (req, res) {
   try {
@@ -1008,6 +1089,7 @@ api.post('/api/v0/barcode/generate', async function (req, res) {
   } finally {}
 });
 
+/** Publicly serves files in the API image directory under `/resources/img/*`. */
 api.use('/resources/img', express.static(path.join(__dirname, 'resources', 'img')));
 
 /**

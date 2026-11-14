@@ -9,13 +9,13 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 
-///////////////////////////////// DB Querys /////////////////////////////////
-
+/** SQL statement that clears the login flag for every user. */
 const logoutUser = `
         UPDATE users 
         SET is_logged = false 
     `;
 
+/** SQL statement used to look up a user by login name and encoded password. */
 const getUserAndLevel = `
         SELECT u.name, u.last_login, l.name AS level FROM users u
         INNER JOIN levels l
@@ -23,8 +23,11 @@ const getUserAndLevel = `
         WHERE user_name = $1 AND password = $2
     `;
 
-/////////////////////////////////  Error Server /////////////////////////////////
-
+/**
+ * Sends the standard internal-server-error response.
+ * @param {import('express').Response} res - Express response to complete.
+ * @returns {import('express').Response} Response with status 500 and `{message, code, status}` JSON.
+ */
 function returnErrorServer(res) {
     return res
       .status(500)
@@ -34,9 +37,9 @@ function returnErrorServer(res) {
 ///////////////////////////////// BARCODE /////////////////////////////////
 
 /**
- * Genera un código de barras y lo guarda en una ruta local.
- * @param {string} texto - El valor que llevará el código de barras.
- * @param {string} rutaDestino - El nombre o ruta del archivo de salida (ej. 'imagenes/codigo.png').
+ * Generates a CODE128 barcode PNG at the API's shared barcode image path.
+ * @param {string} texto - Text encoded in the barcode.
+ * @returns {void} Writes the PNG asynchronously; write errors are logged.
  */
 function guardarCodigoBarras(texto) {
     // 1. Crear un lienzo virtual (Canvas)
@@ -71,15 +74,21 @@ function guardarCodigoBarras(texto) {
     });
 }
 
-//////////////////////////////  Product Image Upload /////////////////////////////////
-
+/** Absolute directory where uploaded product images are stored. */
 const productImagesPath = path.join(__dirname, '..', 'resources', 'img', 'products');
+
+/** Maps accepted product-image MIME types to their filename extensions. */
 const allowedProductImageTypes = new Map([
   ['image/jpeg', 'jpg'],
   ['image/png', 'png'],
   ['image/webp', 'webp'],
   ['image/gif', 'gif'],
 ]);
+
+/**
+ * Multer middleware for product images: stores by product ID, accepts JPEG/PNG/WebP/GIF,
+ * and limits uploads to 5 MiB.
+ */
 const productImageUpload = multer({
   storage: multer.diskStorage({
     destination: (req, file, callback) => {

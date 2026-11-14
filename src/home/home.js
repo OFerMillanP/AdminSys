@@ -15,14 +15,19 @@ import { state } from 'lit/decorators.js';
 /**
  * Home page container element.
  *
- * Renders the main product, register, and sell sections and routes
- * navigation events inside the home view.
+ * Renders the sell, product, registration, sales, and tools sections and
+ * routes navigation events inside the home view.
+ *
+ * @fires home-page-logout - Requests that the application end the current session; `event.detail` is `true`.
+ * @fires home-element-get-sales - Requests the sales data when the sales tab is selected; `event.detail` is `true`.
  */
 export class HomeElement extends ScopedElementsMixin(LitElement) {
+  /** @returns {string} The custom-element tag name. */
   static get is() {
     return 'home-element';
   }
 
+  /** @returns {Object} Child custom-element constructors registered in this scope. */
   static get scopedElements() {
     return {
       'products-element': ProductsElement,
@@ -33,52 +38,64 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
     };
   }
 
+  /** @returns {Object} Reactive property definitions for the home page and child sections. */
   static get properties() {
     return {
       /**
-       * Whether a cash register closing operation completed successfully.
+       * Cash-register closing records displayed by the sales section.
        * @type {Array}
+       * @attribute closed-cash-registers
        */
       closedCashRegisters: {
         type: Array,
       },
       /**
-       * Whether a complete sale operation completed successfully.
-       * @type {Boolean}
+       * Whether the last sale completed successfully.
+       * @type {boolean}
+       * @attribute complete-sale-success
        */
       completeSaleSuccess: {
         type: Boolean,
         attribute: 'complete-sale-success',
       },
       /**
-       * Whether a delete operation completed successfully.
-       * @type {Boolean}
+       * Whether the last product deletion succeeded.
+       * @type {boolean}
+       * @attribute delete-success
        */
       deleteSuccess: {
         type: Boolean,
         attribute: 'delete-success',
       },
       /**
-       * Whether an edit operation completed successfully.
+       * Error response from the last product edit request.
        * @type {Object}
+       * @attribute edit-error-response
        */
       editErrorResponse: {
         type: Object,
       },
       /**
-       * Whether an edit operation completed successfully.
-       * @type {Boolean}
+       * Whether the last product edit succeeded.
+       * @type {boolean}
+       * @attribute edit-success
        */
       editSuccess: {
         type: Boolean,
         attribute: 'edit-success',
       },
+      /**
+       * Barcode-generation result passed to the tools section.
+       * @type {Object}
+       * @attribute generated-barcode
+       */
       generatedBarcode: {
         type: Object,
       },
       /**
-       * Product selected for editing.
-       * @type {Object}
+       * Product suggestions available to the sale section.
+       * @type {Array}
+       * @attribute posible-products
        */
       posibleProducts: {
         type: Array,
@@ -86,6 +103,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
       /**
        * Product selected for editing.
        * @type {Object}
+       * @attribute product-to-edit
        */
       productToEdit: {
         type: Object,
@@ -93,6 +111,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
       /**
        * Products currently selected for sale.
        * @type {Array}
+       * @attribute products-to-sell
        */
       productsToSell: {
         type: Array,
@@ -100,6 +119,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
       /**
        * Product registration error details.
        * @type {Object}
+       * @attribute register-error
        */
       registerError: {
         type: Object,
@@ -107,13 +127,15 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
       /**
        * Products loaded from the inventory.
        * @type {Array}
+       * @attribute registered-products
        */
       registeredProducts: {
         type: Array,
       },
       /**
        * Whether the last product registration succeeded.
-       * @type {Boolean}
+       * @type {boolean}
+       * @attribute register-success
        */
       registerSuccess: {
         type: Boolean,
@@ -121,24 +143,32 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Session user data from login.
+       * @type {Object}
+       * @attribute user-data
        */
       userData: {
         type: Object,
       },
       /**
        * Current total amount for the sale list.
+       * @type {number}
+       * @attribute total
        */
       total: {
         type: Number,
       },
       /**
        * List of completed sales transactions.
+       * @type {Array}
+       * @attribute sales
        */
       sales: {
         type: Array,
       },
       /**
        * Toggle to show the sell tab.
+       * @type {boolean}
+       * @state
        */
       _isShowSell: {
         type: Boolean,
@@ -146,6 +176,8 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Toggle to show the products tab.
+       * @type {boolean}
+       * @state
        */
       _isShowProducts: {
         type: Boolean,
@@ -153,6 +185,8 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Toggle to show the register tab.
+       * @type {boolean}
+       * @state
        */
       _isShowRegister: {
         type: Boolean,
@@ -160,6 +194,8 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Toggle to show the sales tab.
+       * @type {boolean}
+       * @state
        */
       _isShowSales: {
         type: Boolean,
@@ -168,6 +204,8 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
       
       /**
        * Toggle to show the tools tab.
+       * @type {boolean}
+       * @state
        */
       _isShowTools: {
         type: Boolean,
@@ -176,6 +214,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
     };
   }
 
+  /** Initializes the section, tab, and child-component state. */
   constructor() {
     super();
     this.closedCashRegisters = [];
@@ -201,6 +240,10 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
     this._isShowTools = false;
   }
 
+  /**
+   * Selects the initial sell section after the component first renders.
+   * @returns {void}
+   */
   firstUpdated() {
     super.firstUpdated();
     const sections = {
@@ -224,7 +267,9 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
-   * Dispatches a logout request event to the application root.
+   * Dispatches a request for the application to end the current session.
+   * @fires home-page-logout - Fired with `event.detail === true`.
+   * @fires home-page-logout
    */
   _logout() {
     dispatchCustomEvent(this, 'home-page-logout');
@@ -232,6 +277,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
 
   /**
    * Hides all home page sections.
+   * @returns {void}
    */
   _resetSections() {
     this._isShowSell = false;
@@ -246,6 +292,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
    *
    * @param {Event} event - The click event from the tab.
    * @param {HTMLElement} event.target - The clicked tab.
+   * @fires home-element-get-sales - Fired when the sales tab is selected with `event.detail === true`.
    */
   _showSection({target: {id}}) {
     const sections = {
@@ -381,7 +428,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
-   * Returns the register section template.
+   * Returns the tools section template.
    * @returns {import('lit').TemplateResult}
    */
   get _tplRegister() {
@@ -404,10 +451,14 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
     `;
   }
 
+  /** @returns {import('lit').CSSResult[]} Styles applied to the home page. */
   static get styles() {
     return [styles];
   }
 
+  /** Renders the home page.
+   * @returns {import('lit').TemplateResult}
+   */
   render() {
     return html` ${this._tplHome} `;
   }

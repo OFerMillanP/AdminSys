@@ -1,12 +1,14 @@
 import { locales } from "../locales/locales";
 /**
- * Dispatches a custom event from the provided component.
+ * Dispatches a custom event from a component. The event defaults to bubbling
+ * and crossing shadow DOM boundaries, and carries the supplied detail payload.
  *
  * @param {EventTarget} component - The component instance dispatching the event.
  * @param {string} [name=''] - The custom event name.
  * @param {*} [detail=true] - The event payload detail.
  * @param {boolean} [bubbles=true] - Whether the event bubbles.
  * @param {boolean} [composed=true] - Whether the event crosses shadow DOM boundaries.
+ * @returns {void}
  */
 export function dispatchCustomEvent(
   component,
@@ -24,18 +26,29 @@ export function dispatchCustomEvent(
   );
 }
 
+/**
+ * Determines the supported language from the browser's navigator language.
+ *
+ * @returns {string} The supported two-letter locale, or `'en'` if unavailable.
+ */
 export function getCurrentLocale() {
   const language = globalThis.navigator?.language?.split('-')[0]?.toLowerCase();
   return Object.hasOwn(locales, language) ? language : 'en';
 }
 
+/**
+ * Looks up a translation in the current locale, then English, then uses the key.
+ *
+ * @param {string} key - Translation key to look up.
+ * @returns {string} The translated text, or the key if no translation exists.
+ */
 export function t(key) {
   const locale = getCurrentLocale();
   return locales[locale][key] ?? locales.en[key] ?? key;
 }
 
 /**
- * Returns the current local date and time in `DD/MM/YYYY - HH:MM:SS` format.
+ * Returns the current local date and time in `DD/MM/YYYY - H:MM:SS` format.
  * @returns {string} Formatted date and time.
  */
 export function getCurrentDate() {
@@ -55,7 +68,7 @@ export function getCurrentDate() {
  * Generates the full HTML document for printing a purchase ticket.
  *
  * @param {string} body - The ticket body HTML content.
- * @returns {string} The full HTML document ready for printing.
+ * @returns {string} The full HTML document, including localized title and ticket body.
  */
 export function ticketTplToPrint(body) {
   return `

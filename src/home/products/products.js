@@ -15,12 +15,27 @@ import styles from './products.css.js';
  *
  * Renders the product list, edit form, and delete confirmation modal.
  * Dispatches edit and delete events to the parent container.
+ *
+ * @fires products-element-search-product - Requests a product search with `{value: string}` in `event.detail`.
+ * @fires products-element-select-product-to-edit - Requests product details with `{id: string}` in `event.detail`.
+ * @fires products-element-delete-product - Requests deletion with `{id: string}` in `event.detail`.
+ * @fires products-element-close-edit-modal - Notifies the parent that the edit modal closed; `event.detail` is `true`.
+ * @fires products-element-close-success-edit-modal - Notifies the parent that editing was canceled; `event.detail` is `true`.
+ * @fires products-element-edit-product - Requests an update with the edited product object in `event.detail`; `img` is included only when a new image was selected.
+ * @fires products-element-toggle-barcodes - Toggles a product's extra barcodes with `{id: string}` in `event.detail`.
+ * @fires products-element-toggle-image - Toggles a product image with `{id: string}` in `event.detail`.
+ * @fires products-element-sort-products - Requests sorting with `{sortBy: string}` in `event.detail`.
+ * @listens modal-element-confirm-action-confirm-delete - Confirms deletion; `event.detail` is `true`, and the component then emits `products-element-delete-product`.
+ * @listens modal-element-confirm-action-success-update - Closes the successful product update modal; `event.detail` is `true`.
+ * @listens pagination-element-page-changed - Changes the visible product page from `event.detail.page`.
  */
 export class ProductsElement extends ScopedElementsMixin(LitElement) {
+  /** @returns {string} The custom-element tag name. */
   static get is() {
     return 'products-element';
   }
 
+  /** @returns {Object} Child custom-element constructors registered in this scope. */
   static get scopedElements() {
     return {
       'modal-element': ModalElement,
@@ -28,23 +43,30 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     };
   }
 
+  /** @returns {Object} Reactive property definitions for product data and UI state. */
   static get properties() {
     return {
       /**
        * Whether the last delete operation succeeded.
+       * @type {boolean}
+       * @attribute delete-success
        */
       deleteSuccess: {
         type: Boolean,
         attribute: 'delete-success',
       },
       /**
-       * Whether the last edit operation succeeded.
+       * Error response from the last product edit request.
+       * @type {Object}
+       * @attribute edit-error-response
        */
       editErrorResponse: {
         type: Object,
       },
       /**
        * Whether the last edit operation succeeded.
+       * @type {boolean}
+       * @attribute edit-success
        */
       editSuccess: {
         type: Boolean,
@@ -52,6 +74,8 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Current authenticated user level for permission checks.
+       * @type {string}
+       * @attribute level-user
        */
       levelUser: {
         type: String,
@@ -59,60 +83,105 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Product currently selected for editing.
+       * @type {Object}
+       * @attribute product-to-edit
        */
       productToEdit: {
         type: Object,
       },
       /**
        * Registered products loaded from the API.
+       * @type {Array}
+       * @attribute registered-products
        */
       registeredProducts: {
         type: Array,
       },
       /**
        * Whether the delete confirmation modal is visible.
+       * @type {boolean}
+       * @state
        */
       _confirmDelete: {
         type: Boolean,
         state: true,
       },
+      /**
+       * Current page index in the registered-products list.
+       * @type {number}
+       * @state
+       */
       _currentPage: {
         type: Number,
         state: true,
       },
+      /**
+       * Reference to the product deletion confirmation modal.
+       * @type {Object}
+       * @state
+       */
       _deleteModalRef: {
         type: Object,
         state: true,
       },
+      /**
+       * Reference to the successful deletion modal.
+       * @type {Object}
+       * @state
+       */
       _successDeleteModalRef: {
         type: Object,
         state: true,
       },
+      /**
+       * Reference to the product update error modal.
+       * @type {Object}
+       * @state
+       */
       _editErrorResponseModalRef: {
         type: Object,
         state: true,
       },
+      /**
+       * Reference to the successful product update modal.
+       * @type {Object}
+       * @state
+       */
       _editSuccessModalRef: {
         type: Object,
         state: true,
       },
+      /**
+       * Localized messages keyed by known product-edit error codes.
+       * @type {Object}
+       * @state
+       */
       _messageByCode: {
         type: Object,
         state: true,
       },
       /**
        * The id of the product currently pending deletion.
+       * @type {Object}
+       * @state
        */
       _productIdToAction: {
         type: Object,
         state: true,
       },
+      /**
+       * Selected image file and its preview data URL.
+       * @type {Object}
+       * @state
+       */
       _selectedImage: {
         type: Object,
         state: true,
       },
       /**
        * Whether the edit form is currently displayed.
+       * @type {boolean}
+       * @state
        */
       _showEditForm: {
         type: Boolean,
@@ -121,6 +190,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     };
   }
 
+  /** Initializes product data, form state, and modal references. */
   constructor() {
     super();
     this.deleteSuccess = false;
@@ -152,6 +222,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
    * Used to open edit and delete modals when incoming state changes.
    *
    * @param {Map} changedProperties - The changed reactive properties.
+   * @returns {void}
    */
   updated(changedProperties) {
     super.updated(changedProperties);
@@ -172,6 +243,10 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     }
   }
 
+  /**
+   * Clears the product search field when Escape is pressed.
+   * @param {KeyboardEvent} event - Keyboard event from the search input.
+   */
   _manageKeyDowns({key, target}) {
     if (key === 'Escape') {
       target.value = '';
@@ -183,6 +258,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
    * Handles input changes for the product edit form and search field.
    *
    * @param {InputEvent} event - The input event.
+   * @fires products-element-search-product - Fired with `{value: string}` for search input.
    */
   _handleInput({target: {id, value}}) {
     if (Object.keys(this.productToEdit).length) {
@@ -224,6 +300,10 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     inputs[id]?.call();
   }
 
+  /**
+   * Updates the product category selected in the edit form.
+   * @param {CustomEvent} event - Category selection event with `detail.index`.
+   */
   _setCategory({detail: {index}}){
     this.productToEdit = {...this.productToEdit, category: `${index}`};
   }
@@ -232,6 +312,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
    * Requests the selected product for editing.
    *
    * @param {Event} event - The click event on the edit button.
+   * @fires products-element-select-product-to-edit - Fired with `{id: string}` in `event.detail`.
    */
   _selectProductToEdit({target: {id}}) {
     dispatchCustomEvent(this, `${ProductsElement.is}-select-product-to-edit`, {
@@ -243,6 +324,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
    * Opens the delete confirmation modal for the selected product.
    *
    * @param {Event} event - The click event on the delete button.
+   * @param {string} event.target.id - Identifier of the product to delete.
    */
   _deleteProduct({target: {id}}) {
     this._productIdToAction = {id};
@@ -252,6 +334,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
 
   /**
    * Dispatches the event that confirms deletion of the currently selected product.
+   * @fires products-element-delete-product - Fired with `{id: string}` in `event.detail`.
    */
   _confirmDeleteProduct() {
     dispatchCustomEvent(
@@ -263,6 +346,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
 
   /**
    * Closes the edit success modal and resets the edit form state.
+   * @fires products-element-close-edit-modal - Fired with `event.detail === true`.
    */
   _closeEditModal() {
     this._showEditForm = false;
@@ -272,6 +356,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
 
   /**
    * Cancels edit mode and closes the edit view.
+   * @fires products-element-close-success-edit-modal - Fired with `event.detail === true`.
    */
   _cancelEdit() {
     this._showEditForm = false;
@@ -281,6 +366,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
 
   /**
    * Sends the edited product to the parent and opens the success modal.
+   * @fires products-element-edit-product - Fired with the edited product object in `event.detail`; includes `img` only for a newly selected image.
    */
   _updateProduct() {
     const productToEdit = {...this.productToEdit};
@@ -299,33 +385,41 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
   /**
    * Handles page changes in the products list.
    * @param {CustomEvent} event - The page change event.
+   * @param {number} event.detail.page - Selected page number.
    */
   _handlePageChanged({detail: {page}}) {
     this._currentPage = page;
   }
 
   /**
-   * Toggles the display of barcodes for a selected sale row.
+   * Toggles the display of barcodes for a selected product row.
    *
    * @param {Event} event - The click event from the sale row.
    * @param {HTMLElement} event.currentTarget - The row target element.
-   * @param {string} event.currentTarget.id - The sale identifier.
+   * @param {string} event.currentTarget.id - The product identifier.
+   * @fires products-element-toggle-barcodes - Fired with `{id: string}` in `event.detail`.
    */
   _toggleBarcodes({currentTarget: {id}}) {
     dispatchCustomEvent(this, `${ProductsElement.is}-toggle-barcodes`, {id});
   }
 
   /**
-   * Toggles the display of barcodes for a selected sale row.
+   * Toggles the display of the image for a selected product row.
    *
    * @param {Event} event - The click event from the sale row.
    * @param {HTMLElement} event.currentTarget - The row target element.
-   * @param {string} event.currentTarget.id - The sale identifier.
+   * @param {string} event.currentTarget.id - The product identifier.
+   * @fires products-element-toggle-image - Fired with `{id: string}` in `event.detail`.
    */
   _toggleImage({currentTarget: {id}}) {
     dispatchCustomEvent(this, `${ProductsElement.is}-toggle-image`, {id});
   }
 
+  /**
+   * Marks an extra barcode for removal from the edited product.
+   * @param {Event} event - Click event on the barcode remove control.
+   * @param {string} event.target.id - Barcode row identifier.
+   */
   _removeBarcode({target: {id}}){
     this.productToEdit = {
       ...this.productToEdit,
@@ -343,6 +437,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     }
   }
 
+  /** Adds an empty extra-barcode entry for admin users. */
   _addBarcode(){
     if (!!this.productToEdit && this.levelUser === 'admin') {
       this.productToEdit = 
@@ -362,6 +457,10 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     }
   }
 
+  /**
+   * Checks whether required fields are missing from the edit form.
+   * @returns {boolean} Whether the form is incomplete.
+   */
   _isFilledForm(){
     return !this.productToEdit.barcode.length ||
     !this.productToEdit.name.length ||
@@ -369,12 +468,22 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     !this.productToEdit.price
   }
 
+  /**
+   * Requests product sorting by the clicked column.
+   * @param {Event} event - Click event on a sortable column.
+   * @param {string} event.target.id - Name of the sort field.
+   * @fires products-element-sort-products - Fired with `{sortBy: string}` in `event.detail`.
+   */
   _sortBy({target: {id}}){
     dispatchCustomEvent(this, `${ProductsElement.is}-sort-products`, {
       sortBy: id,
     });
   }
 
+  /**
+   * Reads the selected product image and updates its preview.
+   * @param {Event} event - Change event from the image file input.
+   */
   _onFileSelected({target: {files}}) {
     const file = files?.[0];
     if (!file) return;
@@ -853,6 +962,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     `;
   }
 
+  /** @returns {import('lit').TemplateResult} Pagination for registered products. */
   get _tplPagination() {
     return html`
       <pagination-element
@@ -862,6 +972,7 @@ export class ProductsElement extends ScopedElementsMixin(LitElement) {
     `;
   }
 
+  /** @returns {import('lit').CSSResult[]} Styles applied to the products page. */
   static get styles() {
     return [styles];
   }

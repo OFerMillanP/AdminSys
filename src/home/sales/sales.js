@@ -12,64 +12,139 @@ import styles from './sales.css.js';
  * Sales page element.
  *
  * Renders a table of sales with id, product, quantity, and total price.
+ *
+ * @fires sales-element-print-ticket - Requests a ticket print with the selected sale object in `event.detail`.
+ * @fires sales-element-toggle-products - Toggles a sale's product rows with `{id: string}` in `event.detail`.
+ * @fires sales-element-generate-report - Requests a report with `{startDate: {year, month, day}, endDate: {year, month, day}}` in `event.detail`; each date field is a string.
+ * @fires sales-element-close-cash-register - Requests cash-register closure; `event.detail` is `true`.
+ * @listens pagination-element-page-changed - Updates the displayed page from `event.detail.page`.
+ * @listens modal-element-confirm-action-confirm-closed-register-cash - Requests cash-register closure; `event.detail` is `true`.
  */
 export class SalesElement extends ScopedElementsMixin(LitElement) {
+  /** @returns {string} The custom-element tag name. */
   static get is() {
     return 'sales-element';
   }
   
+  /** @returns {Object} Child custom-element constructors registered in this scope. */
   static get scopedElements() {
     return {
       'modal-element': ModalElement
     };
   }
 
+  /** @returns {Object} Reactive property definitions for sales data and view state. */
   static get properties() {
     return {
+      /**
+       * Cash-register closing records displayed by this component.
+       * @type {Array}
+       * @attribute closed-cash-registers
+       */
       closedCashRegisters:{
         type: Array
       },
+      /**
+       * Whether the most recent sale completed successfully.
+       * @type {boolean}
+       * @attribute complete-sale-success
+       */
       completeSaleSuccess: {
         type: Boolean,
         attribute: 'complete-sale-success',
       },
+      /**
+       * Authenticated user's access level.
+       * @type {string}
+       * @attribute level
+       */
       level: {
         type: String,
       },
+      /**
+       * Pages of sale records to display.
+       * @type {Array}
+       * @attribute sales
+       */
       sales: {
         type: Array,
       },
+      /**
+       * Total amount associated with the current sale.
+       * @type {number}
+       * @attribute total
+       */
       total: {
         type: Number,
       },
+      /**
+       * Active sales subview tab index.
+       * @type {number}
+       * @state
+       */
       _activeIndex: {
         type: Number,
         state: true,
       },
+      /**
+       * Reference to the cash-register closing confirmation modal.
+       * @type {Object}
+       * @state
+       */
       _confirmClosedCashRegisterModalRef: {
         type: Object,
         state: true
       },
+      /**
+       * Current page index in the sales list.
+       * @type {number}
+       * @state
+       */
       _currentPage: {
         type: Number,
         state: true,
       },
+      /**
+       * End date selected for report generation in `YYYY-MM-DD` form.
+       * @type {string}
+       * @state
+       */
       _endDate: {
         type: String,
         state: true,
       },
+      /**
+       * Whether the cash-register closing view is visible.
+       * @type {boolean}
+       * @state
+       */
       _isShowCashRegister: {
         type: Boolean,
         state: true,
       },
+      /**
+       * Whether the sales-list view is visible.
+       * @type {boolean}
+       * @state
+       */
       _isShowSales: {
         type: Boolean,
         state: true,
       },
+      /**
+       * Whether the report view is visible.
+       * @type {boolean}
+       * @state
+       */
       _isShowReport: {
         type: Boolean,
         state: true,
       },
+      /**
+       * Start date selected for report generation in `YYYY-MM-DD` form.
+       * @type {string}
+       * @state
+       */
       _startDate: {
         type: String,
         state: true,
@@ -77,6 +152,7 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
     };
   }
 
+  /** Initializes the sales views, date range, and modal reference. */
   constructor() {
     super();
     this.closedCashRegisters = [];
@@ -95,6 +171,10 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
     this._maxDate = new Date().toISOString().split('T')[0];
   }
 
+  /**
+   * Initializes the report range to the current week through today.
+   * @returns {void}
+   */
   firstUpdated() {
     const hoy = new Date();
     const diaSemana = hoy.getDay();
@@ -112,6 +192,7 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
    * Dispatches a request to print the ticket for a sale.
    *
    * @param {Object} sale - The sale object to print.
+   * @fires sales-element-print-ticket - Fired with the sale object in `event.detail`.
    */
   _printTicket(sale) {
     dispatchCustomEvent(this, `${SalesElement.is}-print-ticket`, sale);
@@ -123,11 +204,16 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
    * @param {Event} event - The click event from the sale row.
    * @param {HTMLElement} event.currentTarget - The row target element.
    * @param {string} event.currentTarget.id - The sale identifier.
+   * @fires sales-element-toggle-products - Fired with `{id: string}` in `event.detail`.
    */
   _toggleProducts({currentTarget: {id}}) {
     dispatchCustomEvent(this, `${SalesElement.is}-toggle-products`, {id});
   }
 
+  /**
+   * Sets the current sales page in response to pagination.
+   * @param {CustomEvent} event - Page-change event containing `detail.page`.
+   */
   _handlePageChanged({detail: {page}}) {
     this._currentPage = page;
   }
@@ -137,6 +223,7 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
    *
    * @param {Event} event - The click event from the tab.
    * @param {HTMLElement} event.target - The clicked tab.
+   * @returns {void}
    */
   _showSection({target: {id}}) {
     const sections = {
@@ -161,6 +248,7 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
 
   /**
    * Hides all home page sections.
+   * @returns {void}
    */
   _resetSections() {
     this._isShowSales = false;
@@ -168,6 +256,10 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
     this._isShowCashRegister = false;
   }
 
+  /**
+   * Opens the native date picker for the clicked date field.
+   * @param {MouseEvent} event - Click event on a date text field.
+   */
   _abrirSelector({target}) {
     const input = target.shadowRoot.querySelector('input');
     if (input) {
@@ -175,6 +267,10 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
     }
   }
 
+  /**
+   * Dispatches a report request when both dates are set.
+   * @fires sales-element-generate-report - Fired with start and end `{year, month, day}` string fields in `event.detail`.
+   */
   _generateReport() {
    if (this._startDate.length && this._endDate.length) {
     const startDateParts = this._startDate.split('-');
@@ -194,10 +290,12 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
    }
   }
 
+  /** Opens the cash-register closing confirmation modal. */
   _closeCashRegister() {
     this._confirmClosedCashRegisterModalRef.value.openModal();
   }
 
+  /** @returns {import('lit').TemplateResult} Sales rows for the current page. */
   get _tplSales() {
     return html`
       <section class="sales-list">
@@ -271,6 +369,7 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
     `;
   }
 
+  /** @returns {import('lit').TemplateResult} Navigation tabs for sales subviews. */
   get _tplSalesSection() {
     return html`
       <mwc-tab-bar activeIndex="${this._activeIndex}">
@@ -296,6 +395,7 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
     `;
   }
 
+  /** @returns {import('lit').TemplateResult} Pagination control for the sales list. */
   get _tplPagination() {
     return html`
       <pagination-element
@@ -305,6 +405,7 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
     `;
   }
 
+  /** @returns {import('lit').TemplateResult} Date range and report-generation controls. */
   get _tplReport() {
     return html`
       <section class="report-section">
@@ -346,6 +447,7 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
     `;
   }
 
+  /** Returns the cash-register closing history and close action template. */
   get _tplCashRegisterClosing () {
     return html`
       <section class="cash-register-section">
@@ -398,9 +500,8 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
   }
   // @click="${() => dispatchCustomEvent(this, `${SalesElement.is}-close-cash-register`)}"
 
-  /**
-     * Returns the success modal template.
-     *
+    /**
+     * Returns the cash-register closing confirmation modal template.
      * @returns {import('lit').TemplateResult}
      */
     get _tplConfirmClosedCashRegisterModal() {
@@ -422,6 +523,7 @@ export class SalesElement extends ScopedElementsMixin(LitElement) {
       `;
     }
 
+  /** @returns {import('lit').CSSResult[]} Styles applied to the sales page. */
   static get styles() {
     return [styles];
   }

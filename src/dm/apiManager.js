@@ -5,31 +5,41 @@ import {dispatchCustomEvent} from '../../utils/utils.js';
 /**
  * Element responsible for executing API requests and dispatching events with
  * the results.
+ *
+ * @fires show-spinner - Starts the global request indicator.
+ * @fires api-{event}-success-response - Carries the parsed JSON response.
+ * @fires api-{event}-handle-error - Carries response data when a request fails.
+ * @fires close-spinner - Stops the global request indicator.
  */
 export class ApiManagerElement extends LitElement {
+  /** @returns {string} Registered tag name for the API request element. */
   static get is() {
     return 'api-manager-element';
   }
 
+  /** @returns {Object} This element defines no reactive properties. */
   static get properties() {
     return {};
   }
 
-  /**
-  * Creates an instance of the API manager.
-   */
+  /** Initializes the API request element. */
   constructor() {
     super();
   }
 
   /**
-  * Sends an HTTP request to the specified service and dispatches success or
-  * error events based on the response.
+   * Sends a request and emits events named from the supplied event prefix.
    *
-    * @param {string} method - The HTTP verb to use (GET, POST, PATCH, DELETE).
-    * @param {string} service - The service path relative to the local host.
-    * @param {string} event - The base name of the event to dispatch.
-    * @param {Object} [body={}] - The request body for POST/PATCH.
+   * @param {string} method - HTTP method, such as GET, POST, PATCH, or DELETE.
+   * @param {string} service - API path relative to the base URI.
+   * @param {string} event - Prefix used to name success and error events.
+   * @param {Object|FormData} [body={}] - Payload for POST or PATCH requests.
+   * @param {string} [uri='http://localhost:8100/'] - Base URI of the API.
+   * @returns {Promise<void>}
+   * @fires show-spinner
+   * @fires api-{event}-success-response
+   * @fires api-{event}-handle-error
+   * @fires close-spinner
    */
   async fetch(method = '', service = '', event = '', body = {}, uri = 'http://localhost:8100/') {
     dispatchCustomEvent(this, 'show-spinner');

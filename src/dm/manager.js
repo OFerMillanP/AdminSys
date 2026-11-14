@@ -9,28 +9,59 @@ import {dispatchCustomEvent, getCurrentDate} from '../../utils/utils.js';
  * Manager layer element.
  *
  * Encapsulates API calls and local cache management for products, sales, and login.
+ *
+ * @fires dm-get-product-success-response
+ * @fires dm-get-products-success-response
+ * @fires dm-delete-product-success-response
+ * @fires dm-edit-product-success-response
+ * @fires dm-get-product-to-sell - Carries `{products, total}` for the current sale.
+ * @fires dm-posible-products - Carries checkout product suggestions.
+ * @fires dm-sort-products - Carries sorted product pages.
+ * @fires dm-get-sales-success-response
+ * @fires dm-get-close-cash-register-success-response
+ * @fires dm-post-close-cash-register-success-response
+ * @fires dm-register-sale-success-response
+ * @fires dm-generate-report
+ * @fires dm-generate-report-empty
+ * @listens api-dm-post-close-cash-register-success-response
+ * @listens api-dm-generate-report-success-response
+ * @listens api-dm-get-sales-success-response
+ * @listens api-dm-get-close-cash-register-success-response
+ * @listens api-dm-delete-product-success-response
+ * @listens api-dm-edit-product-success-response
+ * @listens api-dm-get-product-success-response
+ * @listens api-dm-get-products-success-response
+ * @listens api-dm-register-sale-success-response
+ * @listens api-dm-update-password-success-response
+ * @property {{order: string, by: string}} _configProductsSorted - Cached product sorting field and direction.
  */
 export class ManagerElement extends ScopedElementsMixin(LitElement) {
+  /** @returns {string} Registered tag name for the data manager. */
   static get is() {
     return 'manager-element';
   }
 
+  /** @returns {Object} API element registered in this component's scope. */
   static get scopedElements() {
     return {
       'api-manager-element': ApiManagerElement,
     };
   }
 
+  /** @returns {Object} Reactive API inputs and private data caches. */
   static get properties() {
     return {
       /**
-       * Search criteria used to filter the product list.
+       * Search criteria supplied to the data manager.
+       * @type {Object}
+       * @attribute producttosearch
        */
       productToSearch: {
         type: Object,
       },
       /**
        * Password used during login.
+       * @type {string}
        */
       password: {
         type: String,
@@ -38,13 +69,16 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Username used during login.
+       * @type {string}
        */
       user: {
         type: String,
         attribute: 'user',
       },
       /**
-       * Cached Cash Register Closing
+       * Cached cash register closing records.
+       * @type {Array<Object>}
+       * @state
        */
       _cashRegisterClosing: {
         type: Array,
@@ -52,6 +86,8 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * The product selected for editing.
+       * @type {Object}
+       * @state
        */
       _productToEdit: {
         type: Object,
@@ -59,6 +95,8 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Cached list of products retrieved from the API.
+       * @type {Array<Object>}
+       * @state
        */
       _products: {
         type: Array,
@@ -66,6 +104,8 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Products currently added to the sale transaction.
+       * @type {Array<Object>}
+       * @state
        */
       _productsToSell: {
         type: Array,
@@ -73,6 +113,8 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Raw response data from the API.
+       * @type {Object}
+       * @state
        */
       _responseData: {
         type: String,
@@ -80,6 +122,8 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
       },
       /**
        * Cached list of sales retrieved from the API.
+       * @type {Array<Object>}
+       * @state
        */
       _sales: {
         type: Array,
@@ -88,6 +132,7 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     };
   }
 
+  /** Initializes API inputs, caches, and the product sorting configuration. */
   constructor() {
     super();
     this.password = '';
@@ -106,8 +151,7 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
-   * Called after the component is first updated.
-   * Initializes the session and loads the product list.
+   * Checks whether a user session is active after the first render.
    *
    * @override
    */
@@ -117,8 +161,8 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
-   * Called when reactive properties change.
-   * Filters the current product list when the search criteria change.
+   * Called when reactive properties change; no additional update work is
+   * currently needed by the data manager.
    *
    * @param {Map} changedProperties - The changed reactive properties.
    * @override
@@ -173,6 +217,12 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     );
   }
 
+  /**
+   * Sends a password update request for the current user.
+   *
+   * @param {Object} body - Current and replacement password values.
+   * @returns {Promise<void>}
+   */
   async requestChangePassowrd(body) {
     await this._getDataManager().fetch(
       'POST',
@@ -184,8 +234,8 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
 
   /**
    * Loads a product by its identifier.
-   * If the product list is already cached, it dispatches a success event locally.
-   * Otherwise, it requests the product from the API.
+   * Looks up a product in the local cache when it is empty; otherwise requests
+   * the selected product from the API.
    *
    * @param {Object} params
    * @param {string|number} params.id - The ID of the product.
@@ -280,10 +330,20 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     );
   }
 
+  /**
+   * Requests all registered sales from the API.
+   *
+   * @returns {Promise<void>}
+   */
   async getSales() {
     await this._getDataManager().fetch('GET', 'api/v0/sales', 'dm-get-sales');
   }
 
+  /**
+   * Requests cash register closing records from the API.
+   *
+   * @returns {Promise<void>}
+   */
   async getCloseCashRegister() {
     await this._getDataManager().fetch(
       'GET',
@@ -292,6 +352,11 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     );
   }
 
+  /**
+   * Requests a cash register closing from the API.
+   *
+   * @returns {Promise<void>}
+   */
   async postCloseCashRegister() {
     await this._getDataManager().fetch(
       'POST',
@@ -301,15 +366,20 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
-   * Handles a successful product retrieval and dispatches the event.
+   * Forwards a selected product response and caches the selected product.
    *
    * @param {CustomEvent} event - The API response event.
+   * @param {Object} event.detail - Retrieved product data.
+   * @fires dm-get-product-success-response
    */
   _getProductSuccessResponse({detail}) {
     dispatchCustomEvent(this, 'dm-get-product-success-response', detail);
     this._productToEdit = detail;
   }
 
+  /**
+   * Logs out when the API confirms a password change.
+   */
   _changePasswordSuccesResponse() {
     this.logout();
   }
@@ -318,6 +388,7 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
    * Adds a product to the sale list by barcode and updates quantities.
    *
    * @param {string} barcode - The barcode to search for.
+   * @fires dm-get-product-to-sell - Emits `{products, total}` after updating.
    */
   getProductToSell(barcode) {
     const registeredProduct = this._products.find(
@@ -361,6 +432,7 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
    * Removes a product from the sale list by barcode.
    *
    * @param {string} barcode - The barcode of the product to remove.
+   * @fires dm-get-product-to-sell - Emits `{products, total}` after updating.
    */
   deleteProductToSell(barcode) {
     const productsToSell = this._productsToSell.filter(
@@ -380,6 +452,7 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
    *
    * @param {string} barcode - The product barcode to update.
    * @param {number} change - The change to apply to the quantity.
+   * @fires dm-get-product-to-sell - Emits `{products, total}` after updating.
    */
   updateProductToSell(barcode, change) {
     this._productsToSell = this._productsToSell.map((product) =>
@@ -394,7 +467,10 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
-   * Completes the current sale by sending the selected products to the API.
+   * Submits the current sale when at least one product is selected.
+   *
+   * @param {number|string} changeToGive - Change due to the customer.
+   * @param {string} paymentMethod - Payment method used for the sale.
    */
   completeSale(changeToGive, paymentMethod) {
     if (this._productsToSell.length > 0) {
@@ -414,6 +490,14 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     }
   }
 
+  /**
+   * Requests a sales report for an inclusive calendar date range.
+   *
+   * @param {Object} dateRange - Report start and end dates.
+   * @param {{year: number|string, month: number|string, day: number|string}} dateRange.startDate - First report date.
+   * @param {{year: number|string, month: number|string, day: number|string}} dateRange.endDate - Last report date.
+   * @returns {Promise<void>}
+   */
   generateReport(dateRange) {
     return this._getDataManager().fetch(
       'POST',
@@ -423,6 +507,14 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     );
   }
 
+  /**
+   * Emits the report for printing or signals that the selected range is empty.
+   *
+   * @param {CustomEvent} event - Report API success event.
+   * @param {Object} event.detail - Report data including the sales list.
+   * @fires dm-generate-report
+   * @fires dm-generate-report-empty
+   */
   _generateReportSuccessResponse({detail}) {
     if (detail.listSales.length) {
       dispatchCustomEvent(this, 'dm-generate-report', detail);
@@ -431,6 +523,15 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     }
   }
 
+  /**
+   * Finds product suggestions by name or barcode, optionally including description.
+   *
+   * @param {string} keyWord - Search text.
+   * @param {boolean} [isProductsPage=false] - Whether to return product pages
+   *   and include product descriptions in matching.
+   * @fires dm-get-products-success-response - When searching from the products page.
+   * @fires dm-posible-products - When requesting checkout suggestions.
+   */
   getPosibleProducts(keyWord, isProductsPage = false) {
     const normalize = (value) => value.toUpperCase()
       .normalize('NFD')
@@ -473,6 +574,13 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     }
   }
 
+  /**
+   * Clears the current sale, refreshes inventory and sales, and forwards success.
+   *
+   * @param {CustomEvent} event - Successful sale response from the API.
+   * @param {Object} event.detail - The saved sale.
+   * @fires dm-register-sale-success-response
+   */
   _registerSaleSuccessResponse({detail}) {
     this._productsToSell = [];
     this.getProductList();
@@ -494,15 +602,23 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
-   * Handles the product list response from the API manager.
+   * Caches the full product list and forwards the list divided into pages.
    *
-   * @param {CustomEvent} event - The API response event.
+   * @param {CustomEvent} event - Product list API response.
+   * @param {Array<Object>} event.detail - Registered products.
+   * @fires dm-get-products-success-response
    */
   _getProductsSuccessResponse({detail}) {
     this._products = detail;
     dispatchCustomEvent(this, 'dm-get-products-success-response', this._sliceProducts(detail));
   }
 
+  /**
+   * Divides a list into pages of at most 20 entries.
+   *
+   * @param {Array} list - Values to paginate.
+   * @returns {Array<Array>} Pages of values.
+   */
   _sliceProducts(list) {
     let products = [];
     for (let i = 0; i < list.length; i += 20) {
@@ -516,6 +632,8 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
    * Refreshes the product list after deletion.
    *
    * @param {CustomEvent} event - The API response event.
+   * @param {boolean} event.detail - Whether deletion succeeded.
+   * @fires dm-delete-product-success-response
    */
   _deleteProductsSuccessResponse({detail}) {
     dispatchCustomEvent(this, 'dm-delete-product-success-response', detail);
@@ -524,19 +642,34 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
 
   /**
    * Handles a successful product edit response.
-   * Refreshes the product list after editing.
    *
    * @param {CustomEvent} event - The API response event.
+   * @param {Object} event.detail - Updated product returned by the API.
+   * @fires dm-edit-product-success-response
    */
   _editProductSuccessResponse({detail}) {
     dispatchCustomEvent(this, 'dm-edit-product-success-response', detail);
   }
 
+  /**
+   * Stores and forwards the sales list returned by the API.
+   *
+   * @param {CustomEvent} event - Sales API response.
+   * @param {Array<Object>} event.detail - Registered sales.
+   * @fires dm-get-sales-success-response
+   */
   _getSalesSuccessResponse({detail}) {
     this._sales = detail;
     dispatchCustomEvent(this, 'dm-get-sales-success-response', this._sales);
   }
 
+  /**
+   * Stores and forwards cash register closing records from the API.
+   *
+   * @param {CustomEvent} event - Closing list API response.
+   * @param {Array<Object>} event.detail - Closing records.
+   * @fires dm-get-close-cash-register-success-response
+   */
   _getCloseCashRegisterSuccessResponse({detail}) {
     this._cashRegisterClosing = detail;
     dispatchCustomEvent(
@@ -546,11 +679,23 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
     );
   }
 
+  /**
+   * Refreshes the closing history and notifies listeners after an API success.
+   *
+   * @fires dm-post-close-cash-register-success-response
+   */
   _postCloseCashRegisterSuccessResponse(){
     this.getCloseCashRegister();
     dispatchCustomEvent(this,'dm-post-close-cash-register-success-response')
   }
 
+  /**
+   * Cycles sorting direction for a product field and emits the result.
+   *
+   * @param {Object} options - Product sorting options.
+   * @param {string} options.sortBy - Product field to sort by.
+   * @fires dm-sort-products - Emits product pages in the selected order.
+   */
   sortProductsBy({sortBy}){
     let productsSorted = [];
     this._configProductsSorted.order = 
@@ -583,10 +728,10 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
-   * PostBarcode to generate image
+   * Requests an image of the specified barcode from the API.
    *
-   * @param {Object} barcpde - The barcode object with a string barcode.
-   * @return {Promise<void>}
+   * @param {string} barcode - Barcode value to generate.
+   * @returns {Promise<void>}
    */
   async postGenerateBarcode(barcode) {
     await this._getDataManager().fetch(
@@ -598,7 +743,7 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
-   * Request open cash register
+   * Requests that the separate service open the cash drawer.
    *
    * @return {Promise<void>}
    */

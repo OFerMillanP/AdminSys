@@ -8,16 +8,23 @@ import styles from './login.css.js';
  * Login page element.
  *
  * Manages user credential input, validation and dispatches login requests.
+ *
+ * @fires login-page-request-login - Requests authentication with `{user, password}`; values are whitespace-stripped and truncated to 15 and 20 characters, respectively.
  */
 export class LoginElement extends LitElement {
+  /** @returns {string} The custom-element tag name. */
   static get is() {
     return 'login-element';
   }
 
+  /** @returns {Object} Reactive property definitions for login input and error state. */
+  /** @returns {Object} Reactive property definitions for credentials and errors. */
   static get properties() {
     return {
       /**
        * Username entered in the login form.
+       * @type {string}
+       * @attribute user
        */
       user: {
         type: String,
@@ -25,6 +32,8 @@ export class LoginElement extends LitElement {
       },
       /**
        * Password entered in the login form.
+       * @type {string}
+       * @attribute password
        */
       password: {
         type: String,
@@ -32,6 +41,8 @@ export class LoginElement extends LitElement {
       },
       /**
        * Error code returned by the authentication API.
+       * @type {string}
+       * @attribute login-error
        */
       loginError: {
         type: String,
@@ -39,6 +50,8 @@ export class LoginElement extends LitElement {
       },
       /**
        * User-visible login error message.
+       * @type {string}
+       * @state
        */
       _errorMessage: {
         type: String,
@@ -47,6 +60,7 @@ export class LoginElement extends LitElement {
     };
   }
 
+  /** Initializes empty credentials and login error state. */
   constructor() {
     super();
     this.user = '';
@@ -59,6 +73,7 @@ export class LoginElement extends LitElement {
    * Lit lifecycle callback invoked when reactive properties change.
    *
    * @param {Map} changedProperties - The changed reactive properties.
+   * @returns {void}
    */
   updated(changedProperties) {
     super.updated(changedProperties);
@@ -72,6 +87,7 @@ export class LoginElement extends LitElement {
    *
    * @param {KeyboardEvent|Object} event - The click or keypress event.
    * @param {string} event.key - Optional key pressed during login submission.
+   * @fires login-page-request-login - Fired with `{user: string, password: string}` when non-empty credentials are submitted with no key or Enter.
    */
   requestLoginAccess({key = ''}) {
     this._errorMessage =
@@ -88,6 +104,7 @@ export class LoginElement extends LitElement {
    * Handles form input updates for the login fields.
    *
    * @param {InputEvent} event - The input event.
+   * @returns {void}
    */
   _handleInput({target: {id, value}}) {
     this.loginError = '';
@@ -105,6 +122,7 @@ export class LoginElement extends LitElement {
 
   /**
    * Maps the login error code to a friendly error message for display.
+   * @returns {void}
    */
   _showErrorMessage() {
     const errors = {
@@ -114,6 +132,10 @@ export class LoginElement extends LitElement {
     this._errorMessage = errors[this.loginError] ?? '';
   }
 
+  /**
+   * Returns the login form template and its input handlers.
+   * @returns {import('lit').TemplateResult}
+   */
   get _tplLogin() {
     return html`
       <div class="login">
@@ -167,6 +189,7 @@ export class LoginElement extends LitElement {
     `;
   }
 
+  /** @returns {import('lit').CSSResult[]} Styles applied to the login page. */
   static get styles() {
     return [styles];
   }
