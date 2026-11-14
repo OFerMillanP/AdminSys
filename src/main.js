@@ -57,6 +57,9 @@ import {ticketTplToPrint, getCurrentDate, getCurrentLocale, t} from '../utils/ut
  * @listens sell-element-update-product-to-sell
  * @listens tools-element-request-change-password
  * @listens tools-element-request-generate-barcode
+ * @listens tools-element-request-backup-db
+ * @listens dm-database-backup-success-response
+ * @listens dm-database-backup-handle-error
  * @listens api-dm-login-success-response
  * @listens api-dm-login-handle-error
  * @listens api-dm-session-active-success-response
@@ -662,6 +665,21 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
     }
   }
 
+  /** Requests a database backup through the manager. */
+  _requestDatabaseBackup() {
+    this._managerRef.value.backupDatabase();
+  }
+
+  /** Shows the localized result of a successful database backup. */
+  _databaseBackupSuccessResponse() {
+    window.alert(t('tools-element-backup-success'));
+  }
+
+  /** Shows a localized error when the database backup fails. */
+  _databaseBackupHandleError() {
+    window.alert(t('tools-element-backup-error'));
+  }
+
   /**
    * Forwards the password change request to the manager.
    *
@@ -1116,6 +1134,7 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         @sell-element-update-product-to-sell="${this._updateProductToSell}"
         @tools-element-request-change-password="${this._requestChangePassword}"
         @tools-element-request-generate-barcode="${this._requestGenerateBarcode}"
+        @tools-element-request-backup-db=${this._requestDatabaseBackup}
       ></home-element>
     `;
   }
@@ -1153,6 +1172,10 @@ export class MainElement extends ScopedElementsMixin(LitElement) {
         @dm-get-product-to-sell=${this._setListProductToSell}
         @dm-get-products-success-response=${this._getProductsSuccessResponse}
         @dm-get-sales-success-response=${this._getSalesSuccessResponse}
+        @dm-database-backup-success-response=${this
+          ._databaseBackupSuccessResponse}
+        @dm-database-backup-handle-error=${this
+          ._databaseBackupHandleError}
         @dm-post-close-cash-register-success-response=${this
           ._postCloseCashRegisterSuccessResponse}
         @dm-register-sale-success-response=${this._registerSaleSuccessResponse}

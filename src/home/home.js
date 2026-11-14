@@ -360,7 +360,7 @@ export class HomeElement extends ScopedElementsMixin(LitElement) {
               id="sales"
               @click="${this._showSection}"
             ></mwc-tab>
-            ${this.userData?.level === 'admin' ?
+            ${this.userData?.level ?
               html`
                 <mwc-tab
                   label="${t('home-element-nav-tools')}"

@@ -21,9 +21,13 @@ import {dispatchCustomEvent, getCurrentDate} from '../../utils/utils.js';
  * @fires dm-get-close-cash-register-success-response
  * @fires dm-post-close-cash-register-success-response
  * @fires dm-register-sale-success-response
+ * @fires dm-database-backup-success-response
+ * @fires dm-database-backup-handle-error
  * @fires dm-generate-report
  * @fires dm-generate-report-empty
  * @listens api-dm-post-close-cash-register-success-response
+ * @listens api-dm-database-backup-success-response
+ * @listens api-dm-database-backup-handle-error
  * @listens api-dm-generate-report-success-response
  * @listens api-dm-get-sales-success-response
  * @listens api-dm-get-close-cash-register-success-response
@@ -758,6 +762,29 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
   }
 
   /**
+   * Requests a database backup from the API.
+   *
+   * @returns {Promise<void>}
+   */
+  async backupDatabase() {
+    await this._getDataManager().fetch(
+      'POST',
+      'api/v0/database/backup',
+      'dm-database-backup'
+    );
+  }
+
+  /** Forwards a completed database backup response to the application. */
+  _databaseBackupSuccessResponse({detail}) {
+    dispatchCustomEvent(this, 'dm-database-backup-success-response', detail);
+  }
+
+  /** Forwards a database backup error response to the application. */
+  _databaseBackupHandleError({detail}) {
+    dispatchCustomEvent(this, 'dm-database-backup-handle-error', detail);
+  }
+
+  /**
    * Template getter for the internal API manager element.
    *
    * @returns {import('lit').TemplateResult}
@@ -767,6 +794,10 @@ export class ManagerElement extends ScopedElementsMixin(LitElement) {
       <api-manager-element
         @api-dm-post-close-cash-register-success-response="${this
           ._postCloseCashRegisterSuccessResponse}"
+        @api-dm-database-backup-success-response=${this
+          ._databaseBackupSuccessResponse}
+        @api-dm-database-backup-handle-error=${this
+          ._databaseBackupHandleError}
         @api-dm-generate-report-success-response=${this
           ._generateReportSuccessResponse}
         @api-dm-get-sales-success-response=${this._getSalesSuccessResponse}

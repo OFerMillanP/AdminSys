@@ -12,6 +12,8 @@ let fs = require('fs');
 let multer  = require('multer');
 /** Path helpers used to configure static image serving. */
 let path = require('path');
+/** Starts the fixed Windows backup script requested by an authorized user. */
+let {spawn} = require('child_process');
 /** Express application that defines the API routes and static resources. */
 let api = express();
 
@@ -48,6 +50,8 @@ let userLoginTry = 0;
 let lastBarcode = '';
 /** User object retained for login-related API responses and authorization checks. */
 let userToSend = {};
+/** Prevents concurrent database backup processes. */
+let backupInProgress = false;
 
 /**
  * Returns the current date and time in `DD/MM/YYYY - HH:MM:SS` format.
@@ -1087,6 +1091,89 @@ api.post('/api/v0/barcode/generate', async function (req, res) {
     console.error('Error al conectar a la base de datos: ', err.stack);
     return utils.returnErrorServer(res);
   } finally {}
+});
+
+/**
+ * Runs the project's database backup script for an administrator.
+ * @route POST /api/v0/database/backup
+ * @authorization Requires an active administrator session.
+ * @returns {200} `{success:true}` when the SQL backup completes.
+ * @returns {403} `{message, code, status}` when the user is not an administrator.
+ * @returns {409} `{message, code, status}` when another backup is running.
+ * @returns {501} `{message, code, status}` when the server is not running Windows.
+ * @returns {500} `{message, code, status}` when the script fails.
+ */
+api.post('/api/v0/database/backup', async function (req, res) {
+  let ownsBackupLock = false;
+  try {
+    const user_logged = await getUserLogged() || {};
+    if (!user_logged.id || user_logged.level !== 'admin') {
+      return res
+        .status(403)
+        .json({message: 'Not Authorized', code: 'EBA001', status: false});
+    }
+
+    if (backupInProgress) {
+      return res
+        .status(409)
+        .json({message: 'Backup already in progress', code: 'EBA002', status: false});
+    }
+
+    if (process.platform !== 'win32') {
+      return res
+        .status(501)
+        .json({message: 'Backup script requires Windows', code: 'EBA003', status: false});
+    }
+
+    const projectRoot = path.resolve(__dirname, '..', '..');
+    const backupScript = path.join(projectRoot, 'run-backup-db.bat');
+    if (!fs.existsSync(backupScript)) {
+      throw new Error('Database backup script was not found');
+    }
+
+    backupInProgress = true;
+    ownsBackupLock = true;
+    const command = `call "${backupScript}"`;
+    const result = await new Promise((resolve, reject) => {
+      const backupProcess = spawn(
+        process.env.ComSpec || 'cmd.exe',
+        ['/d', '/c', command],
+        {
+          cwd: projectRoot,
+          windowsHide: true,
+          windowsVerbatimArguments: true
+        }
+      );
+      let output = '';
+      let errors = '';
+      backupProcess.stdout.on('data', (data) => {
+        output += data.toString();
+      });
+      backupProcess.stderr.on('data', (data) => {
+        errors += data.toString();
+      });
+      backupProcess.once('error', reject);
+      backupProcess.once('close', (code, signal) => resolve({code, signal, output, errors}));
+    });
+
+    if (result.code !== 0) {
+      console.error('Error al crear el respaldo: ', result.errors || result.output || result.signal);
+      return res
+        .status(500)
+        .json({message: 'Backup failed', code: 'EBA004', status: false});
+    }
+
+    return res.status(200).json({success: true});
+  } catch (err) {
+    console.error('Error al crear el respaldo: ', err.stack);
+    return res
+      .status(500)
+      .json({message: 'Backup failed', code: 'EBA004', status: false});
+  } finally {
+    if (ownsBackupLock) {
+      backupInProgress = false;
+    }
+  }
 });
 
 /** Publicly serves files in the API image directory under `/resources/img/*`. */

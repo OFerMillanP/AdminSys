@@ -49,6 +49,16 @@ export default css`
     --mdc-theme-primary: crimson;
     --mdc-theme-on-primary: #fff;
   }
+  
+  .backup {
+    text-align: center;
+    padding: 1rem;
+  }
+  
+  .backup mwc-button {
+    --mdc-theme-primary: #14593E;
+    --mdc-theme-on-primary: #fff;
+  }
 
   .confirm-sale-cash-input mwc-textfield {
     margin: 0.5rem;

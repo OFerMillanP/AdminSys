@@ -12,6 +12,7 @@ import styles from './tools.css.js';
  * Generates and downloads barcodes and supports changing the current user's password.
  *
  * @fires tools-element-request-generate-barcode - Requests barcode generation with the barcode string in `event.detail`.
+ * @fires tools-element-request-backup-db - Requests a database backup.
  * @fires tools-element-request-change-password - Requests a password change with `{current, new, confirm}` Base64-encoded strings in `event.detail`.
  * @listens modal-element-confirm-action-change-password-sale - Requests the password change; `event.detail` is `true`.
  */
@@ -158,6 +159,11 @@ export class ToolsElement extends ScopedElementsMixin(LitElement) {
     if (this._barcode.length) {
       dispatchCustomEvent(this, `${ToolsElement.is}-request-generate-barcode`, this._barcode);
     }
+  }
+
+  /** Requests a database backup from the application manager. */
+  _requestDatabaseBackup() {
+    dispatchCustomEvent(this, `${ToolsElement.is}-request-backup-db`);
   }
 
   /**
@@ -311,6 +317,16 @@ export class ToolsElement extends ScopedElementsMixin(LitElement) {
           </section>
         ` : nothing
       }
+      ${this.userData.level? html`
+        <section class="backup">
+          <mwc-button
+            raised
+            label="${t('tools-element-backup-db')}"
+            id="tools"
+            @click=${this._requestDatabaseBackup}
+          ></mwc-button>
+        </section>
+      ` : nothing}
       <section class="tools-content">
         ${this._barcode.length ? 
           html`
