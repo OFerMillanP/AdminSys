@@ -28,7 +28,7 @@ export default css`
   }
 
   .input-container input:focus {
-    border-color: #007bff;
+    border-color: #192639;
     outline: none;
   }
 
@@ -43,7 +43,7 @@ export default css`
   }
 
   .button-container button {
-    background-color: #010b15;
+    background-color: #192639;
     color: #fff;
     padding: 10px 15px;
     border: none;
@@ -51,8 +51,16 @@ export default css`
     cursor: pointer;
   }
 
+  .button-container button:hover {
+    background-color: #2c4563;
+  }
+
+  mwc-icon {
+    color: #51204d;
+  }
+
   .accept-modal-button.delete:hover {
-    background-color: #982929;
+    background-color: #6b2632;
   }
 
   .close-modal-button:hover {
@@ -81,7 +89,7 @@ export default css`
 
   .header-table.selectable:hover {
     cursor: pointer;
-    color: #ba46b1;
+    color: #854d80;
     transition: color 0.75s ease;
   }
 
@@ -118,13 +126,14 @@ export default css`
     border-style: none;
     border-radius: 0.5rem;
     font-size: 20px;
-    color: #14593E;
+    color: #14593e;
     text-shadow: rgba(0, 0, 0, 0.6) 2px 2px 4px;
     transform: translateY(0px);
     transition: transform 0.75s ease;
   }
 
   .show-product-image:hover {
+    color: #287a59;
     text-shadow: 2px 2px 4px #000000dd;
     transform: translateY(-4px);
     transition: transform 0.75s ease;
@@ -135,13 +144,14 @@ export default css`
     border: none;
     border-radius: 0.5rem;
     font-size: 20px;
-    color: #af1313;
+    color: #46131c;
     text-shadow: 2px 2px 4px #00000055;
     transform: translateY(0px);
     transition: transform 0.75s ease;
   }
 
   .delete-product:hover {
+    color: #6b2632;
     text-shadow: 2px 2px 4px #000000aa;
     transform: translateY(-4px);
     transition: transform 0.75s ease;
@@ -167,7 +177,7 @@ export default css`
   }
 
   .extra-barcodes {
-    background-color: #501f6f67;
+    background-color: #51204d67;
     transition: background-color 1s ease;
   }
 
@@ -237,7 +247,7 @@ export default css`
   }
 
   mwc-button {
-    --mdc-theme-primary: #3269c7;
+    --mdc-theme-primary: #192639;
     --mdc-theme-on-primary: #fff;
   }
 
@@ -286,7 +296,7 @@ export default css`
   .success-icon {
     width: 60px;
     height: 60px;
-    background-color: #2ecc71;
+    background-color: #14593e;
     color: white;
     border-radius: 50%;
     font-size: 40px;
@@ -297,7 +307,7 @@ export default css`
   .error-icon {
     width: 60px;
     height: 60px;
-    background-color: #af1313;
+    background-color: #46131c;
     color: white;
     border-radius: 50%;
     font-size: 40px;
@@ -311,7 +321,7 @@ export default css`
 
   .info-label {
     padding: 0.5rem 1rem;
-    color: #8e9600;
+    color: #14593e;
   }
 
   .file-name {

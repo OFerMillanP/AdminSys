@@ -25,7 +25,7 @@ export default css`
 
   .logout-button:hover {
     background-color: #333;
-    color: #eb4545;
+    color: #d48b96;
     border: none;
     font-weight: bold;
   }
@@ -68,8 +68,12 @@ export default css`
   }
 
   mwc-button.logout {
-    --mdc-theme-primary: #9c3535;
+    --mdc-theme-primary: #46131c;
     --mdc-theme-on-primary: #fff;
+  }
+
+  mwc-button.logout:hover {
+    --mdc-theme-primary: #6b2632;
   }
 
   mwc-top-app-bar {
@@ -78,7 +82,7 @@ export default css`
   }
 
   mwc-tab-bar {
-    --mdc-theme-primary: #ddd;
+    --mdc-theme-primary: #cd58c4;
     --mdc-text-transform: none;
     --mdc-tab-color-default: white;
     --mdc-tab-text-label-color-default: white;

@@ -27,8 +27,12 @@ export default css`
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    color: #008b8b;
+    color: #14593e;
     font-size: x-large;
+  }
+
+  mwc-icon {
+    color: #51204d;
   }
 
   .input-container {
@@ -102,7 +106,7 @@ export default css`
     border: none;
     border-radius: 0.5rem;
     font-size: x-large;
-    color: #b02b2b;
+    color: #46131c;
     text-shadow: 1px 1px 2px #00000055;
     background-color: transparent;
     cursor: pointer;
@@ -136,8 +140,12 @@ export default css`
   }
 
   mwc-button#complete-sale {
-    --mdc-theme-primary: #213aa8;
+    --mdc-theme-primary: #192639;
     --mdc-theme-on-primary: #fff;
+  }
+
+  mwc-button#complete-sale:hover {
+    --mdc-theme-primary: #2c4563;
   }
 
   table {

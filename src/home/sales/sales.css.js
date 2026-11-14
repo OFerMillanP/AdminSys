@@ -22,7 +22,20 @@ export default css`
   .list-header h2 {
     margin: 0;
     font-size: 1.6rem;
-    color: #010b15;
+    color: #192639;
+  }
+
+  .cash-register-section mwc-button {
+    --mdc-theme-primary: #51204d;
+    --mdc-theme-on-primary: #fff;
+  }
+
+  .cash-register-section mwc-button:hover {
+    --mdc-theme-primary: #71386d;
+  }
+
+  mwc-icon {
+    color: #51204d;
   }
 
   .total {
@@ -73,6 +86,11 @@ export default css`
     padding-top: 2rem;
   }
 
+  mwc-tab-bar {
+    --mdc-theme-primary: #51204d;
+    --mdc-text-transform: none;
+    --mdc-tab-stacked-height: 100px;
+  }
   table {
     width: 100%;
     border-collapse: collapse;

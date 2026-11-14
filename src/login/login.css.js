@@ -11,7 +11,7 @@ export default css`
   }
 
   .input-error {
-    border: 2px solid #ff000045;
+    border: 2px solid #46131c;
     border-radius: 0.5rem;
     outline: none;
   }
@@ -21,7 +21,7 @@ export default css`
   }
 
   .error-label {
-    color: #c00000a0;
+    color: #46131c;
   }
 
   .label-error-containter {
@@ -36,7 +36,11 @@ export default css`
   }
 
   mwc-button {
-    --mdc-theme-primary: #3269c7;
+    --mdc-theme-primary: #192639;
     --mdc-theme-on-primary: #fff;
+  }
+
+  mwc-button:hover {
+    --mdc-theme-primary: #2c4563;
   }
 `;

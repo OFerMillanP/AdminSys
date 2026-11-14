@@ -32,7 +32,7 @@ export default css`
   }
 
   .input-container input:focus {
-    border-color: #007bff;
+    border-color: #192639;
     outline: none;
   }
 
@@ -57,11 +57,11 @@ export default css`
 
   .info-label {
     padding: 0.5rem 1rem;
-    color: #8e9600;
+    color: #14593e;
   }
 
   .error-label {
-    color: #c00000a0;
+    color: #46131c;
     font-size: 0.9rem;
   }
 
@@ -75,7 +75,7 @@ export default css`
   }
 
   .button-container button {
-    background-color: #010b15;
+    background-color: #192639;
     color: #fff;
     padding: 10px 15px;
     border: none;
@@ -84,7 +84,11 @@ export default css`
   }
 
   .button-container button:hover {
-    background-color: #1a3757;
+    background-color: #2c4563;
+  }
+
+  mwc-icon {
+    color: #51204d;
   }
 
   .register-header {
@@ -118,13 +122,13 @@ export default css`
   }
 
   .link {
-    color: #03105c;
+    color: #192639;
     transition: 0.5s;
     padding: 1rem;
   }
 
   .link:hover {
-    color: #81adda;
+    color: #657f9f;
   }
 
   .list-products-navigation {
@@ -175,8 +179,12 @@ export default css`
   }
 
   mwc-button {
-    --mdc-theme-primary: #3269c7;
+    --mdc-theme-primary: #192639;
     --mdc-theme-on-primary: #fff;
+  }
+
+  mwc-button:hover {
+    --mdc-theme-primary: #2c4563;
   }
 
   mwc-button.save {
@@ -224,7 +232,7 @@ export default css`
   .success-icon {
     width: 60px;
     height: 60px;
-    background-color: #2ecc71;
+    background-color: #14593e;
     color: white;
     border-radius: 50%;
     font-size: 40px;
@@ -235,7 +243,7 @@ export default css`
   .error-icon {
     width: 60px;
     height: 60px;
-    background-color: #af1313;
+    background-color: #46131c;
     color: white;
     border-radius: 50%;
     font-size: 40px;

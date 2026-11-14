@@ -18,7 +18,7 @@ export default css`
   }
 
   button {
-    background-color: #010b15;
+    background-color: #192639;
     color: #fff;
     padding: 10px 15px;
     border: none;
@@ -26,35 +26,51 @@ export default css`
     cursor: pointer;
   }
 
+  button:hover {
+    background-color: #2c4563;
+  }
+
   mwc-button.logout {
-    --mdc-theme-primary: #9c3535;
+    --mdc-theme-primary: #46131c;
     --mdc-theme-on-primary: #fff;
+  }
+
+  mwc-button.logout:hover {
+    --mdc-theme-primary: #6b2632;
   }
 
   mwc-button#confirm-button {
-    --mdc-theme-primary: #256aff;
+    --mdc-theme-primary: #192639;
     --mdc-theme-on-primary: #fff;
+  }
+
+  mwc-button#confirm-button:hover {
+    --mdc-theme-primary: #2c4563;
   }
 
   mwc-button#cancel-button {
-    --mdc-theme-primary: #af1313;
+    --mdc-theme-primary: #46131c;
     --mdc-theme-on-primary: #fff;
+  }
+
+  mwc-button#cancel-button:hover {
+    --mdc-theme-primary: #6b2632;
   }
 /* 
   .accept-modal-button-warning:hover {
-    background-color: #af1313;
+    background-color: #6b2632;
   }
 
   .cancel-modal-button-warning:hover {
-    background-color: #256aff;
+    background-color: #2c4563;
   } */
 
   .success:hover {
-    background-color: #2ecc71;
+    background-color: #287a59;
   }
 
   .error:hover {
-    background-color: #af1313;
+    background-color: #6b2632;
   }
 
   .warning:hover {
@@ -62,7 +78,7 @@ export default css`
   }
 
   .info:hover {
-    background-color: #256aff;
+    background-color: #2c4563;
   }
 
   dialog {
@@ -107,7 +123,7 @@ export default css`
   .success-icon {
     width: 60px;
     height: 60px;
-    background-color: #2ecc71;
+    background-color: #14593e;
     color: white;
     border-radius: 50%;
     font-size: 40px;
@@ -119,7 +135,7 @@ export default css`
   .error-icon {
     width: 60px;
     height: 60px;
-    background-color: #af1313;
+    background-color: #46131c;
     color: white;
     border-radius: 50%;
     font-size: 40px;
@@ -140,7 +156,7 @@ export default css`
   .info-icon {
     width: 60px;
     height: 60px;
-    background-color: #256aff;
+    background-color: #192639;
     color: white;
     border-radius: 50%;
     font-size: 40px;

@@ -21,14 +21,27 @@ export default css`
     transition: all 0.2s ease;
   }
 
+  mwc-button.pagination-item {
+    --mdc-theme-primary: #51204d;
+    --mdc-theme-on-primary: #fff;
+  }
+
+  mwc-button.pagination-item:hover:not(.active) {
+    --mdc-theme-primary: #71386d;
+  }
+
   .pagination-item:hover:not(.disabled) {
     background-color: #f0f0f0;
     border-color: #999;
   }
 
   mwc-button.pagination-item.active {
-    --mdc-theme-primary: #6200ee;
+    --mdc-theme-primary: #51204d;
     --mdc-theme-on-primary: #fff;
+  }
+
+  mwc-button.pagination-item.active:hover {
+    --mdc-theme-primary: #71386d;
   }
 
   .pagination-item.disabled {

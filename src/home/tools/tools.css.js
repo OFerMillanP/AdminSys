@@ -46,8 +46,12 @@ export default css`
   }
 
   .change-password mwc-button {
-    --mdc-theme-primary: crimson;
+    --mdc-theme-primary: #46131c;
     --mdc-theme-on-primary: #fff;
+  }
+
+  .change-password mwc-button:hover {
+    --mdc-theme-primary: #6b2632;
   }
   
   .backup {
@@ -56,8 +60,16 @@ export default css`
   }
   
   .backup mwc-button {
-    --mdc-theme-primary: #14593E;
+    --mdc-theme-primary: #14593e;
     --mdc-theme-on-primary: #fff;
+  }
+
+  .backup mwc-button:hover {
+    --mdc-theme-primary: #287a59;
+  }
+
+  .backup mwc-icon {
+    color: #fff;
   }
 
   .confirm-sale-cash-input mwc-textfield {
@@ -66,11 +78,12 @@ export default css`
   }
 
   .pwd-message-error {
-    color: crimson;
+    color: #46131c;
     font-size: 10; 
   }
 
   mwc-textfield {
     width: 60%;
+    --mdc-theme-primary: #51204d;
   }
 `;
